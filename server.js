@@ -1,0 +1,140 @@
+const express = require('express');
+const http = require('http');
+const path = require('path');
+const WebSocket = require('ws');
+
+const app = express();
+app.use(express.static(path.join(__dirname, 'public')));
+
+const server = http.createServer(app);
+const wss = new WebSocket.Server({ server });
+
+// Tempo de tolerância (ms) antes de fechar a sala quando alguém desliga
+// (cobre refresh de página, queda momentânea de rede, etc.)
+const GRACE_MS = 45000;
+
+// rooms[code] = { host: ws|null, viewer: ws|null, hostTimer, viewerTimer }
+const rooms = {};
+
+function send(ws, data) {
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify(data));
+  }
+}
+
+function generateCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // sem 0/O, 1/I para evitar confusão
+  let code;
+  do {
+    code = Array.from({ length: 5 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+  } while (rooms[code]);
+  return code;
+}
+
+function scheduleRemoval(code, role) {
+  const room = rooms[code];
+  if (!room) return;
+  room[role + 'Timer'] = setTimeout(() => {
+    const r = rooms[code];
+    if (!r) return;
+    r[role] = null;
+    const other = role === 'host' ? r.viewer : r.host;
+    send(other, { type: 'peer-left' });
+    if (!r.host && !r.viewer) delete rooms[code];
+  }, GRACE_MS);
+}
+
+wss.on('connection', (ws) => {
+  ws.room = null;
+  ws.role = null;
+
+  ws.on('message', (raw) => {
+    let msg;
+    try {
+      msg = JSON.parse(raw.toString());
+    } catch (e) {
+      return;
+    }
+
+    switch (msg.type) {
+      case 'create-room': {
+        const code = generateCode();
+        rooms[code] = { host: ws, viewer: null, hostTimer: null, viewerTimer: null };
+        ws.room = code;
+        ws.role = 'host';
+        send(ws, { type: 'room-created', code });
+        break;
+      }
+
+      case 'join-room': {
+        const code = (msg.code || '').toUpperCase().trim();
+        const room = rooms[code];
+        if (!room) {
+          send(ws, { type: 'error', message: 'Sala não encontrada. Confirma o código ou pede um link novo.' });
+          return;
+        }
+        if (room.viewer && room.viewer.readyState === WebSocket.OPEN) {
+          send(ws, { type: 'error', message: 'Esta sala já tem duas pessoas.' });
+          return;
+        }
+        if (room.viewerTimer) { clearTimeout(room.viewerTimer); room.viewerTimer = null; }
+        room.viewer = ws;
+        ws.room = code;
+        ws.role = 'viewer';
+        send(ws, { type: 'room-joined', code });
+        send(room.host, { type: 'peer-joined' });
+        break;
+      }
+
+      // Reentrar na mesma sala depois de um refresh de página / queda de rede
+      case 'rejoin-room': {
+        const code = (msg.code || '').toUpperCase().trim();
+        const role = msg.role;
+        const room = rooms[code];
+        if (!room || (role !== 'host' && role !== 'viewer')) {
+          send(ws, { type: 'error', message: 'A sala expirou. Cria uma nova sala.', expired: true });
+          return;
+        }
+        if (room[role] && room[role].readyState === WebSocket.OPEN) {
+          send(ws, { type: 'error', message: 'Essa sala já está aberta nesse papel noutro dispositivo.', expired: true });
+          return;
+        }
+        if (room[role + 'Timer']) { clearTimeout(room[role + 'Timer']); room[role + 'Timer'] = null; }
+        room[role] = ws;
+        ws.room = code;
+        ws.role = role;
+        send(ws, { type: role === 'host' ? 'room-created' : 'room-joined', code, rejoined: true });
+        const other = role === 'host' ? room.viewer : room.host;
+        send(other, { type: 'peer-joined', rejoined: true });
+        break;
+      }
+
+      case 'offer':
+      case 'answer':
+      case 'ice-candidate':
+      case 'chat': {
+        const room = rooms[ws.room];
+        if (!room) return;
+        const target = ws.role === 'host' ? room.viewer : room.host;
+        send(target, msg);
+        break;
+      }
+
+      default:
+        break;
+    }
+  });
+
+  ws.on('close', () => {
+    const room = rooms[ws.room];
+    if (!room || room[ws.role] !== ws) return;
+    const other = ws.role === 'host' ? room.viewer : room.host;
+    send(other, { type: 'peer-disconnected-temp' });
+    scheduleRemoval(ws.room, ws.role);
+  });
+});
+
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+  console.log(`Servidor a correr na porta ${PORT}`);
+});
