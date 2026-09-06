@@ -1,1 +1,716 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Assistir Juntos</title>
+<style>
+  :root {
+    --bg: #0b0c10;
+    --bg-grad: radial-gradient(circle at 20% 0%, #1a1d24 0%, #0b0c10 55%);
+    --card: #16181d;
+    --card-2: #1c1f26;
+    --accent: #e50914;
+    --accent-2: #ff4d5e;
+    --ok: #3ddc84;
+    --warn: #f5b942;
+    --text: #f2f2f2;
+    --muted: #9a9ea6;
+    --border: #262932;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg-grad);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  header {
+    padding: 20px 20px 16px;
+    text-align: center;
+  }
+  header h1 { margin: 0; font-size: 21px; letter-spacing: 0.5px; font-weight: 700; }
+  header span { color: var(--accent); }
+  header p { margin: 4px 0 0; font-size: 12px; color: var(--muted); }
+  main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 8px 16px 100px;
+    gap: 18px;
+  }
+  .screen { display: none; width: 100%; max-width: 460px; flex-direction: column; gap: 16px; }
+  .screen.active { display: flex; }
+  .card {
+    background: linear-gradient(180deg, var(--card-2), var(--card));
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+  }
+  h2 { margin: 0; font-size: 16px; display: flex; align-items: center; gap: 8px; }
+  p.hint { color: var(--muted); font-size: 13px; margin: 0; line-height: 1.4; }
+  button {
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    padding: 14px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.1s ease, opacity 0.15s ease;
+  }
+  button:active { transform: scale(0.97); }
+  button.secondary {
+    background: #24262d;
+    border: 1px solid var(--border);
+    color: var(--text);
+  }
+  button.ghost {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-weight: 500;
+    padding: 10px;
+    font-size: 13px;
+  }
+  button:disabled { opacity: 0.45; cursor: not-allowed; }
+  .row { display: flex; gap: 10px; }
+  .row > * { flex: 1; }
+  input[type="text"] {
+    background: #0f1013;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 14px;
+    border-radius: 12px;
+    font-size: 18px;
+    text-transform: uppercase;
+    letter-spacing: 4px;
+    text-align: center;
+    width: 100%;
+    font-weight: 700;
+  }
+  input[type="text"]:focus { outline: 2px solid var(--accent); }
+  input[type="file"] {
+    color: var(--muted);
+    font-size: 13px;
+  }
+  video {
+    width: 100%;
+    border-radius: 12px;
+    background: #000;
+    max-height: 55vh;
+  }
+  .code-display {
+    font-size: 36px;
+    letter-spacing: 8px;
+    text-align: center;
+    font-weight: 800;
+    color: var(--accent);
+    padding: 8px 0;
+  }
+  .status {
+    font-size: 13px;
+    color: var(--muted);
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--muted);
+    flex-shrink: 0;
+  }
+  .status.connecting .dot { background: var(--warn); animation: pulse 1.2s infinite; }
+  .status.ok .dot { background: var(--ok); }
+  .status.err .dot { background: var(--accent); }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+  .banner {
+    background: rgba(245, 185, 66, 0.12);
+    border: 1px solid rgba(245, 185, 66, 0.35);
+    color: var(--warn);
+    padding: 12px 14px;
+    border-radius: 10px;
+    font-size: 13px;
+    display: none;
+  }
+  .banner.show { display: block; }
+  .divider {
+    text-align: center;
+    color: var(--muted);
+    font-size: 12px;
+  }
+  .error-msg {
+    font-size: 13px;
+    color: var(--accent);
+    text-align: center;
+    min-height: 16px;
+  }
 
+  /* Chat flutuante */
+  #chat-toggle {
+    position: fixed;
+    bottom: 22px;
+    right: 20px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.4);
+    z-index: 30;
+  }
+  #chat-toggle.show { display: flex; }
+  #chat-badge {
+    position: absolute;
+    top: -2px; right: -2px;
+    background: var(--ok);
+    color: #06210f;
+    font-size: 11px;
+    font-weight: 800;
+    min-width: 18px;
+    height: 18px;
+    border-radius: 9px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
+  }
+  #chat-badge.show { display: flex; }
+
+  #chat-panel {
+    position: fixed;
+    right: 0; bottom: 0;
+    width: 100%;
+    max-width: 400px;
+    height: 62vh;
+    background: var(--card);
+    border-top: 1px solid var(--border);
+    border-left: 1px solid var(--border);
+    border-radius: 16px 16px 0 0;
+    display: none;
+    flex-direction: column;
+    z-index: 40;
+    box-shadow: 0 -8px 30px rgba(0,0,0,0.45);
+  }
+  #chat-panel.show { display: flex; }
+  .chat-header {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+    font-weight: 700;
+  }
+  .chat-header button {
+    background: transparent;
+    color: var(--muted);
+    padding: 4px 8px;
+    font-size: 18px;
+  }
+  #chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .msg {
+    max-width: 78%;
+    padding: 9px 12px;
+    border-radius: 14px;
+    font-size: 14px;
+    line-height: 1.35;
+    word-wrap: break-word;
+  }
+  .msg.me {
+    align-self: flex-end;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: #fff;
+    border-bottom-right-radius: 4px;
+  }
+  .msg.them {
+    align-self: flex-start;
+    background: #24262d;
+    color: var(--text);
+    border-bottom-left-radius: 4px;
+  }
+  .msg.sys {
+    align-self: center;
+    background: transparent;
+    color: var(--muted);
+    font-size: 12px;
+  }
+  .chat-input-row {
+    display: flex;
+    gap: 8px;
+    padding: 12px;
+    border-top: 1px solid var(--border);
+  }
+  .chat-input-row input {
+    flex: 1;
+    background: #0f1013;
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 20px;
+    padding: 10px 16px;
+    font-size: 14px;
+  }
+  .chat-input-row button {
+    border-radius: 50%;
+    width: 42px;
+    height: 42px;
+    padding: 0;
+    font-size: 18px;
+    flex: none;
+  }
+  .overlay-btn { display: flex; align-items: center; justify-content: center; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Assistir <span>Juntos</span></h1>
+  <p>Vê o mesmo vídeo, ao mesmo tempo, em telefones diferentes</p>
+</header>
+
+<main>
+
+  <!-- ECRÃ INICIAL -->
+  <section id="screen-home" class="screen active">
+    <div class="card">
+      <h2>🎬 Partilhar o meu vídeo</h2>
+      <p class="hint">Escolhe um vídeo do teu telefone e cria uma sala para a outra pessoa assistir contigo.</p>
+      <button id="btn-create">Criar sala</button>
+    </div>
+    <div class="divider">— ou —</div>
+    <div class="card">
+      <h2>🔑 Entrar numa sala</h2>
+      <p class="hint">Cola o código de 5 letras que a outra pessoa te enviou (ou abre o link diretamente, se te mandaram um).</p>
+      <div class="row">
+        <input type="text" id="input-code" maxlength="5" placeholder="CÓDIGO" inputmode="text" autocomplete="off" autocapitalize="characters" />
+        <button id="btn-paste-code" class="secondary" style="flex:0 0 auto; padding: 14px 16px;">Colar</button>
+      </div>
+      <button id="btn-join">Entrar</button>
+      <p class="error-msg" id="home-error"></p>
+    </div>
+  </section>
+
+  <!-- ECRÃ DO ANFITRIÃO -->
+  <section id="screen-host" class="screen">
+    <div class="banner" id="host-reselect-banner">
+      ⚠️ A ligação foi restabelecida. Por segurança do telemóvel, escolhe novamente o vídeo para continuares a partilhar.
+    </div>
+    <div class="card">
+      <h2>A tua sala</h2>
+      <div class="code-display" id="room-code">-----</div>
+      <div class="row">
+        <button id="btn-copy-link">🔗 Copiar link</button>
+        <button id="btn-copy-code" class="secondary">Copiar código</button>
+      </div>
+      <p class="hint">Envia o link (mais fácil) ou o código à outra pessoa.</p>
+      <p class="status" id="host-status"><span class="dot"></span> A aguardar que alguém entre...</p>
+    </div>
+    <div class="card">
+      <h2>🎞️ Vídeo</h2>
+      <input type="file" id="file-input" accept="video/*" />
+      <video id="host-video" controls playsinline></video>
+    </div>
+  </section>
+
+  <!-- ECRÃ DO VIEWER -->
+  <section id="screen-viewer" class="screen">
+    <div class="card">
+      <h2>A assistir na sala <span id="viewer-code"></span></h2>
+      <p class="status connecting" id="viewer-status"><span class="dot"></span> A ligar...</p>
+      <video id="viewer-video" playsinline autoplay></video>
+      <button id="btn-unmute" class="secondary" style="display:none;">🔊 Tocar / Ativar som</button>
+    </div>
+  </section>
+
+</main>
+
+<!-- CHAT -->
+<button id="chat-toggle" class="secondary">💬<span id="chat-badge"></span></button>
+<div id="chat-panel">
+  <div class="chat-header">
+    <span>Mensagens</span>
+    <button id="chat-close">✕</button>
+  </div>
+  <div id="chat-messages"></div>
+  <div class="chat-input-row">
+    <input type="text" id="chat-input" placeholder="Escreve uma mensagem..." maxlength="500" />
+    <button id="chat-send">➤</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  const wsProtocol = location.protocol === 'https:' ? 'wss://' : 'ws://';
+  let ws = new WebSocket(wsProtocol + location.host);
+
+  const ICE_SERVERS = {
+    iceServers: [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:stun1.l.google.com:19302' },
+      { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
+      { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
+      { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' }
+    ]
+  };
+
+  const screens = {
+    home: document.getElementById('screen-home'),
+    host: document.getElementById('screen-host'),
+    viewer: document.getElementById('screen-viewer')
+  };
+  function showScreen(name) {
+    Object.values(screens).forEach(s => s.classList.remove('active'));
+    screens[name].classList.add('active');
+    document.getElementById('chat-toggle').classList.toggle('show', name !== 'home');
+  }
+
+  function setStatus(el, cls, text) {
+    el.className = 'status ' + cls;
+    el.innerHTML = '<span class="dot"></span> ' + text;
+  }
+
+  let role = null;
+  let roomCode = null;
+  let pc = null;
+  let iceRestartTimer = null;
+
+  function updateUrl() {
+    const url = new URL(location.href);
+    if (roomCode && role) {
+      url.searchParams.set('room', roomCode);
+      url.searchParams.set('role', role);
+    } else {
+      url.searchParams.delete('room');
+      url.searchParams.delete('role');
+    }
+    history.replaceState(null, '', url);
+  }
+
+  function shareLink() {
+    const url = new URL(location.href);
+    url.searchParams.set('room', roomCode);
+    url.searchParams.set('role', 'viewer');
+    return url.toString();
+  }
+
+  async function copyText(text) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // ---------- ECRÃ INICIAL ----------
+  const inputCode = document.getElementById('input-code');
+  inputCode.addEventListener('input', () => {
+    inputCode.value = inputCode.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5);
+  });
+
+  document.getElementById('btn-create').addEventListener('click', () => {
+    ws.send(JSON.stringify({ type: 'create-room' }));
+  });
+
+  document.getElementById('btn-paste-code').addEventListener('click', async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      inputCode.value = text.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5);
+    } catch (e) {
+      document.getElementById('home-error').textContent = 'Não consegui aceder à área de transferência — cola manualmente.';
+    }
+  });
+
+  document.getElementById('btn-join').addEventListener('click', () => {
+    const code = inputCode.value.trim().toUpperCase();
+    if (code.length < 5) {
+      document.getElementById('home-error').textContent = 'O código tem 5 letras/números.';
+      return;
+    }
+    document.getElementById('home-error').textContent = '';
+    ws.send(JSON.stringify({ type: 'join-room', code }));
+  });
+
+  // ---------- LADO ANFITRIÃO ----------
+  const hostVideo = document.getElementById('host-video');
+  const fileInput = document.getElementById('file-input');
+  const hostStatus = document.getElementById('host-status');
+  const reselectBanner = document.getElementById('host-reselect-banner');
+  let pendingPeer = false;
+
+  fileInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    hostVideo.src = URL.createObjectURL(file);
+    reselectBanner.classList.remove('show');
+    if (pendingPeer) {
+      pendingPeer = false;
+      startHostConnection();
+    }
+  });
+
+  document.getElementById('btn-copy-link').addEventListener('click', async () => {
+    const ok = await copyText(shareLink());
+    hostStatus.querySelector('.dot') && (document.getElementById('home-error'));
+    const btn = document.getElementById('btn-copy-link');
+    btn.textContent = ok ? '✅ Link copiado!' : '🔗 Copiar link';
+    setTimeout(() => { btn.textContent = '🔗 Copiar link'; }, 1800);
+  });
+
+  document.getElementById('btn-copy-code').addEventListener('click', async () => {
+    const ok = await copyText(roomCode);
+    const btn = document.getElementById('btn-copy-code');
+    btn.textContent = ok ? '✅ Copiado!' : 'Copiar código';
+    setTimeout(() => { btn.textContent = 'Copiar código'; }, 1800);
+  });
+
+  function attachIceMonitoring(peerConn, statusEl, onReconnected) {
+    peerConn.oniceconnectionstatechange = () => {
+      const state = peerConn.iceConnectionState;
+      if (state === 'connected' || state === 'completed') {
+        if (iceRestartTimer) { clearTimeout(iceRestartTimer); iceRestartTimer = null; }
+        setStatus(statusEl, 'ok', 'Ligado!');
+        if (onReconnected) onReconnected();
+      } else if (state === 'disconnected') {
+        setStatus(statusEl, 'connecting', 'A rede oscilou — a tentar recuperar a ligação...');
+        if (iceRestartTimer) clearTimeout(iceRestartTimer);
+        iceRestartTimer = setTimeout(() => {
+          if (peerConn.iceConnectionState === 'disconnected' && peerConn.restartIce) {
+            peerConn.restartIce();
+          }
+        }, 3000);
+      } else if (state === 'failed') {
+        setStatus(statusEl, 'err', 'A ligação falhou. A tentar novamente...');
+        if (peerConn.restartIce) peerConn.restartIce();
+      } else if (state === 'checking') {
+        setStatus(statusEl, 'connecting', 'A estabelecer ligação...');
+      }
+    };
+  }
+
+  async function startHostConnection() {
+    if (pc) { try { pc.close(); } catch (e) {} }
+    pc = new RTCPeerConnection(ICE_SERVERS);
+
+    pc.onicecandidate = (e) => {
+      if (e.candidate) ws.send(JSON.stringify({ type: 'ice-candidate', candidate: e.candidate }));
+    };
+    attachIceMonitoring(pc, hostStatus);
+
+    const localStream = hostVideo.captureStream ? hostVideo.captureStream() : hostVideo.mozCaptureStream();
+    localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+    ws.send(JSON.stringify({ type: 'offer', offer }));
+    setStatus(hostStatus, 'connecting', 'A ligar à outra pessoa...');
+  }
+
+  // ---------- LADO VIEWER ----------
+  const viewerVideo = document.getElementById('viewer-video');
+  const viewerStatus = document.getElementById('viewer-status');
+  const btnUnmute = document.getElementById('btn-unmute');
+
+  async function startViewerConnection(offer) {
+    if (pc) { try { pc.close(); } catch (e) {} }
+    pc = new RTCPeerConnection(ICE_SERVERS);
+
+    pc.onicecandidate = (e) => {
+      if (e.candidate) ws.send(JSON.stringify({ type: 'ice-candidate', candidate: e.candidate }));
+    };
+    attachIceMonitoring(pc, viewerStatus);
+
+    pc.ontrack = (e) => {
+      viewerVideo.srcObject = e.streams[0];
+      viewerVideo.play().catch(() => { btnUnmute.style.display = 'block'; });
+    };
+
+    await pc.setRemoteDescription(offer);
+    const answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
+    ws.send(JSON.stringify({ type: 'answer', answer }));
+  }
+
+  btnUnmute.addEventListener('click', () => {
+    viewerVideo.muted = false;
+    viewerVideo.play();
+    btnUnmute.style.display = 'none';
+  });
+
+  // ---------- CHAT ----------
+  const chatToggle = document.getElementById('chat-toggle');
+  const chatPanel = document.getElementById('chat-panel');
+  const chatMessages = document.getElementById('chat-messages');
+  const chatInput = document.getElementById('chat-input');
+  const chatBadge = document.getElementById('chat-badge');
+  let unread = 0;
+
+  function addMessage(text, kind) {
+    const div = document.createElement('div');
+    div.className = 'msg ' + kind;
+    div.textContent = text;
+    chatMessages.appendChild(div);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+
+  function openChat() {
+    chatPanel.classList.add('show');
+    unread = 0;
+    chatBadge.classList.remove('show');
+  }
+  chatToggle.addEventListener('click', openChat);
+  document.getElementById('chat-close').addEventListener('click', () => chatPanel.classList.remove('show'));
+
+  function sendChat() {
+    const text = chatInput.value.trim();
+    if (!text) return;
+    ws.send(JSON.stringify({ type: 'chat', text }));
+    addMessage(text, 'me');
+    chatInput.value = '';
+  }
+  document.getElementById('chat-send').addEventListener('click', sendChat);
+  chatInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') sendChat(); });
+
+  // ---------- LIGAÇÃO WEBSOCKET / MENSAGENS DO SERVIDOR ----------
+  function wireSocket(socket) {
+    socket.onmessage = async (event) => {
+      const msg = JSON.parse(event.data);
+
+      switch (msg.type) {
+        case 'room-created':
+          role = 'host';
+          roomCode = msg.code;
+          document.getElementById('room-code').textContent = msg.code;
+          updateUrl();
+          showScreen('host');
+          if (msg.rejoined) {
+            reselectBanner.classList.add('show');
+            setStatus(hostStatus, 'connecting', 'Reconectado à sala. A aguardar a outra pessoa...');
+          }
+          break;
+
+        case 'room-joined':
+          role = 'viewer';
+          roomCode = msg.code;
+          document.getElementById('viewer-code').textContent = msg.code;
+          updateUrl();
+          showScreen('viewer');
+          break;
+
+        case 'error':
+          if (msg.expired) {
+            roomCode = null; role = null; updateUrl();
+            showScreen('home');
+          }
+          document.getElementById('home-error').textContent = msg.message;
+          break;
+
+        case 'peer-joined':
+          if (role === 'host') {
+            if (msg.rejoined) {
+              setStatus(hostStatus, 'connecting', 'A outra pessoa voltou. A reconectar...');
+            } else {
+              setStatus(hostStatus, 'connecting', 'A pessoa entrou! A iniciar transmissão...');
+            }
+            if (fileInput.files[0]) {
+              startHostConnection();
+            } else {
+              pendingPeer = true;
+              setStatus(hostStatus, 'connecting', 'A pessoa já está na sala — escolhe um vídeo para começar.');
+            }
+          }
+          break;
+
+        case 'peer-disconnected-temp':
+          if (role === 'host') setStatus(hostStatus, 'connecting', 'A pessoa perdeu ligação — a aguardar que volte...');
+          if (role === 'viewer') setStatus(viewerStatus, 'connecting', 'O anfitrião perdeu ligação — a aguardar que volte...');
+          break;
+
+        case 'offer':
+          await startViewerConnection(msg.offer);
+          break;
+
+        case 'answer':
+          if (pc) await pc.setRemoteDescription(msg.answer);
+          break;
+
+        case 'ice-candidate':
+          if (pc) { try { await pc.addIceCandidate(msg.candidate); } catch (e) {} }
+          break;
+
+        case 'chat':
+          addMessage(msg.text, 'them');
+          if (!chatPanel.classList.contains('show')) {
+            unread++;
+            chatBadge.textContent = unread;
+            chatBadge.classList.add('show');
+          }
+          break;
+
+        case 'peer-left':
+          if (role === 'host') setStatus(hostStatus, 'err', 'A outra pessoa saiu da sala.');
+          if (role === 'viewer') setStatus(viewerStatus, 'err', 'O anfitrião saiu da sala.');
+          if (pc) { pc.close(); pc = null; }
+          break;
+
+        default:
+          break;
+      }
+    };
+
+    socket.onclose = () => {
+      // Tenta ligar novamente ao servidor de sinalização (ex: Render "acordou" ou rede caiu)
+      setTimeout(reconnectSocket, 2000);
+    };
+  }
+
+  function reconnectSocket() {
+    ws = new WebSocket(wsProtocol + location.host);
+    wireSocket(ws);
+    ws.addEventListener('open', () => {
+      if (roomCode && role) {
+        ws.send(JSON.stringify({ type: 'rejoin-room', code: roomCode, role }));
+      }
+    });
+  }
+
+  wireSocket(ws);
+
+  // ---------- RESTAURAR SALA A PARTIR DO LINK (refresh ou link partilhado) ----------
+  window.addEventListener('load', () => {
+    const params = new URL(location.href).searchParams;
+    const urlRoom = params.get('room');
+    const urlRole = params.get('role');
+    if (urlRoom && urlRole) {
+      roomCode = urlRoom.toUpperCase();
+      role = urlRole;
+      const tryRejoin = () => ws.send(JSON.stringify({ type: 'rejoin-room', code: roomCode, role }));
+      if (ws.readyState === WebSocket.OPEN) tryRejoin();
+      else ws.addEventListener('open', tryRejoin, { once: true });
+    }
+  });
+})();
+</script>
+
+</body>
+</html>
