@@ -6,15 +6,41 @@ const WebSocket = require('ws');
 const app = express();
 app.use(express.static(path.join(__dirname, 'public')));
 
+const GRACE_MS = 45000;
+const rooms = {};
+
+// TURN de reserva (público, pode não ser 100% fiável) — usado apenas se
+// as credenciais da Metered não estiverem configuradas.
+const FALLBACK_ICE_SERVERS = [
+  { urls: 'stun:stun.l.google.com:19302' },
+  { urls: 'stun:stun1.l.google.com:19302' },
+  { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
+  { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
+  { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' }
+];
+
+// Endpoint que devolve os servidores ICE (STUN/TURN) ao cliente.
+// Usa a credencial TURN própria da Metered (dashboard.metered.ca) se estiver
+// configurada nas variáveis de ambiente do Render; caso contrário usa o fallback.
+app.get('/ice-servers', (req, res) => {
+  const username = process.env.METERED_TURN_USERNAME;
+  const credential = process.env.METERED_TURN_CREDENTIAL;
+
+  if (!username || !credential) {
+    return res.json(FALLBACK_ICE_SERVERS);
+  }
+
+  res.json([
+    { urls: 'stun:stun.relay.metered.ca:80' },
+    { urls: 'turn:global.relay.metered.ca:80', username, credential },
+    { urls: 'turn:global.relay.metered.ca:80?transport=tcp', username, credential },
+    { urls: 'turn:global.relay.metered.ca:443', username, credential },
+    { urls: 'turns:global.relay.metered.ca:443?transport=tcp', username, credential }
+  ]);
+});
+
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
-
-// Tempo de tolerância (ms) antes de fechar a sala quando alguém desliga
-// (cobre refresh de página, queda momentânea de rede, etc.)
-const GRACE_MS = 45000;
-
-// rooms[code] = { host: ws|null, viewer: ws|null, hostTimer, viewerTimer }
-const rooms = {};
 
 function send(ws, data) {
   if (ws && ws.readyState === WebSocket.OPEN) {
@@ -23,7 +49,7 @@ function send(ws, data) {
 }
 
 function generateCode() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // sem 0/O, 1/I para evitar confusão
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let code;
   do {
     code = Array.from({ length: 5 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
@@ -86,7 +112,6 @@ wss.on('connection', (ws) => {
         break;
       }
 
-      // Reentrar na mesma sala depois de um refresh de página / queda de rede
       case 'rejoin-room': {
         const code = (msg.code || '').toUpperCase().trim();
         const role = msg.role;
