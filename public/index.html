@@ -133,6 +133,12 @@
   .chat-input-row { display: flex; gap: 8px; padding: 12px; border-top: 1px solid var(--border); }
   .chat-input-row input { flex: 1; background: #0f1013; border: 1px solid var(--border); color: var(--text); border-radius: 20px; padding: 10px 16px; font-size: 14px; }
   .chat-input-row button { border-radius: 50%; width: 42px; height: 42px; padding: 0; font-size: 18px; flex: none; }
+  .mode-btn {
+    background: #24262d; border: 1px solid var(--border); color: var(--muted);
+    font-weight: 600; padding: 12px; border-radius: 10px; font-size: 14px;
+  }
+  .mode-btn-active { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; border: none; }
+  #yt-player-host iframe, #yt-player-viewer iframe { width: 100%; aspect-ratio: 16/9; border-radius: 10px; }
 </style>
 </head>
 <body>
@@ -180,9 +186,29 @@
       <p class="status" id="host-status"><span class="dot"></span> A aguardar que alguém entre...</p>
     </div>
     <div class="card">
-      <h2>🎞️ Vídeo</h2>
-      <input type="file" id="file-input" accept="video/*" />
-      <video id="host-video" controls playsinline></video>
+      <h2>🎬 O que vais partilhar?</h2>
+      <div class="row">
+        <button id="mode-file-btn" class="mode-btn mode-btn-active">📱 Do telemóvel</button>
+        <button id="mode-youtube-btn" class="mode-btn">▶️ YouTube</button>
+      </div>
+
+      <div id="mode-file-panel">
+        <p class="hint">Vídeo ou música guardados no teu telemóvel.</p>
+        <input type="file" id="file-input" accept="video/*,audio/*" />
+        <video id="host-video" controls playsinline></video>
+        <audio id="host-audio" controls style="width:100%; display:none;"></audio>
+        <div id="host-audio-label" class="hint" style="display:none;">🎵 A tocar do telemóvel</div>
+      </div>
+
+      <div id="mode-youtube-panel" style="display:none;">
+        <p class="hint">Cola o link de um vídeo ou música do YouTube.</p>
+        <div class="row">
+          <input type="text" id="yt-url-input" placeholder="Link ou ID do YouTube" style="text-transform:none; letter-spacing:normal; font-size:14px;" />
+          <button id="yt-load-btn" class="secondary" style="flex:0 0 auto;">Carregar</button>
+        </div>
+        <div id="yt-player-host" style="margin-top:10px;"></div>
+        <button id="yt-sync-btn" class="secondary" style="display:none; margin-top:8px;">🔄 Sincronizar agora</button>
+      </div>
     </div>
   </section>
 
@@ -192,7 +218,10 @@
       <h2>A assistir na sala <span id="viewer-code"></span></h2>
       <p class="status connecting" id="viewer-status"><span class="dot"></span> A ligar...</p>
       <video id="viewer-video" playsinline autoplay></video>
+      <div id="yt-player-viewer" style="display:none;"></div>
+      <div id="viewer-audio-label" class="hint" style="display:none;">🎵 A tocar música partilhada</div>
       <button id="btn-unmute" class="secondary" style="display:none;">🔊 Tocar / Ativar som</button>
+      <button id="yt-sync-btn-viewer" class="secondary" style="display:none;">🔄 Sincronizar agora</button>
     </div>
   </section>
 
@@ -200,6 +229,8 @@
 
 <!-- Áudio remoto da chamada de voz (sem interface própria) -->
 <audio id="remote-audio" autoplay playsinline></audio>
+<!-- Áudio remoto da música partilhada do telemóvel (separado da chamada de voz) -->
+<audio id="movie-audio" autoplay playsinline></audio>
 <button id="btn-audio-unmute" class="secondary">🔊 Ativar áudio da chamada</button>
 
 <!-- Botões flutuantes -->
@@ -271,6 +302,12 @@
   let movieStreamId = null;
   let moviePublished = false;
   let pendingPeer = false;
+  let fileKind = 'video';        // 'video' | 'audio' — tipo do ficheiro atual do anfitrião
+  let remoteFileKind = 'video';  // o que o viewer sabe sobre o ficheiro do anfitrião
+  let movieAudioAttached = false;
+  let currentMode = 'file';      // 'file' | 'youtube'
+  let ytPlayer = null;
+  let ytApplyingRemote = false;
   let micStream = null;
   let micAdded = false;
   let micEnabled = false;
@@ -330,13 +367,20 @@
 
   // ---------- LADO ANFITRIÃO ----------
   const hostVideo = document.getElementById('host-video');
+  const hostAudioEl = document.getElementById('host-audio');
+  const hostAudioLabel = document.getElementById('host-audio-label');
   const fileInput = document.getElementById('file-input');
   const hostStatus = document.getElementById('host-status');
   const reselectBanner = document.getElementById('host-reselect-banner');
 
+  function activeHostMediaEl() {
+    return fileKind === 'audio' ? hostAudioEl : hostVideo;
+  }
+
   function addMovieTracksIfNeeded() {
     if (moviePublished || !pc) return;
-    const localStream = hostVideo.captureStream ? hostVideo.captureStream() : hostVideo.mozCaptureStream();
+    const el = activeHostMediaEl();
+    const localStream = el.captureStream ? el.captureStream() : el.mozCaptureStream();
     localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
     moviePublished = true;
     pendingPeer = false;
@@ -345,16 +389,34 @@
   fileInput.addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    hostVideo.src = URL.createObjectURL(file);
+
+    fileKind = file.type.startsWith('audio/') ? 'audio' : 'video';
+    ws.send(JSON.stringify({ type: 'control', action: 'file-kind', kind: fileKind }));
     reselectBanner.classList.remove('show');
+
+    if (fileKind === 'audio') {
+      hostVideo.style.display = 'none';
+      hostAudioEl.style.display = 'block';
+      hostAudioLabel.style.display = 'block';
+      hostAudioLabel.textContent = '🎵 A tocar: ' + file.name;
+      hostAudioEl.src = URL.createObjectURL(file);
+      hostAudioEl.play().catch(() => {});
+    } else {
+      hostVideo.style.display = 'block';
+      hostAudioEl.style.display = 'none';
+      hostAudioLabel.style.display = 'none';
+      hostVideo.src = URL.createObjectURL(file);
+      hostVideo.play().catch(() => { /* o utilizador pode ter de tocar em play manualmente */ });
+    }
 
     if (pendingPeer) {
       addMovieTracksIfNeeded();
       return;
     }
     if (moviePublished && pc) {
-      // Trocar de vídeo a meio da sessão: substitui as faixas em vez de duplicar
-      const newStream = hostVideo.captureStream ? hostVideo.captureStream() : hostVideo.mozCaptureStream();
+      // Trocar de ficheiro a meio da sessão: substitui as faixas em vez de duplicar
+      const el = activeHostMediaEl();
+      const newStream = el.captureStream ? el.captureStream() : el.mozCaptureStream();
       const senders = pc.getSenders();
       newStream.getTracks().forEach(track => {
         const sender = senders.find(s => s.track && s.track.kind === track.kind && s.track !== track);
@@ -363,6 +425,146 @@
       });
     }
   });
+
+  // ---------- MODO: TELEMÓVEL vs YOUTUBE ----------
+  function stopMovieTracks() {
+    if (pc) {
+      const micTrack = micStream ? micStream.getAudioTracks()[0] : null;
+      pc.getSenders().forEach(s => {
+        if (!s.track) return;
+        if (s.track.kind === 'video' || (s.track.kind === 'audio' && s.track !== micTrack)) {
+          pc.removeTrack(s);
+        }
+      });
+    }
+    moviePublished = false;
+    movieStreamId = null;
+  }
+
+  document.getElementById('mode-youtube-btn').addEventListener('click', () => {
+    currentMode = 'youtube';
+    document.getElementById('mode-youtube-btn').classList.add('mode-btn-active');
+    document.getElementById('mode-file-btn').classList.remove('mode-btn-active');
+    document.getElementById('mode-file-panel').style.display = 'none';
+    document.getElementById('mode-youtube-panel').style.display = 'block';
+    hostVideo.pause();
+    hostAudioEl.pause();
+    stopMovieTracks();
+    ws.send(JSON.stringify({ type: 'control', action: 'mode', mode: 'youtube' }));
+  });
+
+  document.getElementById('mode-file-btn').addEventListener('click', () => {
+    currentMode = 'file';
+    document.getElementById('mode-file-btn').classList.add('mode-btn-active');
+    document.getElementById('mode-youtube-btn').classList.remove('mode-btn-active');
+    document.getElementById('mode-file-panel').style.display = 'block';
+    document.getElementById('mode-youtube-panel').style.display = 'none';
+    if (ytPlayer) ytPlayer.pauseVideo();
+    ws.send(JSON.stringify({ type: 'control', action: 'mode', mode: 'file' }));
+  });
+
+  function applyRemoteMode(mode) {
+    if (role !== 'viewer') return;
+    if (mode === 'youtube') {
+      viewerVideo.style.display = 'none';
+      document.getElementById('yt-player-viewer').style.display = 'block';
+    } else {
+      viewerVideo.style.display = '';
+      document.getElementById('yt-player-viewer').style.display = 'none';
+    }
+  }
+
+  // ---------- YOUTUBE (vídeo ou música, em sincronia) ----------
+  function loadYouTubeAPI() {
+    return new Promise((resolve) => {
+      if (window.YT && window.YT.Player) { resolve(); return; }
+      const existingCallback = window.onYouTubeIframeAPIReady;
+      window.onYouTubeIframeAPIReady = () => { if (existingCallback) existingCallback(); resolve(); };
+      if (!document.getElementById('yt-iframe-api')) {
+        const tag = document.createElement('script');
+        tag.id = 'yt-iframe-api';
+        tag.src = 'https://www.youtube.com/iframe_api';
+        document.head.appendChild(tag);
+      }
+    });
+  }
+
+  function extractYouTubeId(input) {
+    input = (input || '').trim();
+    const match = input.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+    if (match) return match[1];
+    if (/^[a-zA-Z0-9_-]{11}$/.test(input)) return input;
+    return null;
+  }
+
+  function getYtContainerId() {
+    return role === 'host' ? 'yt-player-host' : 'yt-player-viewer';
+  }
+
+  function onYtStateChange(e) {
+    if (ytApplyingRemote || !ytPlayer) return;
+    const currentTime = ytPlayer.getCurrentTime();
+    if (e.data === YT.PlayerState.PLAYING) {
+      ws.send(JSON.stringify({ type: 'control', action: 'yt-play', time: currentTime }));
+    } else if (e.data === YT.PlayerState.PAUSED) {
+      ws.send(JSON.stringify({ type: 'control', action: 'yt-pause', time: currentTime }));
+    }
+  }
+
+  async function ensureYtPlayer(videoId) {
+    await loadYouTubeAPI();
+    if (ytPlayer) {
+      ytPlayer.loadVideoById(videoId);
+      return ytPlayer;
+    }
+    return new Promise((resolve) => {
+      const player = new YT.Player(getYtContainerId(), {
+        videoId,
+        playerVars: { playsinline: 1 },
+        events: {
+          onReady: () => { ytPlayer = player; resolve(player); },
+          onStateChange: onYtStateChange
+        }
+      });
+    });
+  }
+
+  function sendYtSync() {
+    if (!ytPlayer) return;
+    const time = ytPlayer.getCurrentTime();
+    const playing = ytPlayer.getPlayerState() === YT.PlayerState.PLAYING;
+    ws.send(JSON.stringify({ type: 'control', action: 'yt-sync', time, playing }));
+  }
+
+  document.getElementById('yt-load-btn').addEventListener('click', async () => {
+    const videoId = extractYouTubeId(document.getElementById('yt-url-input').value);
+    if (!videoId) { alert('Link do YouTube inválido. Cola o link completo ou só o código do vídeo.'); return; }
+    await ensureYtPlayer(videoId);
+    document.getElementById('yt-sync-btn').style.display = 'inline-block';
+    ws.send(JSON.stringify({ type: 'control', action: 'yt-load', videoId }));
+  });
+  document.getElementById('yt-sync-btn').addEventListener('click', sendYtSync);
+  document.getElementById('yt-sync-btn-viewer').addEventListener('click', sendYtSync);
+
+  async function handleControlMessage(msg) {
+    if (msg.action === 'mode') {
+      applyRemoteMode(msg.mode);
+    } else if (msg.action === 'file-kind') {
+      remoteFileKind = msg.kind;
+      movieAudioAttached = false;
+    } else if (msg.action === 'yt-load') {
+      applyRemoteMode('youtube');
+      document.getElementById('yt-sync-btn-viewer').style.display = role === 'viewer' ? 'inline-block' : 'none';
+      await ensureYtPlayer(msg.videoId);
+    } else if (msg.action === 'yt-play' || msg.action === 'yt-pause' || msg.action === 'yt-sync') {
+      if (!ytPlayer) return;
+      ytApplyingRemote = true;
+      ytPlayer.seekTo(msg.time, true);
+      const shouldPlay = msg.action === 'yt-play' || (msg.action === 'yt-sync' && msg.playing);
+      if (shouldPlay) ytPlayer.playVideo(); else ytPlayer.pauseVideo();
+      setTimeout(() => { ytApplyingRemote = false; }, 400);
+    }
+  }
 
   document.getElementById('btn-copy-link').addEventListener('click', async () => {
     const ok = await copyText(shareLink());
@@ -448,6 +650,15 @@
         viewerVideo.play().catch(() => { btnUnmute.style.display = 'block'; });
       } else if (e.track.kind === 'audio') {
         if (stream.id === movieStreamId) return; // já vai junto do vídeo
+        if (remoteFileKind === 'audio' && !movieAudioAttached) {
+          movieAudioAttached = true;
+          movieStreamId = stream.id;
+          const movieAudioEl = document.getElementById('movie-audio');
+          movieAudioEl.srcObject = stream;
+          movieAudioEl.play().catch(() => { btnAudioUnmute.classList.add('show'); });
+          document.getElementById('viewer-audio-label').style.display = 'block';
+          return;
+        }
         remoteAudio.srcObject = stream;
         remoteAudio.play().catch(() => { btnAudioUnmute.classList.add('show'); });
       }
@@ -464,6 +675,7 @@
     moviePublished = false;
     micAdded = false;
     movieStreamId = null;
+    movieAudioAttached = false;
   }
 
   async function handleSignal(msg) {
@@ -612,6 +824,10 @@
             chatBadge.textContent = unread;
             chatBadge.classList.add('show');
           }
+          break;
+
+        case 'control':
+          await handleControlMessage(msg);
           break;
 
         case 'peer-disconnected-temp':
