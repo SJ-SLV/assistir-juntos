@@ -1,10 +1,19 @@
 # Assistir Juntos
 
-Site para duas pessoas assistirem ao mesmo vídeo em sincronia, cada uma no seu telefone, via WebRTC — com chat de texto e agora também **chamada de voz**.
+Site para duas pessoas assistirem ao mesmo vídeo em sincronia, cada uma no seu telefone, via WebRTC — com chat de texto, chamada de voz, música do telemóvel e vídeos/música do YouTube.
 
-## Novidade: chamada de voz (microfone)
+## Novidade: YouTube e música do telemóvel
 
-Além do chat de texto (SMS), agora há um botão flutuante **🎤** (canto inferior esquerdo) em ambos os ecrãs:
+No ecrã do anfitrião há agora dois separadores:
+
+- **📱 Do telemóvel** (como já existia) — agora também aceita **ficheiros de áudio** (música), não só vídeo. Se escolheres um ficheiro de música, aparece um leitor simples em vez do vídeo.
+- **▶️ YouTube** — cola o link (ou só o código) de um vídeo ou música do YouTube e toca em "Carregar". **Importante: isto funciona de forma diferente do vídeo do telemóvel** — não há transmissão P2P; cada telefone carrega o vídeo diretamente do YouTube, e nós só sincronizamos play/pausa/avanço entre os dois. Isto tem até vantagens: não depende do TURN, não gasta dados a "reenviar" vídeo, e a qualidade é a mesma que terias a ver o YouTube normalmente.
+  - Qualquer um dos dois lados pode dar play/pausa — sincroniza automaticamente para o outro.
+  - Se a sincronia desviar (ex: um teve de recarregar a página), há um botão **"🔄 Sincronizar agora"** que força os dois a ficarem no mesmo ponto.
+
+## Chamada de voz (microfone)
+
+Além do chat de texto (SMS), há um botão flutuante **🎤** (canto inferior esquerdo) em ambos os ecrãs:
 
 - Ao tocar pela primeira vez, o telemóvel pede permissão para usar o microfone.
 - Depois de aceitar, o áudio do microfone passa a ser enviado ao vivo para a outra pessoa (chamada de voz durante o vídeo).
@@ -14,14 +23,17 @@ Além do chat de texto (SMS), agora há um botão flutuante **🎤** (canto infe
 
 Tecnicamente, isto usa a mesma ligação WebRTC que já transmite o vídeo, apenas com uma faixa de áudio adicional bidirecional — não precisa de nenhum servidor extra.
 
+**Nota:** se usares música do telemóvel (não vídeo) e chamada de voz ao mesmo tempo, pode haver conflito no áudio recebido do outro lado — é uma limitação conhecida desta versão, por afetar poucos casos de uso reais.
+
 ## Recapitulando as funcionalidades
 
-- **Vídeo em sincronia:** o anfitrião escolhe um vídeo do telefone e é transmitido ao vivo para a outra pessoa.
+- **Vídeo/música em sincronia:** o anfitrião escolhe um ficheiro do telefone (vídeo ou áudio) ou um link do YouTube, e é sincronizado com a outra pessoa.
 - **Link partilhável:** botão "Copiar link" para a outra pessoa entrar sem escrever código.
 - **Reconexão automática:** refresh de página ou queda de rede não obriga a criar sala nova.
-- **TURN fiável (opcional, recomendado):** configura `METERED_APP_NAME` e `METERED_API_KEY` nas variáveis de ambiente do Render para ligações mais estáveis (ver secção abaixo).
+- **TURN fiável (opcional, recomendado):** configura `METERED_TURN_USERNAME` e `METERED_TURN_CREDENTIAL` nas variáveis de ambiente do Render para ligações mais estáveis (ver secção abaixo).
 - **Chat de texto:** botão flutuante 💬.
-- **Chamada de voz:** botão flutuante 🎤 (novidade desta versão).
+- **Chamada de voz:** botão flutuante 🎤.
+- **YouTube em sincronia:** vídeos e música do YouTube, com play/pausa sincronizados.
 
 ## TURN fiável (Metered) — recomendado
 

@@ -137,7 +137,8 @@ wss.on('connection', (ws) => {
       case 'offer':
       case 'answer':
       case 'ice-candidate':
-      case 'chat': {
+      case 'chat':
+      case 'control': {
         const room = rooms[ws.room];
         if (!room) return;
         const target = ws.role === 'host' ? room.viewer : room.host;
