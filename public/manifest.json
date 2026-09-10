@@ -1,0 +1,13 @@
+{
+  "name": "Assistir Juntos",
+  "short_name": "Assistir Juntos",
+  "description": "Vê o mesmo vídeo, música ou YouTube em sincronia com outra pessoa, cada um no seu telefone.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0b0c10",
+  "theme_color": "#e50914",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

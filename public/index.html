@@ -4,6 +4,10 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>Assistir Juntos</title>
+<link rel="manifest" href="manifest.json" />
+<meta name="theme-color" content="#e50914" />
+<link rel="icon" href="icon.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="icon.svg" />
 <style>
   :root {
     --bg: #0b0c10;
@@ -93,6 +97,7 @@
   .banner.show { display: block; }
   .divider { text-align: center; color: var(--muted); font-size: 12px; }
   .error-msg { font-size: 13px; color: var(--accent); text-align: center; min-height: 16px; }
+  .now-playing { font-size: 14px; color: var(--text); background: #20222a; border-radius: 10px; padding: 10px 12px; display: none; }
 
   /* Botões flutuantes (chat / chamada) */
   .fab {
@@ -139,6 +144,32 @@
   }
   .mode-btn-active { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; border: none; }
   #yt-player-host iframe, #yt-player-viewer iframe { width: 100%; aspect-ratio: 16/9; border-radius: 10px; }
+
+  /* Playlist */
+  .playlist { display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow-y: auto; }
+  .playlist-item {
+    display: flex; align-items: center; gap: 8px; background: #1c1e25; border: 1px solid var(--border);
+    border-radius: 10px; padding: 8px 10px; font-size: 13px;
+  }
+  .playlist-item.playing { border-color: var(--accent); background: rgba(229,9,20,0.1); }
+  .playlist-icon { flex: none; }
+  .playlist-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .playlist-actions { display: flex; gap: 4px; flex: none; }
+  .playlist-actions button {
+    background: #262933; border: none; color: var(--muted); width: 26px; height: 26px;
+    border-radius: 6px; padding: 0; font-size: 12px; line-height: 1;
+  }
+  .playlist-actions button:hover { color: var(--text); }
+
+  /* Barra de reprodução */
+  .player-bar { display: none; flex-direction: column; gap: 8px; background: #1c1e25; border: 1px solid var(--border); border-radius: 12px; padding: 12px; }
+  .player-bar.show { display: flex; }
+  .player-title { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .player-controls { display: flex; align-items: center; gap: 10px; }
+  .player-controls button { background: #262933; border: none; color: var(--text); width: 40px; height: 40px; border-radius: 50%; padding: 0; font-size: 16px; flex: none; }
+  .player-controls button.play-pause { background: linear-gradient(135deg, var(--accent), var(--accent-2)); width: 46px; height: 46px; font-size: 18px; }
+  .player-seek-row { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--muted); }
+  .player-seek-row input[type="range"] { flex: 1; accent-color: var(--accent); }
 </style>
 </head>
 <body>
@@ -173,7 +204,7 @@
   <!-- ECRÃ DO ANFITRIÃO -->
   <section id="screen-host" class="screen">
     <div class="banner" id="host-reselect-banner">
-      ⚠️ A ligação foi restabelecida. Por segurança do telemóvel, escolhe novamente o vídeo para continuares a partilhar.
+      ⚠️ A ligação foi restabelecida. Por segurança do telemóvel, a playlist local perdeu-se — volta a adicionar os ficheiros para continuares a partilhar.
     </div>
     <div class="card">
       <h2>A tua sala</h2>
@@ -182,9 +213,19 @@
         <button id="btn-copy-link">🔗 Copiar link</button>
         <button id="btn-copy-code" class="secondary">Copiar código</button>
       </div>
-      <p class="hint">Envia o link (mais fácil) ou o código à outra pessoa.</p>
+      <button id="btn-share-link" class="secondary">📤 Partilhar</button>
+      <div id="qr-wrap" style="display:flex; justify-content:center;">
+        <img id="qr-code" alt="Código QR da sala" width="140" height="140" style="border-radius:10px; background:#fff; padding:6px;" />
+      </div>
+      <p class="hint">Envia o link (mais fácil) ou o código à outra pessoa. Ela também pode apontar a câmara ao QR.</p>
+      <div class="row" style="align-items:center; gap:8px;">
+        <label for="vol-call-host" style="font-size:12px; color:var(--muted); flex:0 0 auto;">🎤 Volume da chamada</label>
+        <input type="range" id="vol-call-host" min="0" max="100" value="100" style="flex:1;" />
+      </div>
       <p class="status" id="host-status"><span class="dot"></span> A aguardar que alguém entre...</p>
+      <button id="btn-leave-host" class="ghost">🚪 Sair da sala</button>
     </div>
+
     <div class="card">
       <h2>🎬 O que vais partilhar?</h2>
       <div class="row">
@@ -193,21 +234,46 @@
       </div>
 
       <div id="mode-file-panel">
-        <p class="hint">Vídeo ou música guardados no teu telemóvel.</p>
-        <input type="file" id="file-input" accept="video/*,audio/*" />
+        <p class="hint">Adiciona vídeos ou músicas do telemóvel — dá para adicionar vários de uma vez e criar uma playlist.</p>
+        <input type="file" id="file-input" accept="video/*,audio/*" multiple />
         <video id="host-video" controls playsinline></video>
-        <audio id="host-audio" controls style="width:100%; display:none;"></audio>
-        <div id="host-audio-label" class="hint" style="display:none;">🎵 A tocar do telemóvel</div>
+        <audio id="host-audio" style="display:none;"></audio>
+
+        <div id="file-player-bar" class="player-bar">
+          <div class="player-title" id="file-track-title">—</div>
+          <div class="player-seek-row">
+            <span id="file-time-current">0:00</span>
+            <input type="range" id="file-seek" min="0" max="100" value="0" />
+            <span id="file-time-duration">0:00</span>
+          </div>
+          <div class="player-controls">
+            <button id="file-prev-btn" title="Anterior">⏮</button>
+            <button id="file-play-pause" class="play-pause" title="Play/Pausa">▶</button>
+            <button id="file-next-btn" title="Seguinte">⏭</button>
+          </div>
+        </div>
+
+        <div class="playlist" id="file-playlist"></div>
       </div>
 
       <div id="mode-youtube-panel" style="display:none;">
-        <p class="hint">Cola o link de um vídeo ou música do YouTube.</p>
+        <p class="hint">Cola o link de um vídeo ou música do YouTube e adiciona à fila.</p>
         <div class="row">
           <input type="text" id="yt-url-input" placeholder="Link ou ID do YouTube" style="text-transform:none; letter-spacing:normal; font-size:14px;" />
-          <button id="yt-load-btn" class="secondary" style="flex:0 0 auto;">Carregar</button>
+          <button id="yt-load-btn" class="secondary" style="flex:0 0 auto;">Adicionar</button>
         </div>
         <div id="yt-player-host" style="margin-top:10px;"></div>
-        <button id="yt-sync-btn" class="secondary" style="display:none; margin-top:8px;">🔄 Sincronizar agora</button>
+
+        <div id="yt-player-bar" class="player-bar">
+          <div class="player-title" id="yt-track-title">—</div>
+          <div class="player-controls">
+            <button id="yt-prev-btn" title="Anterior">⏮</button>
+            <button id="yt-sync-btn" class="secondary" style="width:auto; border-radius:12px; padding:0 14px; height:40px;">🔄 Sincronizar</button>
+            <button id="yt-next-btn" title="Seguinte">⏭</button>
+          </div>
+        </div>
+
+        <div class="playlist" id="yt-playlist"></div>
       </div>
     </div>
   </section>
@@ -219,9 +285,18 @@
       <p class="status connecting" id="viewer-status"><span class="dot"></span> A ligar...</p>
       <video id="viewer-video" playsinline autoplay></video>
       <div id="yt-player-viewer" style="display:none;"></div>
-      <div id="viewer-audio-label" class="hint" style="display:none;">🎵 A tocar música partilhada</div>
+      <div id="viewer-now-playing" class="now-playing"></div>
+      <div class="row" style="align-items:center; gap:8px;">
+        <label for="vol-content" style="font-size:12px; color:var(--muted); flex:0 0 auto;">🎬 Conteúdo</label>
+        <input type="range" id="vol-content" min="0" max="100" value="100" style="flex:1;" />
+      </div>
+      <div class="row" style="align-items:center; gap:8px;">
+        <label for="vol-call" style="font-size:12px; color:var(--muted); flex:0 0 auto;">🎤 Chamada</label>
+        <input type="range" id="vol-call" min="0" max="100" value="100" style="flex:1;" />
+      </div>
       <button id="btn-unmute" class="secondary" style="display:none;">🔊 Tocar / Ativar som</button>
       <button id="yt-sync-btn-viewer" class="secondary" style="display:none;">🔄 Sincronizar agora</button>
+      <button id="btn-leave-viewer" class="ghost">🚪 Sair da sala</button>
     </div>
   </section>
 
@@ -234,18 +309,18 @@
 <button id="btn-audio-unmute" class="secondary">🔊 Ativar áudio da chamada</button>
 
 <!-- Botões flutuantes -->
-<button id="mic-toggle" class="fab" title="Chamada de voz">🎤</button>
-<button id="chat-toggle" class="fab secondary">💬<span id="chat-badge" class="badge"></span></button>
+<button id="mic-toggle" class="fab" title="Chamada de voz" aria-label="Chamada de voz">🎤</button>
+<button id="chat-toggle" class="fab secondary" aria-label="Abrir mensagens">💬<span id="chat-badge" class="badge"></span></button>
 
 <div id="chat-panel">
   <div class="chat-header">
     <span>Mensagens</span>
-    <button id="chat-close">✕</button>
+    <button id="chat-close" aria-label="Fechar mensagens">✕</button>
   </div>
   <div id="chat-messages"></div>
   <div class="chat-input-row">
     <input type="text" id="chat-input" placeholder="Escreve uma mensagem..." maxlength="500" />
-    <button id="chat-send">➤</button>
+    <button id="chat-send" aria-label="Enviar mensagem">➤</button>
   </div>
 </div>
 
@@ -253,6 +328,9 @@
 (function () {
   const wsProtocol = location.protocol === 'https:' ? 'wss://' : 'ws://';
   let ws = new WebSocket(wsProtocol + location.host);
+  let wsReconnectDelay = 1000;
+
+  const SESSION_KEY = 'assistir_juntos_session_v1';
 
   const FALLBACK_ICE_SERVERS = [
     { urls: 'stun:stun.l.google.com:19302' },
@@ -291,6 +369,19 @@
     el.innerHTML = '<span class="dot"></span> ' + text;
   }
 
+  function escapeHtml(s) {
+    const d = document.createElement('div');
+    d.textContent = s == null ? '' : String(s);
+    return d.innerHTML;
+  }
+
+  function formatTime(t) {
+    if (!isFinite(t) || isNaN(t)) return '0:00';
+    const m = Math.floor(t / 60);
+    const s = Math.floor(t % 60);
+    return m + ':' + String(s).padStart(2, '0');
+  }
+
   // ---------- ESTADO GERAL ----------
   let role = null;
   let roomCode = null;
@@ -302,15 +393,25 @@
   let movieStreamId = null;
   let moviePublished = false;
   let pendingPeer = false;
-  let fileKind = 'video';        // 'video' | 'audio' — tipo do ficheiro atual do anfitrião
-  let remoteFileKind = 'video';  // o que o viewer sabe sobre o ficheiro do anfitrião
+  let fileKind = 'video';
+  let remoteFileKind = 'video';
   let movieAudioAttached = false;
-  let currentMode = 'file';      // 'file' | 'youtube'
+  let currentMode = 'file';
   let ytPlayer = null;
   let ytApplyingRemote = false;
-  let micStream = null;
-  let micAdded = false;
-  let micEnabled = false;
+
+  // Playlists (geridas pelo anfitrião)
+  let filePlaylist = [];
+  let fileCurrentIndex = -1;
+  let ytPlaylist = [];
+  let ytCurrentIndex = -1;
+
+  function saveLocalSession() {
+    try { localStorage.setItem(SESSION_KEY, JSON.stringify({ code: roomCode, role })); } catch (e) {}
+  }
+  function clearLocalSession() {
+    try { localStorage.removeItem(SESSION_KEY); } catch (e) {}
+  }
 
   function updateUrl() {
     const url = new URL(location.href);
@@ -365,10 +466,32 @@
     ws.send(JSON.stringify({ type: 'join-room', code }));
   });
 
+  // ---------- SAIR DA SALA ----------
+  function leaveRoom() {
+    ws.send(JSON.stringify({ type: 'leave-room' }));
+  }
+  document.getElementById('btn-leave-host').addEventListener('click', leaveRoom);
+  document.getElementById('btn-leave-viewer').addEventListener('click', leaveRoom);
+
+  function resetAllStateToHome() {
+    resetPeerConnection();
+    clearLocalSession();
+    roomCode = null;
+    role = null;
+    updateUrl();
+    filePlaylist.forEach(item => { try { URL.revokeObjectURL(item.url); } catch (e) {} });
+    filePlaylist = [];
+    fileCurrentIndex = -1;
+    ytPlaylist = [];
+    ytCurrentIndex = -1;
+    if (ytPlayer && ytPlayer.destroy) { try { ytPlayer.destroy(); } catch (e) {} }
+    ytPlayer = null;
+    showScreen('home');
+  }
+
   // ---------- LADO ANFITRIÃO ----------
   const hostVideo = document.getElementById('host-video');
   const hostAudioEl = document.getElementById('host-audio');
-  const hostAudioLabel = document.getElementById('host-audio-label');
   const fileInput = document.getElementById('file-input');
   const hostStatus = document.getElementById('host-status');
   const reselectBanner = document.getElementById('host-reselect-banner');
@@ -386,35 +509,9 @@
     pendingPeer = false;
   }
 
-  fileInput.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    fileKind = file.type.startsWith('audio/') ? 'audio' : 'video';
-    ws.send(JSON.stringify({ type: 'control', action: 'file-kind', kind: fileKind }));
-    reselectBanner.classList.remove('show');
-
-    if (fileKind === 'audio') {
-      hostVideo.style.display = 'none';
-      hostAudioEl.style.display = 'block';
-      hostAudioLabel.style.display = 'block';
-      hostAudioLabel.textContent = '🎵 A tocar: ' + file.name;
-      hostAudioEl.src = URL.createObjectURL(file);
-      hostAudioEl.play().catch(() => {});
-    } else {
-      hostVideo.style.display = 'block';
-      hostAudioEl.style.display = 'none';
-      hostAudioLabel.style.display = 'none';
-      hostVideo.src = URL.createObjectURL(file);
-      hostVideo.play().catch(() => { /* o utilizador pode ter de tocar em play manualmente */ });
-    }
-
-    if (pendingPeer) {
-      addMovieTracksIfNeeded();
-      return;
-    }
+  function publishOrReplaceMovieTrack() {
+    if (pendingPeer) { addMovieTracksIfNeeded(); return; }
     if (moviePublished && pc) {
-      // Trocar de ficheiro a meio da sessão: substitui as faixas em vez de duplicar
       const el = activeHostMediaEl();
       const newStream = el.captureStream ? el.captureStream() : el.mozCaptureStream();
       const senders = pc.getSenders();
@@ -424,9 +521,13 @@
         else pc.addTrack(track, newStream);
       });
     }
-  });
+  }
 
-  // ---------- MODO: TELEMÓVEL vs YOUTUBE ----------
+  function broadcastFileState() {
+    const item = filePlaylist[fileCurrentIndex];
+    ws.send(JSON.stringify({ type: 'control', action: 'file-kind', kind: fileKind, title: item ? item.name : '' }));
+  }
+
   function stopMovieTracks() {
     if (pc) {
       const micTrack = micStream ? micStream.getAudioTracks()[0] : null;
@@ -441,6 +542,170 @@
     movieStreamId = null;
   }
 
+  // ---------- PLAYLIST DO TELEMÓVEL ----------
+  function renderFilePlaylist() {
+    const container = document.getElementById('file-playlist');
+    if (!filePlaylist.length) {
+      container.innerHTML = '<p class="hint">A playlist está vazia — adiciona vídeos ou música.</p>';
+      return;
+    }
+    container.innerHTML = filePlaylist.map((item, i) => `
+      <div class="playlist-item ${i === fileCurrentIndex ? 'playing' : ''}">
+        <span class="playlist-icon">${item.kind === 'audio' ? '🎵' : '🎬'}</span>
+        <span class="playlist-name">${escapeHtml(item.name)}</span>
+        <div class="playlist-actions">
+          <button data-action="play" data-index="${i}" title="Tocar agora">▶</button>
+          <button data-action="up" data-index="${i}" title="Mover para cima">↑</button>
+          <button data-action="down" data-index="${i}" title="Mover para baixo">↓</button>
+          <button data-action="remove" data-index="${i}" title="Remover">✕</button>
+        </div>
+      </div>`).join('');
+  }
+
+  document.getElementById('file-playlist').addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-action]');
+    if (!btn) return;
+    const index = Number(btn.dataset.index);
+    const action = btn.dataset.action;
+    if (action === 'play') playFileAt(index);
+    else if (action === 'remove') removeFileAt(index);
+    else if (action === 'up') moveFile(index, -1);
+    else if (action === 'down') moveFile(index, 1);
+  });
+
+  function addFilesToPlaylist(fileList) {
+    const startIndex = filePlaylist.length;
+    Array.from(fileList).forEach(file => {
+      filePlaylist.push({
+        file,
+        name: file.name,
+        kind: file.type.startsWith('audio/') ? 'audio' : 'video',
+        url: URL.createObjectURL(file)
+      });
+    });
+    renderFilePlaylist();
+    if (fileCurrentIndex === -1) playFileAt(startIndex);
+  }
+
+  function playFileAt(index) {
+    if (index < 0 || index >= filePlaylist.length) return;
+    fileCurrentIndex = index;
+    const item = filePlaylist[index];
+    fileKind = item.kind;
+    reselectBanner.classList.remove('show');
+
+    if (item.kind === 'audio') {
+      hostVideo.style.display = 'none';
+      document.getElementById('file-player-bar').classList.add('show');
+      hostAudioEl.src = item.url;
+      hostAudioEl.play().catch(() => {});
+    } else {
+      hostVideo.style.display = 'block';
+      document.getElementById('file-player-bar').classList.remove('show');
+      hostVideo.src = item.url;
+      hostVideo.play().catch(() => {});
+    }
+    document.getElementById('file-track-title').textContent = item.name;
+    renderFilePlaylist();
+    broadcastFileState();
+    publishOrReplaceMovieTrack();
+  }
+
+  function playNextFile() {
+    if (!filePlaylist.length) return;
+    playFileAt((fileCurrentIndex + 1) % filePlaylist.length);
+  }
+  function playPrevFile() {
+    if (!filePlaylist.length) return;
+    playFileAt((fileCurrentIndex - 1 + filePlaylist.length) % filePlaylist.length);
+  }
+
+  function removeFileAt(index) {
+    const wasCurrent = index === fileCurrentIndex;
+    try { URL.revokeObjectURL(filePlaylist[index].url); } catch (e) {}
+    filePlaylist.splice(index, 1);
+    if (fileCurrentIndex > index) fileCurrentIndex--;
+    else if (wasCurrent) {
+      fileCurrentIndex = -1;
+      if (filePlaylist.length) {
+        playFileAt(0);
+      } else {
+        hostVideo.pause();
+        hostAudioEl.pause();
+        stopMovieTracks();
+        document.getElementById('file-player-bar').classList.remove('show');
+      }
+    }
+    renderFilePlaylist();
+  }
+
+  function moveFile(index, delta) {
+    const newIndex = index + delta;
+    if (newIndex < 0 || newIndex >= filePlaylist.length) return;
+    [filePlaylist[index], filePlaylist[newIndex]] = [filePlaylist[newIndex], filePlaylist[index]];
+    if (fileCurrentIndex === index) fileCurrentIndex = newIndex;
+    else if (fileCurrentIndex === newIndex) fileCurrentIndex = index;
+    renderFilePlaylist();
+  }
+
+  fileInput.addEventListener('change', (e) => {
+    if (e.target.files.length) addFilesToPlaylist(e.target.files);
+    fileInput.value = '';
+  });
+
+  // Barra de reprodução — música do telemóvel
+  hostAudioEl.addEventListener('play', () => { document.getElementById('file-play-pause').textContent = '⏸'; });
+  hostAudioEl.addEventListener('pause', () => { document.getElementById('file-play-pause').textContent = '▶'; });
+  hostAudioEl.addEventListener('timeupdate', () => {
+    const seek = document.getElementById('file-seek');
+    if (!isNaN(hostAudioEl.duration) && isFinite(hostAudioEl.duration)) seek.max = hostAudioEl.duration;
+    seek.value = hostAudioEl.currentTime || 0;
+    document.getElementById('file-time-current').textContent = formatTime(hostAudioEl.currentTime);
+    document.getElementById('file-time-duration').textContent = formatTime(hostAudioEl.duration);
+  });
+  hostAudioEl.addEventListener('ended', playNextFile);
+  hostVideo.addEventListener('ended', playNextFile);
+
+  document.getElementById('file-play-pause').addEventListener('click', () => {
+    if (hostAudioEl.paused) hostAudioEl.play(); else hostAudioEl.pause();
+  });
+  document.getElementById('file-seek').addEventListener('input', (e) => {
+    hostAudioEl.currentTime = Number(e.target.value);
+  });
+  document.getElementById('file-prev-btn').addEventListener('click', playPrevFile);
+  document.getElementById('file-next-btn').addEventListener('click', playNextFile);
+
+  document.getElementById('btn-copy-link').addEventListener('click', async () => {
+    const ok = await copyText(shareLink());
+    const btn = document.getElementById('btn-copy-link');
+    btn.textContent = ok ? '✅ Link copiado!' : '🔗 Copiar link';
+    setTimeout(() => { btn.textContent = '🔗 Copiar link'; }, 1800);
+  });
+
+  document.getElementById('btn-copy-code').addEventListener('click', async () => {
+    const ok = await copyText(roomCode);
+    const btn = document.getElementById('btn-copy-code');
+    btn.textContent = ok ? '✅ Copiado!' : 'Copiar código';
+    setTimeout(() => { btn.textContent = 'Copiar código'; }, 1800);
+  });
+
+  document.getElementById('btn-share-link').addEventListener('click', async () => {
+    const url = shareLink();
+    if (navigator.share) {
+      try { await navigator.share({ title: 'Assistir Juntos', text: 'Entra na minha sala para assistirmos juntos:', url }); return; }
+      catch (e) { /* utilizador cancelou ou não suportado — cai para copiar */ }
+    }
+    await copyText(url);
+    const btn = document.getElementById('btn-share-link');
+    btn.textContent = '✅ Link copiado!';
+    setTimeout(() => { btn.textContent = '📤 Partilhar'; }, 1800);
+  });
+
+  document.getElementById('vol-call-host').addEventListener('input', (e) => {
+    remoteAudio.volume = Number(e.target.value) / 100;
+  });
+
+  // ---------- MODO: TELEMÓVEL vs YOUTUBE ----------
   document.getElementById('mode-youtube-btn').addEventListener('click', () => {
     currentMode = 'youtube';
     document.getElementById('mode-youtube-btn').classList.add('mode-btn-active');
@@ -474,118 +739,18 @@
     }
   }
 
-  // ---------- YOUTUBE (vídeo ou música, em sincronia) ----------
-  function loadYouTubeAPI() {
-    return new Promise((resolve) => {
-      if (window.YT && window.YT.Player) { resolve(); return; }
-      const existingCallback = window.onYouTubeIframeAPIReady;
-      window.onYouTubeIframeAPIReady = () => { if (existingCallback) existingCallback(); resolve(); };
-      if (!document.getElementById('yt-iframe-api')) {
-        const tag = document.createElement('script');
-        tag.id = 'yt-iframe-api';
-        tag.src = 'https://www.youtube.com/iframe_api';
-        document.head.appendChild(tag);
-      }
-    });
-  }
-
-  function extractYouTubeId(input) {
-    input = (input || '').trim();
-    const match = input.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-    if (match) return match[1];
-    if (/^[a-zA-Z0-9_-]{11}$/.test(input)) return input;
-    return null;
-  }
-
-  function getYtContainerId() {
-    return role === 'host' ? 'yt-player-host' : 'yt-player-viewer';
-  }
-
-  function onYtStateChange(e) {
-    if (ytApplyingRemote || !ytPlayer) return;
-    const currentTime = ytPlayer.getCurrentTime();
-    if (e.data === YT.PlayerState.PLAYING) {
-      ws.send(JSON.stringify({ type: 'control', action: 'yt-play', time: currentTime }));
-    } else if (e.data === YT.PlayerState.PAUSED) {
-      ws.send(JSON.stringify({ type: 'control', action: 'yt-pause', time: currentTime }));
-    }
-  }
-
-  async function ensureYtPlayer(videoId) {
-    await loadYouTubeAPI();
-    if (ytPlayer) {
-      ytPlayer.loadVideoById(videoId);
-      return ytPlayer;
-    }
-    return new Promise((resolve) => {
-      const player = new YT.Player(getYtContainerId(), {
-        videoId,
-        playerVars: { playsinline: 1 },
-        events: {
-          onReady: () => { ytPlayer = player; resolve(player); },
-          onStateChange: onYtStateChange
-        }
-      });
-    });
-  }
-
-  function sendYtSync() {
-    if (!ytPlayer) return;
-    const time = ytPlayer.getCurrentTime();
-    const playing = ytPlayer.getPlayerState() === YT.PlayerState.PLAYING;
-    ws.send(JSON.stringify({ type: 'control', action: 'yt-sync', time, playing }));
-  }
-
-  document.getElementById('yt-load-btn').addEventListener('click', async () => {
-    const videoId = extractYouTubeId(document.getElementById('yt-url-input').value);
-    if (!videoId) { alert('Link do YouTube inválido. Cola o link completo ou só o código do vídeo.'); return; }
-    await ensureYtPlayer(videoId);
-    document.getElementById('yt-sync-btn').style.display = 'inline-block';
-    ws.send(JSON.stringify({ type: 'control', action: 'yt-load', videoId }));
-  });
-  document.getElementById('yt-sync-btn').addEventListener('click', sendYtSync);
-  document.getElementById('yt-sync-btn-viewer').addEventListener('click', sendYtSync);
-
-  async function handleControlMessage(msg) {
-    if (msg.action === 'mode') {
-      applyRemoteMode(msg.mode);
-    } else if (msg.action === 'file-kind') {
-      remoteFileKind = msg.kind;
-      movieAudioAttached = false;
-    } else if (msg.action === 'yt-load') {
-      applyRemoteMode('youtube');
-      document.getElementById('yt-sync-btn-viewer').style.display = role === 'viewer' ? 'inline-block' : 'none';
-      await ensureYtPlayer(msg.videoId);
-    } else if (msg.action === 'yt-play' || msg.action === 'yt-pause' || msg.action === 'yt-sync') {
-      if (!ytPlayer) return;
-      ytApplyingRemote = true;
-      ytPlayer.seekTo(msg.time, true);
-      const shouldPlay = msg.action === 'yt-play' || (msg.action === 'yt-sync' && msg.playing);
-      if (shouldPlay) ytPlayer.playVideo(); else ytPlayer.pauseVideo();
-      setTimeout(() => { ytApplyingRemote = false; }, 400);
-    }
-  }
-
-  document.getElementById('btn-copy-link').addEventListener('click', async () => {
-    const ok = await copyText(shareLink());
-    const btn = document.getElementById('btn-copy-link');
-    btn.textContent = ok ? '✅ Link copiado!' : '🔗 Copiar link';
-    setTimeout(() => { btn.textContent = '🔗 Copiar link'; }, 1800);
-  });
-
-  document.getElementById('btn-copy-code').addEventListener('click', async () => {
-    const ok = await copyText(roomCode);
-    const btn = document.getElementById('btn-copy-code');
-    btn.textContent = ok ? '✅ Copiado!' : 'Copiar código';
-    setTimeout(() => { btn.textContent = 'Copiar código'; }, 1800);
-  });
-
   // ---------- LADO VIEWER ----------
   const viewerVideo = document.getElementById('viewer-video');
   const viewerStatus = document.getElementById('viewer-status');
   const btnUnmute = document.getElementById('btn-unmute');
   const remoteAudio = document.getElementById('remote-audio');
   const btnAudioUnmute = document.getElementById('btn-audio-unmute');
+
+  function updateViewerNowPlaying(text) {
+    const el = document.getElementById('viewer-now-playing');
+    if (text) { el.textContent = text; el.style.display = 'block'; }
+    else { el.style.display = 'none'; }
+  }
 
   btnUnmute.addEventListener('click', () => {
     viewerVideo.muted = false;
@@ -595,7 +760,17 @@
   });
   btnAudioUnmute.addEventListener('click', () => {
     remoteAudio.play().catch(() => {});
+    document.getElementById('movie-audio').play().catch(() => {});
     btnAudioUnmute.classList.remove('show');
+  });
+
+  document.getElementById('vol-content').addEventListener('input', (e) => {
+    const v = Number(e.target.value) / 100;
+    viewerVideo.volume = v;
+    document.getElementById('movie-audio').volume = v;
+  });
+  document.getElementById('vol-call').addEventListener('input', (e) => {
+    remoteAudio.volume = Number(e.target.value) / 100;
   });
 
   // ---------- LIGAÇÃO WEBRTC (peer connection única, com renegociação) ----------
@@ -649,14 +824,13 @@
         viewerVideo.srcObject = stream;
         viewerVideo.play().catch(() => { btnUnmute.style.display = 'block'; });
       } else if (e.track.kind === 'audio') {
-        if (stream.id === movieStreamId) return; // já vai junto do vídeo
+        if (stream.id === movieStreamId) return;
         if (remoteFileKind === 'audio' && !movieAudioAttached) {
           movieAudioAttached = true;
           movieStreamId = stream.id;
           const movieAudioEl = document.getElementById('movie-audio');
           movieAudioEl.srcObject = stream;
           movieAudioEl.play().catch(() => { btnAudioUnmute.classList.add('show'); });
-          document.getElementById('viewer-audio-label').style.display = 'block';
           return;
         }
         remoteAudio.srcObject = stream;
@@ -695,6 +869,9 @@
 
   // ---------- CHAMADA DE VOZ ----------
   const micToggle = document.getElementById('mic-toggle');
+  let micStream = null;
+  let micAdded = false;
+  let micEnabled = false;
 
   function updateMicButton() {
     micToggle.classList.remove('active', 'muted');
@@ -724,6 +901,209 @@
     updateMicButton();
   });
 
+  // ---------- YOUTUBE (vídeo ou música, em sincronia, com playlist) ----------
+  function loadYouTubeAPI() {
+    return new Promise((resolve) => {
+      if (window.YT && window.YT.Player) { resolve(); return; }
+      const existingCallback = window.onYouTubeIframeAPIReady;
+      window.onYouTubeIframeAPIReady = () => { if (existingCallback) existingCallback(); resolve(); };
+      if (!document.getElementById('yt-iframe-api')) {
+        const tag = document.createElement('script');
+        tag.id = 'yt-iframe-api';
+        tag.src = 'https://www.youtube.com/iframe_api';
+        document.head.appendChild(tag);
+      }
+    });
+  }
+
+  function extractYouTubeId(input) {
+    input = (input || '').trim();
+    const match = input.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+    if (match) return match[1];
+    if (/^[a-zA-Z0-9_-]{11}$/.test(input)) return input;
+    return null;
+  }
+
+  function fetchYoutubeTitle(videoId) {
+    return fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => (data && data.title) ? data.title : videoId)
+      .catch(() => videoId);
+  }
+
+  function getYtContainerId() {
+    return role === 'host' ? 'yt-player-host' : 'yt-player-viewer';
+  }
+
+  function onYtStateChange(e) {
+    if (ytApplyingRemote || !ytPlayer) return;
+    const currentTime = ytPlayer.getCurrentTime();
+    if (e.data === YT.PlayerState.PLAYING) {
+      ws.send(JSON.stringify({ type: 'control', action: 'yt-play', time: currentTime }));
+    } else if (e.data === YT.PlayerState.PAUSED) {
+      ws.send(JSON.stringify({ type: 'control', action: 'yt-pause', time: currentTime }));
+    } else if (e.data === YT.PlayerState.ENDED && role === 'host') {
+      playNextYoutube();
+    }
+  }
+
+  async function ensureYtPlayer(videoId) {
+    await loadYouTubeAPI();
+    if (ytPlayer) {
+      ytPlayer.loadVideoById(videoId);
+      return ytPlayer;
+    }
+    return new Promise((resolve) => {
+      const player = new YT.Player(getYtContainerId(), {
+        videoId,
+        playerVars: { playsinline: 1 },
+        events: {
+          onReady: () => { ytPlayer = player; resolve(player); },
+          onStateChange: onYtStateChange
+        }
+      });
+    });
+  }
+
+  function sendYtSync() {
+    if (!ytPlayer) return;
+    const time = ytPlayer.getCurrentTime();
+    const playing = ytPlayer.getPlayerState() === YT.PlayerState.PLAYING;
+    ws.send(JSON.stringify({ type: 'control', action: 'yt-sync', time, playing }));
+  }
+  document.getElementById('yt-sync-btn').addEventListener('click', sendYtSync);
+  document.getElementById('yt-sync-btn-viewer').addEventListener('click', sendYtSync);
+
+  // Corrige desvios de sincronização automaticamente, sem interromper a reprodução
+  setInterval(() => {
+    if (ytPlayer && typeof ytPlayer.getPlayerState === 'function' &&
+        ytPlayer.getPlayerState() === YT.PlayerState.PLAYING && !ytApplyingRemote) {
+      ws.send(JSON.stringify({ type: 'control', action: 'yt-heartbeat', time: ytPlayer.getCurrentTime() }));
+    }
+  }, 4000);
+
+  // Playlist do YouTube
+  function renderYtPlaylist() {
+    const container = document.getElementById('yt-playlist');
+    if (!ytPlaylist.length) {
+      container.innerHTML = '<p class="hint">A fila está vazia — adiciona um link do YouTube.</p>';
+      return;
+    }
+    container.innerHTML = ytPlaylist.map((item, i) => `
+      <div class="playlist-item ${i === ytCurrentIndex ? 'playing' : ''}">
+        <span class="playlist-icon">▶️</span>
+        <span class="playlist-name">${escapeHtml(item.title || item.videoId)}</span>
+        <div class="playlist-actions">
+          <button data-action="play" data-index="${i}" title="Tocar agora">▶</button>
+          <button data-action="up" data-index="${i}" title="Mover para cima">↑</button>
+          <button data-action="down" data-index="${i}" title="Mover para baixo">↓</button>
+          <button data-action="remove" data-index="${i}" title="Remover">✕</button>
+        </div>
+      </div>`).join('');
+  }
+
+  document.getElementById('yt-playlist').addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-action]');
+    if (!btn) return;
+    const index = Number(btn.dataset.index);
+    const action = btn.dataset.action;
+    if (action === 'play') playYoutubeAt(index);
+    else if (action === 'remove') removeYoutubeAt(index);
+    else if (action === 'up') moveYoutube(index, -1);
+    else if (action === 'down') moveYoutube(index, 1);
+  });
+
+  async function playYoutubeAt(index) {
+    if (index < 0 || index >= ytPlaylist.length) return;
+    ytCurrentIndex = index;
+    const item = ytPlaylist[index];
+    await ensureYtPlayer(item.videoId);
+    document.getElementById('yt-track-title').textContent = item.title || item.videoId;
+    document.getElementById('yt-player-bar').classList.add('show');
+    document.getElementById('yt-sync-btn').style.display = 'inline-block';
+    renderYtPlaylist();
+    ws.send(JSON.stringify({ type: 'control', action: 'yt-load', videoId: item.videoId, title: item.title }));
+  }
+
+  function playNextYoutube() {
+    if (!ytPlaylist.length) return;
+    playYoutubeAt((ytCurrentIndex + 1) % ytPlaylist.length);
+  }
+  function playPrevYoutube() {
+    if (!ytPlaylist.length) return;
+    playYoutubeAt((ytCurrentIndex - 1 + ytPlaylist.length) % ytPlaylist.length);
+  }
+  document.getElementById('yt-next-btn').addEventListener('click', playNextYoutube);
+  document.getElementById('yt-prev-btn').addEventListener('click', playPrevYoutube);
+
+  function removeYoutubeAt(index) {
+    const wasCurrent = index === ytCurrentIndex;
+    ytPlaylist.splice(index, 1);
+    if (ytCurrentIndex > index) ytCurrentIndex--;
+    else if (wasCurrent) {
+      ytCurrentIndex = -1;
+      if (ytPlaylist.length) playYoutubeAt(0);
+      else if (ytPlayer) ytPlayer.stopVideo();
+    }
+    renderYtPlaylist();
+  }
+
+  function moveYoutube(index, delta) {
+    const newIndex = index + delta;
+    if (newIndex < 0 || newIndex >= ytPlaylist.length) return;
+    [ytPlaylist[index], ytPlaylist[newIndex]] = [ytPlaylist[newIndex], ytPlaylist[index]];
+    if (ytCurrentIndex === index) ytCurrentIndex = newIndex;
+    else if (ytCurrentIndex === newIndex) ytCurrentIndex = index;
+    renderYtPlaylist();
+  }
+
+  document.getElementById('yt-load-btn').addEventListener('click', async () => {
+    const raw = document.getElementById('yt-url-input').value;
+    const videoId = extractYouTubeId(raw);
+    if (!videoId) { alert('Link do YouTube inválido. Cola o link completo ou só o código do vídeo.'); return; }
+    document.getElementById('yt-url-input').value = '';
+    const item = { videoId, title: videoId };
+    ytPlaylist.push(item);
+    renderYtPlaylist();
+    if (ytCurrentIndex === -1) playYoutubeAt(ytPlaylist.length - 1);
+    const title = await fetchYoutubeTitle(videoId);
+    item.title = title;
+    renderYtPlaylist();
+    if (ytPlaylist[ytCurrentIndex] === item) {
+      document.getElementById('yt-track-title').textContent = title;
+    }
+  });
+
+  async function handleControlMessage(msg) {
+    if (msg.action === 'mode') {
+      applyRemoteMode(msg.mode);
+    } else if (msg.action === 'file-kind') {
+      remoteFileKind = msg.kind;
+      movieAudioAttached = false;
+      updateViewerNowPlaying(msg.kind === 'audio' ? ('🎵 ' + (msg.title || 'Música')) : '');
+    } else if (msg.action === 'yt-load') {
+      applyRemoteMode('youtube');
+      document.getElementById('yt-sync-btn-viewer').style.display = role === 'viewer' ? 'inline-block' : 'none';
+      updateViewerNowPlaying('▶️ ' + (msg.title || 'Vídeo do YouTube'));
+      await ensureYtPlayer(msg.videoId);
+    } else if (msg.action === 'yt-play' || msg.action === 'yt-pause' || msg.action === 'yt-sync') {
+      if (!ytPlayer) return;
+      ytApplyingRemote = true;
+      ytPlayer.seekTo(msg.time, true);
+      const shouldPlay = msg.action === 'yt-play' || (msg.action === 'yt-sync' && msg.playing);
+      if (shouldPlay) ytPlayer.playVideo(); else ytPlayer.pauseVideo();
+      setTimeout(() => { ytApplyingRemote = false; }, 400);
+    } else if (msg.action === 'yt-heartbeat') {
+      if (!ytPlayer) return;
+      const diff = Math.abs(ytPlayer.getCurrentTime() - msg.time);
+      if (diff > 1.5) {
+        ytApplyingRemote = true;
+        ytPlayer.seekTo(msg.time, true);
+        setTimeout(() => { ytApplyingRemote = false; }, 400);
+      }
+    }
+  }
+
   // ---------- CHAT ----------
   const chatToggle = document.getElementById('chat-toggle');
   const chatPanel = document.getElementById('chat-panel');
@@ -731,13 +1111,34 @@
   const chatInput = document.getElementById('chat-input');
   const chatBadge = document.getElementById('chat-badge');
   let unread = 0;
+  let chatHistoryLog = [];
 
-  function addMessage(text, kind) {
+  function chatStorageKey() { return 'assistir_juntos_chat_' + roomCode; }
+  function saveChatHistory() {
+    try { localStorage.setItem(chatStorageKey(), JSON.stringify(chatHistoryLog.slice(-50))); } catch (e) {}
+  }
+  function loadChatHistory() {
+    try {
+      const raw = localStorage.getItem(chatStorageKey());
+      if (!raw) return;
+      const arr = JSON.parse(raw);
+      arr.forEach(m => addMessage(m.text, m.kind, false));
+    } catch (e) {}
+  }
+  function clearChatHistory() {
+    try { if (roomCode) localStorage.removeItem(chatStorageKey()); } catch (e) {}
+  }
+
+  function addMessage(text, kind, remember = true) {
     const div = document.createElement('div');
     div.className = 'msg ' + kind;
     div.textContent = text;
     chatMessages.appendChild(div);
     chatMessages.scrollTop = chatMessages.scrollHeight;
+    if (remember) {
+      chatHistoryLog.push({ text, kind });
+      saveChatHistory();
+    }
   }
 
   chatToggle.addEventListener('click', () => {
@@ -767,8 +1168,11 @@
           role = 'host';
           roomCode = msg.code;
           document.getElementById('room-code').textContent = msg.code;
+          document.getElementById('qr-code').src = 'https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=' + encodeURIComponent(shareLink());
           updateUrl();
+          saveLocalSession();
           showScreen('host');
+          loadChatHistory();
           if (msg.rejoined) {
             resetPeerConnection();
             reselectBanner.classList.add('show');
@@ -781,12 +1185,19 @@
           roomCode = msg.code;
           document.getElementById('viewer-code').textContent = msg.code;
           updateUrl();
+          saveLocalSession();
           showScreen('viewer');
+          loadChatHistory();
           if (msg.rejoined) resetPeerConnection();
           break;
 
+        case 'left-room':
+          clearChatHistory();
+          resetAllStateToHome();
+          break;
+
         case 'error':
-          if (msg.expired) { roomCode = null; role = null; updateUrl(); showScreen('home'); }
+          if (msg.expired) { roomCode = null; role = null; updateUrl(); clearLocalSession(); showScreen('home'); }
           document.getElementById('home-error').textContent = msg.message;
           break;
 
@@ -794,10 +1205,12 @@
           await ensurePeerConnection();
           if (role === 'host') {
             setStatus(hostStatus, 'connecting', msg.rejoined ? 'A pessoa voltou. A reconectar...' : 'A pessoa entrou! A iniciar transmissão...');
-            if (fileInput.files[0]) addMovieTracksIfNeeded();
-            else { pendingPeer = true; setStatus(hostStatus, 'connecting', 'A pessoa já está na sala — escolhe um vídeo para começar.'); }
+            if (currentMode === 'file') {
+              if (filePlaylist.length) addMovieTracksIfNeeded();
+              else pendingPeer = true;
+            }
           } else {
-            setStatus(viewerStatus, 'connecting', 'O anfitrião reconectou-se. A aguardar vídeo...');
+            setStatus(viewerStatus, 'connecting', 'O anfitrião reconectou-se. A aguardar conteúdo...');
           }
           if (micStream && !micAdded && micEnabled) {
             micStream.getAudioTracks().forEach(t => pc.addTrack(t, micStream));
@@ -846,24 +1259,43 @@
       }
     };
 
-    socket.onclose = () => { setTimeout(reconnectSocket, 2000); };
+    socket.onclose = () => {
+      setTimeout(reconnectSocket, wsReconnectDelay);
+      wsReconnectDelay = Math.min(wsReconnectDelay * 2, 10000);
+    };
   }
 
   function reconnectSocket() {
     ws = new WebSocket(wsProtocol + location.host);
     wireSocket(ws);
     ws.addEventListener('open', () => {
+      wsReconnectDelay = 1000;
       if (roomCode && role) ws.send(JSON.stringify({ type: 'rejoin-room', code: roomCode, role }));
     });
   }
 
   wireSocket(ws);
 
-  // ---------- RESTAURAR SALA A PARTIR DO LINK ----------
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+
+  // ---------- RESTAURAR SESSÃO (link partilhado, refresh, ou reabrir o site) ----------
   window.addEventListener('load', () => {
     const params = new URL(location.href).searchParams;
-    const urlRoom = params.get('room');
-    const urlRole = params.get('role');
+    let urlRoom = params.get('room');
+    let urlRole = params.get('role');
+
+    if (!urlRoom || !urlRole) {
+      try {
+        const saved = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null');
+        if (saved && saved.code && saved.role) {
+          urlRoom = saved.code;
+          urlRole = saved.role;
+        }
+      } catch (e) {}
+    }
+
     if (urlRoom && urlRole) {
       roomCode = urlRoom.toUpperCase();
       role = urlRole;
