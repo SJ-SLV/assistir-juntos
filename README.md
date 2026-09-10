@@ -94,3 +94,23 @@ MAX_ROOMS=5000
 O servidor não guarda os ficheiros de vídeo dos utilizadores. Os ficheiros locais são selecionados no navegador e transmitidos através do WebRTC. As salas vivem em memória e são eliminadas quando ficam abandonadas.
 
 Para produção, recomenda-se usar HTTPS/WSS no domínio público, configurar TURN próprio e acompanhar `/health` através do sistema de monitorização do alojamento.
+
+
+## Modo Ficheiro P2P (novo)
+
+O modo **Do telemóvel** usa WebRTC DataChannel para transferir o ficheiro diretamente entre os dois dispositivos, quando a rede permite. O servidor participa apenas na sinalização WebSocket; o vídeo/áudio não é enviado através do servidor.
+
+### Fluxo
+1. O anfitrião escolhe um vídeo ou áudio.
+2. O ficheiro é dividido em blocos de 64 KB.
+3. Os blocos são enviados pelo DataChannel com controlo de backpressure.
+4. O dispositivo convidado guarda temporariamente os blocos em IndexedDB, reconstrói o Blob e começa a reprodução local.
+5. O anfitrião envia eventos leves de `play`, `pause` e `seek`, mantendo as duas reproduções sincronizadas.
+6. Ao terminar, o conteúdo temporário recebido é removido e o Object URL é revogado.
+
+### Importante
+- A transferência P2P não elimina a necessidade de Internet/rede para estabelecer a ligação WebRTC.
+- TURN é importante em redes móveis/NAT mais restritivas. Configure `METERED_TURN_USERNAME` e `METERED_TURN_CREDENTIAL` no Render para melhorar a conectividade.
+- O limite atual do cliente é 1,5 GB por ficheiro.
+- O navegador controla o armazenamento temporário; a aplicação não tenta apagar ficheiros arbitrários do armazenamento do telefone.
+- O modo YouTube continua a usar a sincronização online normal.
