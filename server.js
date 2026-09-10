@@ -134,6 +134,23 @@ wss.on('connection', (ws) => {
         break;
       }
 
+      // Saída voluntária e imediata (botão "Sair da sala") — ao contrário de uma
+      // queda de rede, não há período de tolerância nem tentativa de reconexão.
+      case 'leave-room': {
+        const room = rooms[ws.room];
+        if (room && ws.role && room[ws.role] === ws) {
+          if (room[ws.role + 'Timer']) clearTimeout(room[ws.role + 'Timer']);
+          const other = ws.role === 'host' ? room.viewer : room.host;
+          room[ws.role] = null;
+          send(other, { type: 'peer-left' });
+          if (!room.host && !room.viewer) delete rooms[ws.room];
+        }
+        ws.room = null;
+        ws.role = null;
+        send(ws, { type: 'left-room' });
+        break;
+      }
+
       case 'offer':
       case 'answer':
       case 'ice-candidate':

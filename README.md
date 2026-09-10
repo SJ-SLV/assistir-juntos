@@ -1,15 +1,27 @@
 # Assistir Juntos
 
-Site para duas pessoas assistirem ao mesmo vídeo em sincronia, cada uma no seu telefone, via WebRTC — com chat de texto, chamada de voz, música do telemóvel e vídeos/música do YouTube.
+Site para duas pessoas assistirem ao mesmo vídeo/música em sincronia, cada uma no seu telefone, via WebRTC — com chat de texto, chamada de voz, playlists de música/vídeo do telemóvel e do YouTube.
 
-## Novidade: YouTube e música do telemóvel
+## Novidades desta versão
 
-No ecrã do anfitrião há agora dois separadores:
+- **Partilha mais fácil:** botão "📤 Partilhar" (usa o menu nativo do telemóvel — WhatsApp, SMS, etc.) e um **código QR** para a outra pessoa apontar a câmara e entrar direto.
+- **Controlo de volume separado:** o viewer pode ajustar o volume do conteúdo (vídeo/música) e da chamada de voz de forma independente. O anfitrião também pode ajustar o volume da chamada recebida.
+- **Chat com histórico persistente:** as mensagens já não se perdem ao atualizar a página — ficam guardadas por sala no telemóvel.
+- **Reconexão mais robusta:** se o servidor ficar indisponível momentaneamente (ex: o Render "a acordar"), o site tenta ligar-se de novo com esperas crescentes (1s, 2s, 4s... até 10s), em vez de martelar sempre ao mesmo ritmo.
+- **Instalável como app:** em telemóveis Android/Chrome, aparece a opção "Adicionar ao ecrã principal" — passa a abrir como uma app normal, com ícone próprio.
+- **A sala não se perde ao atualizar a página.** Antes bastava recarregar; agora a sessão fica guardada no telemóvel (mesmo sem link nem código à mão) e só termina se tocares em **"🚪 Sair da sala"**, ou se a outra pessoa saiu e não voltou dentro do tempo de tolerância. Podes atualizar a página as vezes que quiseres sem perder o lugar na sala.
+- **Playlists.** Tanto para música/vídeo do telemóvel como para o YouTube, o anfitrião pode agora adicionar vários ficheiros/links de seguida, reordenar (↑↓), tocar um item específico, remover, e a reprodução avança automaticamente para o próximo quando um termina.
+- **Leitor melhorado.** Para música (do telemóvel), há uma barra de reprodução própria — título da faixa, barra de progresso arrastável, tempo atual/total, play/pausa, anterior/seguinte. Para YouTube, o título de cada vídeo é obtido automaticamente, e há botões de anterior/seguinte para navegar na fila.
+- **Sincronização do YouTube mais robusta.** Além do botão manual "Sincronizar agora", agora há uma verificação automática a cada poucos segundos que corrige pequenos desvios sem interromper a reprodução.
 
-- **📱 Do telemóvel** (como já existia) — agora também aceita **ficheiros de áudio** (música), não só vídeo. Se escolheres um ficheiro de música, aparece um leitor simples em vez do vídeo.
-- **▶️ YouTube** — cola o link (ou só o código) de um vídeo ou música do YouTube e toca em "Carregar". **Importante: isto funciona de forma diferente do vídeo do telemóvel** — não há transmissão P2P; cada telefone carrega o vídeo diretamente do YouTube, e nós só sincronizamos play/pausa/avanço entre os dois. Isto tem até vantagens: não depende do TURN, não gasta dados a "reenviar" vídeo, e a qualidade é a mesma que terias a ver o YouTube normalmente.
+## YouTube e música do telemóvel
+
+No ecrã do anfitrião há dois separadores:
+
+- **📱 Do telemóvel** — aceita vídeo **e** áudio (música). Podes selecionar vários ficheiros de uma vez para criar uma playlist.
+- **▶️ YouTube** — cola o link (ou só o código) de um vídeo ou música do YouTube e toca em "Adicionar". **Importante: isto funciona de forma diferente do vídeo do telemóvel** — não há transmissão P2P; cada telefone carrega o vídeo diretamente do YouTube, e nós só sincronizamos play/pausa/avanço entre os dois. Isto tem até vantagens: não depende do TURN, não gasta dados a "reenviar" vídeo, e a qualidade é a mesma que terias a ver o YouTube normalmente.
   - Qualquer um dos dois lados pode dar play/pausa — sincroniza automaticamente para o outro.
-  - Se a sincronia desviar (ex: um teve de recarregar a página), há um botão **"🔄 Sincronizar agora"** que força os dois a ficarem no mesmo ponto.
+  - As playlists (do telemóvel e do YouTube) são geridas pelo **anfitrião** — é quem tem os ficheiros/escolhe os links. A pessoa do outro lado vê sempre o que está a tocar.
 
 ## Chamada de voz (microfone)
 
