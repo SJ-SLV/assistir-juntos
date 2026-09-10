@@ -174,6 +174,8 @@
 </head>
 <body>
 
+<div id="network-banner" class="banner" style="position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:60;max-width:min(92vw,460px);width:max-content;box-shadow:0 8px 24px rgba(0,0,0,.35);">⚠️ Sem ligação ao servidor. A tentar reconectar…</div>
+
 <header>
   <h1>Assistir <span>Juntos</span></h1>
   <p>Vê o mesmo vídeo, ao mesmo tempo, em telefones diferentes</p>
@@ -329,8 +331,17 @@
   const wsProtocol = location.protocol === 'https:' ? 'wss://' : 'ws://';
   let ws = new WebSocket(wsProtocol + location.host);
   let wsReconnectDelay = 1000;
+  let wsReconnectTimer = null;
+  let wsConnecting = false;
 
   const SESSION_KEY = 'assistir_juntos_session_v1';
+
+  const networkBanner = document.getElementById('network-banner');
+  function updateNetworkBanner(online) { if (networkBanner) networkBanner.classList.toggle('show', !online); }
+  function wsSend(payload) {
+    if (!ws || ws.readyState !== WebSocket.OPEN) { updateNetworkBanner(false); return false; }
+    try { ws.send(JSON.stringify(payload)); return true; } catch (e) { updateNetworkBanner(false); return false; }
+  }
 
   const FALLBACK_ICE_SERVERS = [
     { urls: 'stun:stun.l.google.com:19302' },
@@ -399,6 +410,8 @@
   let currentMode = 'file';
   let ytPlayer = null;
   let ytApplyingRemote = false;
+  let pendingIceCandidates = [];
+  let hasRemoteDescription = false;
 
   // Playlists (geridas pelo anfitrião)
   let filePlaylist = [];
@@ -444,7 +457,7 @@
   });
 
   document.getElementById('btn-create').addEventListener('click', () => {
-    ws.send(JSON.stringify({ type: 'create-room' }));
+    if (!wsSend({ type: 'create-room' })) document.getElementById('home-error').textContent = 'A ligar ao servidor… tenta novamente em instantes.';
   });
 
   document.getElementById('btn-paste-code').addEventListener('click', async () => {
@@ -463,12 +476,12 @@
       return;
     }
     document.getElementById('home-error').textContent = '';
-    ws.send(JSON.stringify({ type: 'join-room', code }));
+    if (!wsSend({ type: 'join-room', code })) { document.getElementById('home-error').textContent = 'Sem ligação ao servidor. A tentar reconectar…'; return; }
   });
 
   // ---------- SAIR DA SALA ----------
   function leaveRoom() {
-    ws.send(JSON.stringify({ type: 'leave-room' }));
+    wsSend({ type: 'leave-room' });
   }
   document.getElementById('btn-leave-host').addEventListener('click', leaveRoom);
   document.getElementById('btn-leave-viewer').addEventListener('click', leaveRoom);
@@ -525,7 +538,7 @@
 
   function broadcastFileState() {
     const item = filePlaylist[fileCurrentIndex];
-    ws.send(JSON.stringify({ type: 'control', action: 'file-kind', kind: fileKind, title: item ? item.name : '' }));
+    wsSend({ type: 'control', action: 'file-kind', kind: fileKind, title: item ? item.name : '' });
   }
 
   function stopMovieTracks() {
@@ -715,7 +728,7 @@
     hostVideo.pause();
     hostAudioEl.pause();
     stopMovieTracks();
-    ws.send(JSON.stringify({ type: 'control', action: 'mode', mode: 'youtube' }));
+    wsSend({ type: 'control', action: 'mode', mode: 'youtube' });
   });
 
   document.getElementById('mode-file-btn').addEventListener('click', () => {
@@ -725,7 +738,7 @@
     document.getElementById('mode-file-panel').style.display = 'block';
     document.getElementById('mode-youtube-panel').style.display = 'none';
     if (ytPlayer) ytPlayer.pauseVideo();
-    ws.send(JSON.stringify({ type: 'control', action: 'mode', mode: 'file' }));
+    wsSend({ type: 'control', action: 'mode', mode: 'file' });
   });
 
   function applyRemoteMode(mode) {
@@ -802,14 +815,14 @@
     polite = (role === 'viewer');
 
     pc.onicecandidate = (e) => {
-      if (e.candidate) ws.send(JSON.stringify({ type: 'ice-candidate', candidate: e.candidate }));
+      if (e.candidate) wsSend({ type: 'ice-candidate', candidate: e.candidate });
     };
 
     pc.onnegotiationneeded = async () => {
       try {
         makingOffer = true;
         await pc.setLocalDescription();
-        ws.send(JSON.stringify({ type: 'offer', offer: pc.localDescription }));
+        wsSend({ type: 'offer', offer: pc.localDescription });
       } catch (err) {
         console.error('Erro ao negociar ligação:', err);
       } finally {
@@ -850,6 +863,8 @@
     micAdded = false;
     movieStreamId = null;
     movieAudioAttached = false;
+    pendingIceCandidates = [];
+    hasRemoteDescription = false;
   }
 
   async function handleSignal(msg) {
@@ -861,9 +876,14 @@
     if (ignoreOffer) return;
 
     await pc.setRemoteDescription(description);
+    hasRemoteDescription = true;
+    if (pendingIceCandidates.length) {
+      const queued = pendingIceCandidates.splice(0);
+      for (const candidate of queued) { try { await pc.addIceCandidate(candidate); } catch (err) {} }
+    }
     if (isOffer) {
       await pc.setLocalDescription();
-      ws.send(JSON.stringify({ type: 'answer', answer: pc.localDescription }));
+      wsSend({ type: 'answer', answer: pc.localDescription });
     }
   }
 
@@ -939,9 +959,9 @@
     if (ytApplyingRemote || !ytPlayer) return;
     const currentTime = ytPlayer.getCurrentTime();
     if (e.data === YT.PlayerState.PLAYING) {
-      ws.send(JSON.stringify({ type: 'control', action: 'yt-play', time: currentTime }));
+      wsSend({ type: 'control', action: 'yt-play', time: currentTime });
     } else if (e.data === YT.PlayerState.PAUSED) {
-      ws.send(JSON.stringify({ type: 'control', action: 'yt-pause', time: currentTime }));
+      wsSend({ type: 'control', action: 'yt-pause', time: currentTime });
     } else if (e.data === YT.PlayerState.ENDED && role === 'host') {
       playNextYoutube();
     }
@@ -969,7 +989,7 @@
     if (!ytPlayer) return;
     const time = ytPlayer.getCurrentTime();
     const playing = ytPlayer.getPlayerState() === YT.PlayerState.PLAYING;
-    ws.send(JSON.stringify({ type: 'control', action: 'yt-sync', time, playing }));
+    wsSend({ type: 'control', action: 'yt-sync', time, playing });
   }
   document.getElementById('yt-sync-btn').addEventListener('click', sendYtSync);
   document.getElementById('yt-sync-btn-viewer').addEventListener('click', sendYtSync);
@@ -978,7 +998,7 @@
   setInterval(() => {
     if (ytPlayer && typeof ytPlayer.getPlayerState === 'function' &&
         ytPlayer.getPlayerState() === YT.PlayerState.PLAYING && !ytApplyingRemote) {
-      ws.send(JSON.stringify({ type: 'control', action: 'yt-heartbeat', time: ytPlayer.getCurrentTime() }));
+      wsSend({ type: 'control', action: 'yt-heartbeat', time: ytPlayer.getCurrentTime() });
     }
   }, 4000);
 
@@ -1022,7 +1042,7 @@
     document.getElementById('yt-player-bar').classList.add('show');
     document.getElementById('yt-sync-btn').style.display = 'inline-block';
     renderYtPlaylist();
-    ws.send(JSON.stringify({ type: 'control', action: 'yt-load', videoId: item.videoId, title: item.title }));
+    wsSend({ type: 'control', action: 'yt-load', videoId: item.videoId, title: item.title });
   }
 
   function playNextYoutube() {
@@ -1151,7 +1171,7 @@
   function sendChat() {
     const text = chatInput.value.trim();
     if (!text) return;
-    ws.send(JSON.stringify({ type: 'chat', text }));
+    wsSend({ type: 'chat', text });
     addMessage(text, 'me');
     chatInput.value = '';
   }
@@ -1226,8 +1246,9 @@
 
         case 'ice-candidate':
           await ensurePeerConnection();
+          if (!hasRemoteDescription) { pendingIceCandidates.push(msg.candidate); break; }
           try { await pc.addIceCandidate(msg.candidate); }
-          catch (err) { if (!ignoreOffer) console.error(err); }
+          catch (err) { if (!ignoreOffer) console.warn('ICE candidate rejeitado:', err); }
           break;
 
         case 'chat':
@@ -1259,19 +1280,27 @@
       }
     };
 
+    socket.onopen = () => {
+      wsConnecting = false;
+      updateNetworkBanner(true);
+      wsReconnectDelay = 1000;
+      if (roomCode && role) wsSend({ type: 'rejoin-room', code: roomCode, role });
+    };
     socket.onclose = () => {
-      setTimeout(reconnectSocket, wsReconnectDelay);
+      wsConnecting = false;
+      updateNetworkBanner(false);
+      if (wsReconnectTimer) return;
+      const delay = wsReconnectDelay;
       wsReconnectDelay = Math.min(wsReconnectDelay * 2, 10000);
+      wsReconnectTimer = setTimeout(() => { wsReconnectTimer = null; reconnectSocket(); }, delay);
     };
   }
 
   function reconnectSocket() {
+    if (wsConnecting || (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING))) return;
+    wsConnecting = true;
     ws = new WebSocket(wsProtocol + location.host);
     wireSocket(ws);
-    ws.addEventListener('open', () => {
-      wsReconnectDelay = 1000;
-      if (roomCode && role) ws.send(JSON.stringify({ type: 'rejoin-room', code: roomCode, role }));
-    });
   }
 
   wireSocket(ws);
@@ -1281,6 +1310,9 @@
   }
 
   // ---------- RESTAURAR SESSÃO (link partilhado, refresh, ou reabrir o site) ----------
+  window.addEventListener('online', () => { if (!ws || ws.readyState !== WebSocket.OPEN) reconnectSocket(); });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && (!ws || ws.readyState === WebSocket.CLOSED)) reconnectSocket(); });
+
   window.addEventListener('load', () => {
     const params = new URL(location.href).searchParams;
     let urlRoom = params.get('room');
@@ -1299,7 +1331,7 @@
     if (urlRoom && urlRole) {
       roomCode = urlRoom.toUpperCase();
       role = urlRole;
-      const tryRejoin = () => ws.send(JSON.stringify({ type: 'rejoin-room', code: roomCode, role }));
+      const tryRejoin = () => wsSend({ type: 'rejoin-room', code: roomCode, role });
       if (ws.readyState === WebSocket.OPEN) tryRejoin();
       else ws.addEventListener('open', tryRejoin, { once: true });
     }
