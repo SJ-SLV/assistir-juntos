@@ -120,9 +120,12 @@ wss.on('connection', (ws) => {
           send(ws, { type: 'error', message: 'A sala expirou. Cria uma nova sala.', expired: true });
           return;
         }
-        if (room[role] && room[role].readyState === WebSocket.OPEN) {
-          send(ws, { type: 'error', message: 'Essa sala já está aberta nesse papel noutro dispositivo.', expired: true });
-          return;
+        // Um refresh de página cria uma ligação nova antes do servidor detetar
+        // que a antiga fechou. Em vez de rejeitar, a nova ligação substitui a
+        // antiga — fecha-se a antiga explicitamente para não ficar "presa".
+        const existing = room[role];
+        if (existing && existing !== ws) {
+          try { existing.close(); } catch (e) {}
         }
         if (room[role + 'Timer']) { clearTimeout(room[role + 'Timer']); room[role + 'Timer'] = null; }
         room[role] = ws;
