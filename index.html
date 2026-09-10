@@ -1,0 +1,1343 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Assistir Juntos</title>
+<link rel="manifest" href="manifest.json" />
+<meta name="theme-color" content="#e50914" />
+<link rel="icon" href="icon.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="icon.svg" />
+<style>
+  :root {
+    --bg: #0b0c10;
+    --bg-grad: radial-gradient(circle at 20% 0%, #1a1d24 0%, #0b0c10 55%);
+    --card: #16181d;
+    --card-2: #1c1f26;
+    --accent: #e50914;
+    --accent-2: #ff4d5e;
+    --ok: #3ddc84;
+    --warn: #f5b942;
+    --text: #f2f2f2;
+    --muted: #9a9ea6;
+    --border: #262932;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg-grad);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  header { padding: 20px 20px 16px; text-align: center; }
+  header h1 { margin: 0; font-size: 21px; letter-spacing: 0.5px; font-weight: 700; }
+  header span { color: var(--accent); }
+  header p { margin: 4px 0 0; font-size: 12px; color: var(--muted); }
+  main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 8px 16px 110px;
+    gap: 18px;
+  }
+  .screen { display: none; width: 100%; max-width: 460px; flex-direction: column; gap: 16px; }
+  .screen.active { display: flex; }
+  .card {
+    background: linear-gradient(180deg, var(--card-2), var(--card));
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+  }
+  h2 { margin: 0; font-size: 16px; display: flex; align-items: center; gap: 8px; }
+  p.hint { color: var(--muted); font-size: 13px; margin: 0; line-height: 1.4; }
+  button {
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    padding: 14px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.1s ease, opacity 0.15s ease;
+  }
+  button:active { transform: scale(0.97); }
+  button.secondary { background: #24262d; border: 1px solid var(--border); color: var(--text); }
+  button.ghost { background: transparent; border: 1px solid var(--border); color: var(--muted); font-weight: 500; padding: 10px; font-size: 13px; }
+  button:disabled { opacity: 0.45; cursor: not-allowed; }
+  .row { display: flex; gap: 10px; }
+  .row > * { flex: 1; }
+  input[type="text"] {
+    background: #0f1013; border: 1px solid var(--border); color: var(--text);
+    padding: 14px; border-radius: 12px; font-size: 18px; text-transform: uppercase;
+    letter-spacing: 4px; text-align: center; width: 100%; font-weight: 700;
+  }
+  input[type="text"]:focus { outline: 2px solid var(--accent); }
+  input[type="file"] { color: var(--muted); font-size: 13px; }
+  video { width: 100%; border-radius: 12px; background: #000; max-height: 55vh; }
+  .code-display { font-size: 36px; letter-spacing: 8px; text-align: center; font-weight: 800; color: var(--accent); padding: 8px 0; }
+  .status { font-size: 13px; color: var(--muted); text-align: center; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex-shrink: 0; }
+  .status.connecting .dot { background: var(--warn); animation: pulse 1.2s infinite; }
+  .status.ok .dot { background: var(--ok); }
+  .status.err .dot { background: var(--accent); }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+  .banner {
+    background: rgba(245, 185, 66, 0.12); border: 1px solid rgba(245, 185, 66, 0.35);
+    color: var(--warn); padding: 12px 14px; border-radius: 10px; font-size: 13px; display: none;
+  }
+  .banner.show { display: block; }
+  .divider { text-align: center; color: var(--muted); font-size: 12px; }
+  .error-msg { font-size: 13px; color: var(--accent); text-align: center; min-height: 16px; }
+  .now-playing { font-size: 14px; color: var(--text); background: #20222a; border-radius: 10px; padding: 10px 12px; display: none; }
+
+  /* Botões flutuantes (chat / chamada) */
+  .fab {
+    position: fixed; bottom: 22px; width: 56px; height: 56px; border-radius: 50%;
+    display: none; align-items: center; justify-content: center; font-size: 24px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.4); z-index: 30; border: none;
+  }
+  .fab.show { display: flex; }
+  #chat-toggle { right: 20px; background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; }
+  #mic-toggle { left: 20px; background: #24262d; border: 1px solid var(--border); color: var(--text); }
+  #mic-toggle.active { background: linear-gradient(135deg, #2fae67, var(--ok)); color: #06210f; }
+  #mic-toggle.muted { background: #3a2b2b; color: var(--accent-2); }
+  .badge {
+    position: absolute; top: -2px; right: -2px; background: var(--ok); color: #06210f;
+    font-size: 11px; font-weight: 800; min-width: 18px; height: 18px; border-radius: 9px;
+    display: none; align-items: center; justify-content: center; padding: 0 4px;
+  }
+  .badge.show { display: flex; }
+  #btn-audio-unmute {
+    position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%);
+    z-index: 35; display: none; width: auto; padding: 10px 18px; font-size: 13px;
+  }
+  #btn-audio-unmute.show { display: block; }
+
+  #chat-panel {
+    position: fixed; right: 0; bottom: 0; width: 100%; max-width: 400px; height: 62vh;
+    background: var(--card); border-top: 1px solid var(--border); border-left: 1px solid var(--border);
+    border-radius: 16px 16px 0 0; display: none; flex-direction: column; z-index: 40;
+    box-shadow: 0 -8px 30px rgba(0,0,0,0.45);
+  }
+  #chat-panel.show { display: flex; }
+  .chat-header { padding: 14px 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight: 700; }
+  .chat-header button { background: transparent; color: var(--muted); padding: 4px 8px; font-size: 18px; }
+  #chat-messages { flex: 1; overflow-y: auto; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+  .msg { max-width: 78%; padding: 9px 12px; border-radius: 14px; font-size: 14px; line-height: 1.35; word-wrap: break-word; }
+  .msg.me { align-self: flex-end; background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; border-bottom-right-radius: 4px; }
+  .msg.them { align-self: flex-start; background: #24262d; color: var(--text); border-bottom-left-radius: 4px; }
+  .chat-input-row { display: flex; gap: 8px; padding: 12px; border-top: 1px solid var(--border); }
+  .chat-input-row input { flex: 1; background: #0f1013; border: 1px solid var(--border); color: var(--text); border-radius: 20px; padding: 10px 16px; font-size: 14px; }
+  .chat-input-row button { border-radius: 50%; width: 42px; height: 42px; padding: 0; font-size: 18px; flex: none; }
+  .mode-btn {
+    background: #24262d; border: 1px solid var(--border); color: var(--muted);
+    font-weight: 600; padding: 12px; border-radius: 10px; font-size: 14px;
+  }
+  .mode-btn-active { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; border: none; }
+  #yt-player-host iframe, #yt-player-viewer iframe { width: 100%; aspect-ratio: 16/9; border-radius: 10px; }
+
+  /* Playlist */
+  .playlist { display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow-y: auto; }
+  .playlist-item {
+    display: flex; align-items: center; gap: 8px; background: #1c1e25; border: 1px solid var(--border);
+    border-radius: 10px; padding: 8px 10px; font-size: 13px;
+  }
+  .playlist-item.playing { border-color: var(--accent); background: rgba(229,9,20,0.1); }
+  .playlist-icon { flex: none; }
+  .playlist-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .playlist-actions { display: flex; gap: 4px; flex: none; }
+  .playlist-actions button {
+    background: #262933; border: none; color: var(--muted); width: 26px; height: 26px;
+    border-radius: 6px; padding: 0; font-size: 12px; line-height: 1;
+  }
+  .playlist-actions button:hover { color: var(--text); }
+
+  /* Barra de reprodução */
+  .player-bar { display: none; flex-direction: column; gap: 8px; background: #1c1e25; border: 1px solid var(--border); border-radius: 12px; padding: 12px; }
+  .player-bar.show { display: flex; }
+  .player-title { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .player-controls { display: flex; align-items: center; gap: 10px; }
+  .player-controls button { background: #262933; border: none; color: var(--text); width: 40px; height: 40px; border-radius: 50%; padding: 0; font-size: 16px; flex: none; }
+  .player-controls button.play-pause { background: linear-gradient(135deg, var(--accent), var(--accent-2)); width: 46px; height: 46px; font-size: 18px; }
+  .player-seek-row { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--muted); }
+  .player-seek-row input[type="range"] { flex: 1; accent-color: var(--accent); }
+</style>
+</head>
+<body>
+
+<div id="network-banner" class="banner" style="position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:60;max-width:min(92vw,460px);width:max-content;box-shadow:0 8px 24px rgba(0,0,0,.35);">⚠️ Sem ligação ao servidor. A tentar reconectar…</div>
+
+<header>
+  <h1>Assistir <span>Juntos</span></h1>
+  <p>Vê o mesmo vídeo, ao mesmo tempo, em telefones diferentes</p>
+</header>
+
+<main>
+
+  <!-- ECRÃ INICIAL -->
+  <section id="screen-home" class="screen active">
+    <div class="card">
+      <h2>🎬 Partilhar o meu vídeo</h2>
+      <p class="hint">Escolhe um vídeo do teu telefone e cria uma sala para a outra pessoa assistir contigo.</p>
+      <button id="btn-create">Criar sala</button>
+    </div>
+    <div class="divider">— ou —</div>
+    <div class="card">
+      <h2>🔑 Entrar numa sala</h2>
+      <p class="hint">Cola o código de 5 letras que a outra pessoa te enviou (ou abre o link diretamente, se te mandaram um).</p>
+      <div class="row">
+        <input type="text" id="input-code" maxlength="5" placeholder="CÓDIGO" inputmode="text" autocomplete="off" autocapitalize="characters" />
+        <button id="btn-paste-code" class="secondary" style="flex:0 0 auto; padding: 14px 16px;">Colar</button>
+      </div>
+      <button id="btn-join">Entrar</button>
+      <p class="error-msg" id="home-error"></p>
+    </div>
+  </section>
+
+  <!-- ECRÃ DO ANFITRIÃO -->
+  <section id="screen-host" class="screen">
+    <div class="banner" id="host-reselect-banner">
+      ⚠️ A ligação foi restabelecida. Por segurança do telemóvel, a playlist local perdeu-se — volta a adicionar os ficheiros para continuares a partilhar.
+    </div>
+    <div class="card">
+      <h2>A tua sala</h2>
+      <div class="code-display" id="room-code">-----</div>
+      <div class="row">
+        <button id="btn-copy-link">🔗 Copiar link</button>
+        <button id="btn-copy-code" class="secondary">Copiar código</button>
+      </div>
+      <button id="btn-share-link" class="secondary">📤 Partilhar</button>
+      <div id="qr-wrap" style="display:flex; justify-content:center;">
+        <img id="qr-code" alt="Código QR da sala" width="140" height="140" style="border-radius:10px; background:#fff; padding:6px;" />
+      </div>
+      <p class="hint">Envia o link (mais fácil) ou o código à outra pessoa. Ela também pode apontar a câmara ao QR.</p>
+      <div class="row" style="align-items:center; gap:8px;">
+        <label for="vol-call-host" style="font-size:12px; color:var(--muted); flex:0 0 auto;">🎤 Volume da chamada</label>
+        <input type="range" id="vol-call-host" min="0" max="100" value="100" style="flex:1;" />
+      </div>
+      <p class="status" id="host-status"><span class="dot"></span> A aguardar que alguém entre...</p>
+      <button id="btn-leave-host" class="ghost">🚪 Sair da sala</button>
+    </div>
+
+    <div class="card">
+      <h2>🎬 O que vais partilhar?</h2>
+      <div class="row">
+        <button id="mode-file-btn" class="mode-btn mode-btn-active">📱 Do telemóvel</button>
+        <button id="mode-youtube-btn" class="mode-btn">▶️ YouTube</button>
+      </div>
+
+      <div id="mode-file-panel">
+        <p class="hint">Adiciona vídeos ou músicas do telemóvel — dá para adicionar vários de uma vez e criar uma playlist.</p>
+        <input type="file" id="file-input" accept="video/*,audio/*" multiple />
+        <video id="host-video" controls playsinline></video>
+        <audio id="host-audio" style="display:none;"></audio>
+
+        <div id="file-player-bar" class="player-bar">
+          <div class="player-title" id="file-track-title">—</div>
+          <div class="player-seek-row">
+            <span id="file-time-current">0:00</span>
+            <input type="range" id="file-seek" min="0" max="100" value="0" />
+            <span id="file-time-duration">0:00</span>
+          </div>
+          <div class="player-controls">
+            <button id="file-prev-btn" title="Anterior">⏮</button>
+            <button id="file-play-pause" class="play-pause" title="Play/Pausa">▶</button>
+            <button id="file-next-btn" title="Seguinte">⏭</button>
+          </div>
+        </div>
+
+        <div class="playlist" id="file-playlist"></div>
+      </div>
+
+      <div id="mode-youtube-panel" style="display:none;">
+        <p class="hint">Cola o link de um vídeo ou música do YouTube e adiciona à fila.</p>
+        <div class="row">
+          <input type="text" id="yt-url-input" placeholder="Link ou ID do YouTube" style="text-transform:none; letter-spacing:normal; font-size:14px;" />
+          <button id="yt-load-btn" class="secondary" style="flex:0 0 auto;">Adicionar</button>
+        </div>
+        <div id="yt-player-host" style="margin-top:10px;"></div>
+
+        <div id="yt-player-bar" class="player-bar">
+          <div class="player-title" id="yt-track-title">—</div>
+          <div class="player-controls">
+            <button id="yt-prev-btn" title="Anterior">⏮</button>
+            <button id="yt-sync-btn" class="secondary" style="width:auto; border-radius:12px; padding:0 14px; height:40px;">🔄 Sincronizar</button>
+            <button id="yt-next-btn" title="Seguinte">⏭</button>
+          </div>
+        </div>
+
+        <div class="playlist" id="yt-playlist"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ECRÃ DO VIEWER -->
+  <section id="screen-viewer" class="screen">
+    <div class="card">
+      <h2>A assistir na sala <span id="viewer-code"></span></h2>
+      <p class="status connecting" id="viewer-status"><span class="dot"></span> A ligar...</p>
+      <video id="viewer-video" playsinline autoplay></video>
+      <div id="yt-player-viewer" style="display:none;"></div>
+      <div id="viewer-now-playing" class="now-playing"></div>
+      <div class="row" style="align-items:center; gap:8px;">
+        <label for="vol-content" style="font-size:12px; color:var(--muted); flex:0 0 auto;">🎬 Conteúdo</label>
+        <input type="range" id="vol-content" min="0" max="100" value="100" style="flex:1;" />
+      </div>
+      <div class="row" style="align-items:center; gap:8px;">
+        <label for="vol-call" style="font-size:12px; color:var(--muted); flex:0 0 auto;">🎤 Chamada</label>
+        <input type="range" id="vol-call" min="0" max="100" value="100" style="flex:1;" />
+      </div>
+      <button id="btn-unmute" class="secondary" style="display:none;">🔊 Tocar / Ativar som</button>
+      <button id="yt-sync-btn-viewer" class="secondary" style="display:none;">🔄 Sincronizar agora</button>
+      <button id="btn-leave-viewer" class="ghost">🚪 Sair da sala</button>
+    </div>
+  </section>
+
+</main>
+
+<!-- Áudio remoto da chamada de voz (sem interface própria) -->
+<audio id="remote-audio" autoplay playsinline></audio>
+<!-- Áudio remoto da música partilhada do telemóvel (separado da chamada de voz) -->
+<audio id="movie-audio" autoplay playsinline></audio>
+<button id="btn-audio-unmute" class="secondary">🔊 Ativar áudio da chamada</button>
+
+<!-- Botões flutuantes -->
+<button id="mic-toggle" class="fab" title="Chamada de voz" aria-label="Chamada de voz">🎤</button>
+<button id="chat-toggle" class="fab secondary" aria-label="Abrir mensagens">💬<span id="chat-badge" class="badge"></span></button>
+
+<div id="chat-panel">
+  <div class="chat-header">
+    <span>Mensagens</span>
+    <button id="chat-close" aria-label="Fechar mensagens">✕</button>
+  </div>
+  <div id="chat-messages"></div>
+  <div class="chat-input-row">
+    <input type="text" id="chat-input" placeholder="Escreve uma mensagem..." maxlength="500" />
+    <button id="chat-send" aria-label="Enviar mensagem">➤</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  const wsProtocol = location.protocol === 'https:' ? 'wss://' : 'ws://';
+  let ws = new WebSocket(wsProtocol + location.host);
+  let wsReconnectDelay = 1000;
+  let wsReconnectTimer = null;
+  let wsConnecting = false;
+
+  const SESSION_KEY = 'assistir_juntos_session_v1';
+
+  const networkBanner = document.getElementById('network-banner');
+  function updateNetworkBanner(online) { if (networkBanner) networkBanner.classList.toggle('show', !online); }
+  function wsSend(payload) {
+    if (!ws || ws.readyState !== WebSocket.OPEN) { updateNetworkBanner(false); return false; }
+    try { ws.send(JSON.stringify(payload)); return true; } catch (e) { updateNetworkBanner(false); return false; }
+  }
+
+  const FALLBACK_ICE_SERVERS = [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' },
+    { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
+    { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
+    { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' }
+  ];
+  let cachedIceServers = null;
+  async function getIceServers() {
+    if (cachedIceServers) return cachedIceServers;
+    try {
+      const res = await fetch('/ice-servers');
+      const list = await res.json();
+      cachedIceServers = { iceServers: Array.isArray(list) && list.length ? list : FALLBACK_ICE_SERVERS };
+    } catch (e) {
+      cachedIceServers = { iceServers: FALLBACK_ICE_SERVERS };
+    }
+    return cachedIceServers;
+  }
+
+  const screens = {
+    home: document.getElementById('screen-home'),
+    host: document.getElementById('screen-host'),
+    viewer: document.getElementById('screen-viewer')
+  };
+  function showScreen(name) {
+    Object.values(screens).forEach(s => s.classList.remove('active'));
+    screens[name].classList.add('active');
+    document.getElementById('chat-toggle').classList.toggle('show', name !== 'home');
+    document.getElementById('mic-toggle').classList.toggle('show', name !== 'home');
+  }
+
+  function setStatus(el, cls, text) {
+    el.className = 'status ' + cls;
+    el.innerHTML = '<span class="dot"></span> ' + text;
+  }
+
+  function escapeHtml(s) {
+    const d = document.createElement('div');
+    d.textContent = s == null ? '' : String(s);
+    return d.innerHTML;
+  }
+
+  function formatTime(t) {
+    if (!isFinite(t) || isNaN(t)) return '0:00';
+    const m = Math.floor(t / 60);
+    const s = Math.floor(t % 60);
+    return m + ':' + String(s).padStart(2, '0');
+  }
+
+  // ---------- ESTADO GERAL ----------
+  let role = null;
+  let roomCode = null;
+  let pc = null;
+  let polite = false;
+  let makingOffer = false;
+  let ignoreOffer = false;
+  let iceRestartTimer = null;
+  let movieStreamId = null;
+  let moviePublished = false;
+  let pendingPeer = false;
+  let fileKind = 'video';
+  let remoteFileKind = 'video';
+  let movieAudioAttached = false;
+  let currentMode = 'file';
+  let ytPlayer = null;
+  let ytApplyingRemote = false;
+  let pendingIceCandidates = [];
+  let hasRemoteDescription = false;
+
+  // Playlists (geridas pelo anfitrião)
+  let filePlaylist = [];
+  let fileCurrentIndex = -1;
+  let ytPlaylist = [];
+  let ytCurrentIndex = -1;
+
+  function saveLocalSession() {
+    try { localStorage.setItem(SESSION_KEY, JSON.stringify({ code: roomCode, role })); } catch (e) {}
+  }
+  function clearLocalSession() {
+    try { localStorage.removeItem(SESSION_KEY); } catch (e) {}
+  }
+
+  function updateUrl() {
+    const url = new URL(location.href);
+    if (roomCode && role) {
+      url.searchParams.set('room', roomCode);
+      url.searchParams.set('role', role);
+    } else {
+      url.searchParams.delete('room');
+      url.searchParams.delete('role');
+    }
+    history.replaceState(null, '', url);
+  }
+
+  function shareLink() {
+    const url = new URL(location.href);
+    url.searchParams.set('room', roomCode);
+    url.searchParams.set('role', 'viewer');
+    return url.toString();
+  }
+
+  async function copyText(text) {
+    try { await navigator.clipboard.writeText(text); return true; }
+    catch (e) { return false; }
+  }
+
+  // ---------- ECRÃ INICIAL ----------
+  const inputCode = document.getElementById('input-code');
+  inputCode.addEventListener('input', () => {
+    inputCode.value = inputCode.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5);
+  });
+
+  document.getElementById('btn-create').addEventListener('click', () => {
+    if (!wsSend({ type: 'create-room' })) document.getElementById('home-error').textContent = 'A ligar ao servidor… tenta novamente em instantes.';
+  });
+
+  document.getElementById('btn-paste-code').addEventListener('click', async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      inputCode.value = text.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5);
+    } catch (e) {
+      document.getElementById('home-error').textContent = 'Não consegui aceder à área de transferência — cola manualmente.';
+    }
+  });
+
+  document.getElementById('btn-join').addEventListener('click', () => {
+    const code = inputCode.value.trim().toUpperCase();
+    if (code.length < 5) {
+      document.getElementById('home-error').textContent = 'O código tem 5 letras/números.';
+      return;
+    }
+    document.getElementById('home-error').textContent = '';
+    if (!wsSend({ type: 'join-room', code })) { document.getElementById('home-error').textContent = 'Sem ligação ao servidor. A tentar reconectar…'; return; }
+  });
+
+  // ---------- SAIR DA SALA ----------
+  function leaveRoom() {
+    wsSend({ type: 'leave-room' });
+  }
+  document.getElementById('btn-leave-host').addEventListener('click', leaveRoom);
+  document.getElementById('btn-leave-viewer').addEventListener('click', leaveRoom);
+
+  function resetAllStateToHome() {
+    resetPeerConnection();
+    clearLocalSession();
+    roomCode = null;
+    role = null;
+    updateUrl();
+    filePlaylist.forEach(item => { try { URL.revokeObjectURL(item.url); } catch (e) {} });
+    filePlaylist = [];
+    fileCurrentIndex = -1;
+    ytPlaylist = [];
+    ytCurrentIndex = -1;
+    if (ytPlayer && ytPlayer.destroy) { try { ytPlayer.destroy(); } catch (e) {} }
+    ytPlayer = null;
+    showScreen('home');
+  }
+
+  // ---------- LADO ANFITRIÃO ----------
+  const hostVideo = document.getElementById('host-video');
+  const hostAudioEl = document.getElementById('host-audio');
+  const fileInput = document.getElementById('file-input');
+  const hostStatus = document.getElementById('host-status');
+  const reselectBanner = document.getElementById('host-reselect-banner');
+
+  function activeHostMediaEl() {
+    return fileKind === 'audio' ? hostAudioEl : hostVideo;
+  }
+
+  function addMovieTracksIfNeeded() {
+    if (moviePublished || !pc) return;
+    const el = activeHostMediaEl();
+    const localStream = el.captureStream ? el.captureStream() : el.mozCaptureStream();
+    localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+    moviePublished = true;
+    pendingPeer = false;
+  }
+
+  function publishOrReplaceMovieTrack() {
+    if (pendingPeer) { addMovieTracksIfNeeded(); return; }
+    if (moviePublished && pc) {
+      const el = activeHostMediaEl();
+      const newStream = el.captureStream ? el.captureStream() : el.mozCaptureStream();
+      const senders = pc.getSenders();
+      newStream.getTracks().forEach(track => {
+        const sender = senders.find(s => s.track && s.track.kind === track.kind && s.track !== track);
+        if (sender) sender.replaceTrack(track);
+        else pc.addTrack(track, newStream);
+      });
+    }
+  }
+
+  function broadcastFileState() {
+    const item = filePlaylist[fileCurrentIndex];
+    wsSend({ type: 'control', action: 'file-kind', kind: fileKind, title: item ? item.name : '' });
+  }
+
+  function stopMovieTracks() {
+    if (pc) {
+      const micTrack = micStream ? micStream.getAudioTracks()[0] : null;
+      pc.getSenders().forEach(s => {
+        if (!s.track) return;
+        if (s.track.kind === 'video' || (s.track.kind === 'audio' && s.track !== micTrack)) {
+          pc.removeTrack(s);
+        }
+      });
+    }
+    moviePublished = false;
+    movieStreamId = null;
+  }
+
+  // ---------- PLAYLIST DO TELEMÓVEL ----------
+  function renderFilePlaylist() {
+    const container = document.getElementById('file-playlist');
+    if (!filePlaylist.length) {
+      container.innerHTML = '<p class="hint">A playlist está vazia — adiciona vídeos ou música.</p>';
+      return;
+    }
+    container.innerHTML = filePlaylist.map((item, i) => `
+      <div class="playlist-item ${i === fileCurrentIndex ? 'playing' : ''}">
+        <span class="playlist-icon">${item.kind === 'audio' ? '🎵' : '🎬'}</span>
+        <span class="playlist-name">${escapeHtml(item.name)}</span>
+        <div class="playlist-actions">
+          <button data-action="play" data-index="${i}" title="Tocar agora">▶</button>
+          <button data-action="up" data-index="${i}" title="Mover para cima">↑</button>
+          <button data-action="down" data-index="${i}" title="Mover para baixo">↓</button>
+          <button data-action="remove" data-index="${i}" title="Remover">✕</button>
+        </div>
+      </div>`).join('');
+  }
+
+  document.getElementById('file-playlist').addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-action]');
+    if (!btn) return;
+    const index = Number(btn.dataset.index);
+    const action = btn.dataset.action;
+    if (action === 'play') playFileAt(index);
+    else if (action === 'remove') removeFileAt(index);
+    else if (action === 'up') moveFile(index, -1);
+    else if (action === 'down') moveFile(index, 1);
+  });
+
+  function addFilesToPlaylist(fileList) {
+    const startIndex = filePlaylist.length;
+    Array.from(fileList).forEach(file => {
+      filePlaylist.push({
+        file,
+        name: file.name,
+        kind: file.type.startsWith('audio/') ? 'audio' : 'video',
+        url: URL.createObjectURL(file)
+      });
+    });
+    renderFilePlaylist();
+    if (fileCurrentIndex === -1) playFileAt(startIndex);
+  }
+
+  function playFileAt(index) {
+    if (index < 0 || index >= filePlaylist.length) return;
+    fileCurrentIndex = index;
+    const item = filePlaylist[index];
+    fileKind = item.kind;
+    reselectBanner.classList.remove('show');
+
+    if (item.kind === 'audio') {
+      hostVideo.style.display = 'none';
+      document.getElementById('file-player-bar').classList.add('show');
+      hostAudioEl.src = item.url;
+      hostAudioEl.play().catch(() => {});
+    } else {
+      hostVideo.style.display = 'block';
+      document.getElementById('file-player-bar').classList.remove('show');
+      hostVideo.src = item.url;
+      hostVideo.play().catch(() => {});
+    }
+    document.getElementById('file-track-title').textContent = item.name;
+    renderFilePlaylist();
+    broadcastFileState();
+    publishOrReplaceMovieTrack();
+  }
+
+  function playNextFile() {
+    if (!filePlaylist.length) return;
+    playFileAt((fileCurrentIndex + 1) % filePlaylist.length);
+  }
+  function playPrevFile() {
+    if (!filePlaylist.length) return;
+    playFileAt((fileCurrentIndex - 1 + filePlaylist.length) % filePlaylist.length);
+  }
+
+  function removeFileAt(index) {
+    const wasCurrent = index === fileCurrentIndex;
+    try { URL.revokeObjectURL(filePlaylist[index].url); } catch (e) {}
+    filePlaylist.splice(index, 1);
+    if (fileCurrentIndex > index) fileCurrentIndex--;
+    else if (wasCurrent) {
+      fileCurrentIndex = -1;
+      if (filePlaylist.length) {
+        playFileAt(0);
+      } else {
+        hostVideo.pause();
+        hostAudioEl.pause();
+        stopMovieTracks();
+        document.getElementById('file-player-bar').classList.remove('show');
+      }
+    }
+    renderFilePlaylist();
+  }
+
+  function moveFile(index, delta) {
+    const newIndex = index + delta;
+    if (newIndex < 0 || newIndex >= filePlaylist.length) return;
+    [filePlaylist[index], filePlaylist[newIndex]] = [filePlaylist[newIndex], filePlaylist[index]];
+    if (fileCurrentIndex === index) fileCurrentIndex = newIndex;
+    else if (fileCurrentIndex === newIndex) fileCurrentIndex = index;
+    renderFilePlaylist();
+  }
+
+  fileInput.addEventListener('change', (e) => {
+    if (e.target.files.length) addFilesToPlaylist(e.target.files);
+    fileInput.value = '';
+  });
+
+  // Barra de reprodução — música do telemóvel
+  hostAudioEl.addEventListener('play', () => { document.getElementById('file-play-pause').textContent = '⏸'; });
+  hostAudioEl.addEventListener('pause', () => { document.getElementById('file-play-pause').textContent = '▶'; });
+  hostAudioEl.addEventListener('timeupdate', () => {
+    const seek = document.getElementById('file-seek');
+    if (!isNaN(hostAudioEl.duration) && isFinite(hostAudioEl.duration)) seek.max = hostAudioEl.duration;
+    seek.value = hostAudioEl.currentTime || 0;
+    document.getElementById('file-time-current').textContent = formatTime(hostAudioEl.currentTime);
+    document.getElementById('file-time-duration').textContent = formatTime(hostAudioEl.duration);
+  });
+  hostAudioEl.addEventListener('ended', playNextFile);
+  hostVideo.addEventListener('ended', playNextFile);
+
+  document.getElementById('file-play-pause').addEventListener('click', () => {
+    if (hostAudioEl.paused) hostAudioEl.play(); else hostAudioEl.pause();
+  });
+  document.getElementById('file-seek').addEventListener('input', (e) => {
+    hostAudioEl.currentTime = Number(e.target.value);
+  });
+  document.getElementById('file-prev-btn').addEventListener('click', playPrevFile);
+  document.getElementById('file-next-btn').addEventListener('click', playNextFile);
+
+  document.getElementById('btn-copy-link').addEventListener('click', async () => {
+    const ok = await copyText(shareLink());
+    const btn = document.getElementById('btn-copy-link');
+    btn.textContent = ok ? '✅ Link copiado!' : '🔗 Copiar link';
+    setTimeout(() => { btn.textContent = '🔗 Copiar link'; }, 1800);
+  });
+
+  document.getElementById('btn-copy-code').addEventListener('click', async () => {
+    const ok = await copyText(roomCode);
+    const btn = document.getElementById('btn-copy-code');
+    btn.textContent = ok ? '✅ Copiado!' : 'Copiar código';
+    setTimeout(() => { btn.textContent = 'Copiar código'; }, 1800);
+  });
+
+  document.getElementById('btn-share-link').addEventListener('click', async () => {
+    const url = shareLink();
+    if (navigator.share) {
+      try { await navigator.share({ title: 'Assistir Juntos', text: 'Entra na minha sala para assistirmos juntos:', url }); return; }
+      catch (e) { /* utilizador cancelou ou não suportado — cai para copiar */ }
+    }
+    await copyText(url);
+    const btn = document.getElementById('btn-share-link');
+    btn.textContent = '✅ Link copiado!';
+    setTimeout(() => { btn.textContent = '📤 Partilhar'; }, 1800);
+  });
+
+  document.getElementById('vol-call-host').addEventListener('input', (e) => {
+    remoteAudio.volume = Number(e.target.value) / 100;
+  });
+
+  // ---------- MODO: TELEMÓVEL vs YOUTUBE ----------
+  document.getElementById('mode-youtube-btn').addEventListener('click', () => {
+    currentMode = 'youtube';
+    document.getElementById('mode-youtube-btn').classList.add('mode-btn-active');
+    document.getElementById('mode-file-btn').classList.remove('mode-btn-active');
+    document.getElementById('mode-file-panel').style.display = 'none';
+    document.getElementById('mode-youtube-panel').style.display = 'block';
+    hostVideo.pause();
+    hostAudioEl.pause();
+    stopMovieTracks();
+    wsSend({ type: 'control', action: 'mode', mode: 'youtube' });
+  });
+
+  document.getElementById('mode-file-btn').addEventListener('click', () => {
+    currentMode = 'file';
+    document.getElementById('mode-file-btn').classList.add('mode-btn-active');
+    document.getElementById('mode-youtube-btn').classList.remove('mode-btn-active');
+    document.getElementById('mode-file-panel').style.display = 'block';
+    document.getElementById('mode-youtube-panel').style.display = 'none';
+    if (ytPlayer) ytPlayer.pauseVideo();
+    wsSend({ type: 'control', action: 'mode', mode: 'file' });
+  });
+
+  function applyRemoteMode(mode) {
+    if (role !== 'viewer') return;
+    if (mode === 'youtube') {
+      viewerVideo.style.display = 'none';
+      document.getElementById('yt-player-viewer').style.display = 'block';
+    } else {
+      viewerVideo.style.display = '';
+      document.getElementById('yt-player-viewer').style.display = 'none';
+    }
+  }
+
+  // ---------- LADO VIEWER ----------
+  const viewerVideo = document.getElementById('viewer-video');
+  const viewerStatus = document.getElementById('viewer-status');
+  const btnUnmute = document.getElementById('btn-unmute');
+  const remoteAudio = document.getElementById('remote-audio');
+  const btnAudioUnmute = document.getElementById('btn-audio-unmute');
+
+  function updateViewerNowPlaying(text) {
+    const el = document.getElementById('viewer-now-playing');
+    if (text) { el.textContent = text; el.style.display = 'block'; }
+    else { el.style.display = 'none'; }
+  }
+
+  btnUnmute.addEventListener('click', () => {
+    viewerVideo.muted = false;
+    viewerVideo.play();
+    remoteAudio.play().catch(() => {});
+    btnUnmute.style.display = 'none';
+  });
+  btnAudioUnmute.addEventListener('click', () => {
+    remoteAudio.play().catch(() => {});
+    document.getElementById('movie-audio').play().catch(() => {});
+    btnAudioUnmute.classList.remove('show');
+  });
+
+  document.getElementById('vol-content').addEventListener('input', (e) => {
+    const v = Number(e.target.value) / 100;
+    viewerVideo.volume = v;
+    document.getElementById('movie-audio').volume = v;
+  });
+  document.getElementById('vol-call').addEventListener('input', (e) => {
+    remoteAudio.volume = Number(e.target.value) / 100;
+  });
+
+  // ---------- LIGAÇÃO WEBRTC (peer connection única, com renegociação) ----------
+  function attachIceMonitoring(peerConn, statusEl) {
+    peerConn.oniceconnectionstatechange = () => {
+      const state = peerConn.iceConnectionState;
+      if (state === 'connected' || state === 'completed') {
+        if (iceRestartTimer) { clearTimeout(iceRestartTimer); iceRestartTimer = null; }
+        setStatus(statusEl, 'ok', 'Ligado!');
+      } else if (state === 'disconnected') {
+        setStatus(statusEl, 'connecting', 'A rede oscilou — a tentar recuperar a ligação...');
+        if (iceRestartTimer) clearTimeout(iceRestartTimer);
+        iceRestartTimer = setTimeout(() => {
+          if (peerConn.iceConnectionState === 'disconnected' && peerConn.restartIce) peerConn.restartIce();
+        }, 3000);
+      } else if (state === 'failed') {
+        setStatus(statusEl, 'err', 'A ligação falhou. A tentar novamente...');
+        if (peerConn.restartIce) peerConn.restartIce();
+      } else if (state === 'checking') {
+        setStatus(statusEl, 'connecting', 'A estabelecer ligação...');
+      }
+    };
+  }
+
+  async function ensurePeerConnection() {
+    if (pc) return pc;
+    const iceConfig = await getIceServers();
+    pc = new RTCPeerConnection(iceConfig);
+    polite = (role === 'viewer');
+
+    pc.onicecandidate = (e) => {
+      if (e.candidate) wsSend({ type: 'ice-candidate', candidate: e.candidate });
+    };
+
+    pc.onnegotiationneeded = async () => {
+      try {
+        makingOffer = true;
+        await pc.setLocalDescription();
+        wsSend({ type: 'offer', offer: pc.localDescription });
+      } catch (err) {
+        console.error('Erro ao negociar ligação:', err);
+      } finally {
+        makingOffer = false;
+      }
+    };
+
+    pc.ontrack = (e) => {
+      const stream = e.streams[0];
+      if (e.track.kind === 'video') {
+        movieStreamId = stream.id;
+        viewerVideo.srcObject = stream;
+        viewerVideo.play().catch(() => { btnUnmute.style.display = 'block'; });
+      } else if (e.track.kind === 'audio') {
+        if (stream.id === movieStreamId) return;
+        if (remoteFileKind === 'audio' && !movieAudioAttached) {
+          movieAudioAttached = true;
+          movieStreamId = stream.id;
+          const movieAudioEl = document.getElementById('movie-audio');
+          movieAudioEl.srcObject = stream;
+          movieAudioEl.play().catch(() => { btnAudioUnmute.classList.add('show'); });
+          return;
+        }
+        remoteAudio.srcObject = stream;
+        remoteAudio.play().catch(() => { btnAudioUnmute.classList.add('show'); });
+      }
+    };
+
+    const statusEl = role === 'host' ? hostStatus : viewerStatus;
+    attachIceMonitoring(pc, statusEl);
+    return pc;
+  }
+
+  function resetPeerConnection() {
+    if (pc) { try { pc.close(); } catch (e) {} }
+    pc = null;
+    moviePublished = false;
+    micAdded = false;
+    movieStreamId = null;
+    movieAudioAttached = false;
+    pendingIceCandidates = [];
+    hasRemoteDescription = false;
+  }
+
+  async function handleSignal(msg) {
+    await ensurePeerConnection();
+    const description = msg.offer || msg.answer;
+    const isOffer = description.type === 'offer';
+    const collision = isOffer && (makingOffer || pc.signalingState !== 'stable');
+    ignoreOffer = !polite && collision;
+    if (ignoreOffer) return;
+
+    await pc.setRemoteDescription(description);
+    hasRemoteDescription = true;
+    if (pendingIceCandidates.length) {
+      const queued = pendingIceCandidates.splice(0);
+      for (const candidate of queued) { try { await pc.addIceCandidate(candidate); } catch (err) {} }
+    }
+    if (isOffer) {
+      await pc.setLocalDescription();
+      wsSend({ type: 'answer', answer: pc.localDescription });
+    }
+  }
+
+  // ---------- CHAMADA DE VOZ ----------
+  const micToggle = document.getElementById('mic-toggle');
+  let micStream = null;
+  let micAdded = false;
+  let micEnabled = false;
+
+  function updateMicButton() {
+    micToggle.classList.remove('active', 'muted');
+    if (!micAdded) { micToggle.textContent = '🎤'; }
+    else if (micEnabled) { micToggle.textContent = '🎙️'; micToggle.classList.add('active'); }
+    else { micToggle.textContent = '🔇'; micToggle.classList.add('muted'); }
+  }
+
+  micToggle.addEventListener('click', async () => {
+    if (!micStream) {
+      try {
+        micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      } catch (e) {
+        alert('Não foi possível aceder ao microfone. Verifica as permissões do telemóvel/browser.');
+        return;
+      }
+    }
+    await ensurePeerConnection();
+    if (!micAdded) {
+      micStream.getAudioTracks().forEach(t => { t.enabled = true; pc.addTrack(t, micStream); });
+      micAdded = true;
+      micEnabled = true;
+    } else {
+      micEnabled = !micEnabled;
+      micStream.getAudioTracks().forEach(t => { t.enabled = micEnabled; });
+    }
+    updateMicButton();
+  });
+
+  // ---------- YOUTUBE (vídeo ou música, em sincronia, com playlist) ----------
+  function loadYouTubeAPI() {
+    return new Promise((resolve) => {
+      if (window.YT && window.YT.Player) { resolve(); return; }
+      const existingCallback = window.onYouTubeIframeAPIReady;
+      window.onYouTubeIframeAPIReady = () => { if (existingCallback) existingCallback(); resolve(); };
+      if (!document.getElementById('yt-iframe-api')) {
+        const tag = document.createElement('script');
+        tag.id = 'yt-iframe-api';
+        tag.src = 'https://www.youtube.com/iframe_api';
+        document.head.appendChild(tag);
+      }
+    });
+  }
+
+  function extractYouTubeId(input) {
+    input = (input || '').trim();
+    const match = input.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+    if (match) return match[1];
+    if (/^[a-zA-Z0-9_-]{11}$/.test(input)) return input;
+    return null;
+  }
+
+  function fetchYoutubeTitle(videoId) {
+    return fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => (data && data.title) ? data.title : videoId)
+      .catch(() => videoId);
+  }
+
+  function getYtContainerId() {
+    return role === 'host' ? 'yt-player-host' : 'yt-player-viewer';
+  }
+
+  function onYtStateChange(e) {
+    if (ytApplyingRemote || !ytPlayer) return;
+    const currentTime = ytPlayer.getCurrentTime();
+    if (e.data === YT.PlayerState.PLAYING) {
+      wsSend({ type: 'control', action: 'yt-play', time: currentTime });
+    } else if (e.data === YT.PlayerState.PAUSED) {
+      wsSend({ type: 'control', action: 'yt-pause', time: currentTime });
+    } else if (e.data === YT.PlayerState.ENDED && role === 'host') {
+      playNextYoutube();
+    }
+  }
+
+  async function ensureYtPlayer(videoId) {
+    await loadYouTubeAPI();
+    if (ytPlayer) {
+      ytPlayer.loadVideoById(videoId);
+      return ytPlayer;
+    }
+    return new Promise((resolve) => {
+      const player = new YT.Player(getYtContainerId(), {
+        videoId,
+        playerVars: { playsinline: 1 },
+        events: {
+          onReady: () => { ytPlayer = player; resolve(player); },
+          onStateChange: onYtStateChange
+        }
+      });
+    });
+  }
+
+  function sendYtSync() {
+    if (!ytPlayer) return;
+    const time = ytPlayer.getCurrentTime();
+    const playing = ytPlayer.getPlayerState() === YT.PlayerState.PLAYING;
+    wsSend({ type: 'control', action: 'yt-sync', time, playing });
+  }
+  document.getElementById('yt-sync-btn').addEventListener('click', sendYtSync);
+  document.getElementById('yt-sync-btn-viewer').addEventListener('click', sendYtSync);
+
+  // Corrige desvios de sincronização automaticamente, sem interromper a reprodução
+  setInterval(() => {
+    if (ytPlayer && typeof ytPlayer.getPlayerState === 'function' &&
+        ytPlayer.getPlayerState() === YT.PlayerState.PLAYING && !ytApplyingRemote) {
+      wsSend({ type: 'control', action: 'yt-heartbeat', time: ytPlayer.getCurrentTime() });
+    }
+  }, 4000);
+
+  // Playlist do YouTube
+  function renderYtPlaylist() {
+    const container = document.getElementById('yt-playlist');
+    if (!ytPlaylist.length) {
+      container.innerHTML = '<p class="hint">A fila está vazia — adiciona um link do YouTube.</p>';
+      return;
+    }
+    container.innerHTML = ytPlaylist.map((item, i) => `
+      <div class="playlist-item ${i === ytCurrentIndex ? 'playing' : ''}">
+        <span class="playlist-icon">▶️</span>
+        <span class="playlist-name">${escapeHtml(item.title || item.videoId)}</span>
+        <div class="playlist-actions">
+          <button data-action="play" data-index="${i}" title="Tocar agora">▶</button>
+          <button data-action="up" data-index="${i}" title="Mover para cima">↑</button>
+          <button data-action="down" data-index="${i}" title="Mover para baixo">↓</button>
+          <button data-action="remove" data-index="${i}" title="Remover">✕</button>
+        </div>
+      </div>`).join('');
+  }
+
+  document.getElementById('yt-playlist').addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-action]');
+    if (!btn) return;
+    const index = Number(btn.dataset.index);
+    const action = btn.dataset.action;
+    if (action === 'play') playYoutubeAt(index);
+    else if (action === 'remove') removeYoutubeAt(index);
+    else if (action === 'up') moveYoutube(index, -1);
+    else if (action === 'down') moveYoutube(index, 1);
+  });
+
+  async function playYoutubeAt(index) {
+    if (index < 0 || index >= ytPlaylist.length) return;
+    ytCurrentIndex = index;
+    const item = ytPlaylist[index];
+    await ensureYtPlayer(item.videoId);
+    document.getElementById('yt-track-title').textContent = item.title || item.videoId;
+    document.getElementById('yt-player-bar').classList.add('show');
+    document.getElementById('yt-sync-btn').style.display = 'inline-block';
+    renderYtPlaylist();
+    wsSend({ type: 'control', action: 'yt-load', videoId: item.videoId, title: item.title });
+  }
+
+  function playNextYoutube() {
+    if (!ytPlaylist.length) return;
+    playYoutubeAt((ytCurrentIndex + 1) % ytPlaylist.length);
+  }
+  function playPrevYoutube() {
+    if (!ytPlaylist.length) return;
+    playYoutubeAt((ytCurrentIndex - 1 + ytPlaylist.length) % ytPlaylist.length);
+  }
+  document.getElementById('yt-next-btn').addEventListener('click', playNextYoutube);
+  document.getElementById('yt-prev-btn').addEventListener('click', playPrevYoutube);
+
+  function removeYoutubeAt(index) {
+    const wasCurrent = index === ytCurrentIndex;
+    ytPlaylist.splice(index, 1);
+    if (ytCurrentIndex > index) ytCurrentIndex--;
+    else if (wasCurrent) {
+      ytCurrentIndex = -1;
+      if (ytPlaylist.length) playYoutubeAt(0);
+      else if (ytPlayer) ytPlayer.stopVideo();
+    }
+    renderYtPlaylist();
+  }
+
+  function moveYoutube(index, delta) {
+    const newIndex = index + delta;
+    if (newIndex < 0 || newIndex >= ytPlaylist.length) return;
+    [ytPlaylist[index], ytPlaylist[newIndex]] = [ytPlaylist[newIndex], ytPlaylist[index]];
+    if (ytCurrentIndex === index) ytCurrentIndex = newIndex;
+    else if (ytCurrentIndex === newIndex) ytCurrentIndex = index;
+    renderYtPlaylist();
+  }
+
+  document.getElementById('yt-load-btn').addEventListener('click', async () => {
+    const raw = document.getElementById('yt-url-input').value;
+    const videoId = extractYouTubeId(raw);
+    if (!videoId) { alert('Link do YouTube inválido. Cola o link completo ou só o código do vídeo.'); return; }
+    document.getElementById('yt-url-input').value = '';
+    const item = { videoId, title: videoId };
+    ytPlaylist.push(item);
+    renderYtPlaylist();
+    if (ytCurrentIndex === -1) playYoutubeAt(ytPlaylist.length - 1);
+    const title = await fetchYoutubeTitle(videoId);
+    item.title = title;
+    renderYtPlaylist();
+    if (ytPlaylist[ytCurrentIndex] === item) {
+      document.getElementById('yt-track-title').textContent = title;
+    }
+  });
+
+  async function handleControlMessage(msg) {
+    if (msg.action === 'mode') {
+      applyRemoteMode(msg.mode);
+    } else if (msg.action === 'file-kind') {
+      remoteFileKind = msg.kind;
+      movieAudioAttached = false;
+      updateViewerNowPlaying(msg.kind === 'audio' ? ('🎵 ' + (msg.title || 'Música')) : '');
+    } else if (msg.action === 'yt-load') {
+      applyRemoteMode('youtube');
+      document.getElementById('yt-sync-btn-viewer').style.display = role === 'viewer' ? 'inline-block' : 'none';
+      updateViewerNowPlaying('▶️ ' + (msg.title || 'Vídeo do YouTube'));
+      await ensureYtPlayer(msg.videoId);
+    } else if (msg.action === 'yt-play' || msg.action === 'yt-pause' || msg.action === 'yt-sync') {
+      if (!ytPlayer) return;
+      ytApplyingRemote = true;
+      ytPlayer.seekTo(msg.time, true);
+      const shouldPlay = msg.action === 'yt-play' || (msg.action === 'yt-sync' && msg.playing);
+      if (shouldPlay) ytPlayer.playVideo(); else ytPlayer.pauseVideo();
+      setTimeout(() => { ytApplyingRemote = false; }, 400);
+    } else if (msg.action === 'yt-heartbeat') {
+      if (!ytPlayer) return;
+      const diff = Math.abs(ytPlayer.getCurrentTime() - msg.time);
+      if (diff > 1.5) {
+        ytApplyingRemote = true;
+        ytPlayer.seekTo(msg.time, true);
+        setTimeout(() => { ytApplyingRemote = false; }, 400);
+      }
+    }
+  }
+
+  // ---------- CHAT ----------
+  const chatToggle = document.getElementById('chat-toggle');
+  const chatPanel = document.getElementById('chat-panel');
+  const chatMessages = document.getElementById('chat-messages');
+  const chatInput = document.getElementById('chat-input');
+  const chatBadge = document.getElementById('chat-badge');
+  let unread = 0;
+  let chatHistoryLog = [];
+
+  function chatStorageKey() { return 'assistir_juntos_chat_' + roomCode; }
+  function saveChatHistory() {
+    try { localStorage.setItem(chatStorageKey(), JSON.stringify(chatHistoryLog.slice(-50))); } catch (e) {}
+  }
+  function loadChatHistory() {
+    try {
+      const raw = localStorage.getItem(chatStorageKey());
+      if (!raw) return;
+      const arr = JSON.parse(raw);
+      arr.forEach(m => addMessage(m.text, m.kind, false));
+    } catch (e) {}
+  }
+  function clearChatHistory() {
+    try { if (roomCode) localStorage.removeItem(chatStorageKey()); } catch (e) {}
+  }
+
+  function addMessage(text, kind, remember = true) {
+    const div = document.createElement('div');
+    div.className = 'msg ' + kind;
+    div.textContent = text;
+    chatMessages.appendChild(div);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    if (remember) {
+      chatHistoryLog.push({ text, kind });
+      saveChatHistory();
+    }
+  }
+
+  chatToggle.addEventListener('click', () => {
+    chatPanel.classList.add('show');
+    unread = 0;
+    chatBadge.classList.remove('show');
+  });
+  document.getElementById('chat-close').addEventListener('click', () => chatPanel.classList.remove('show'));
+
+  function sendChat() {
+    const text = chatInput.value.trim();
+    if (!text) return;
+    wsSend({ type: 'chat', text });
+    addMessage(text, 'me');
+    chatInput.value = '';
+  }
+  document.getElementById('chat-send').addEventListener('click', sendChat);
+  chatInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') sendChat(); });
+
+  // ---------- MENSAGENS DO SERVIDOR ----------
+  function wireSocket(socket) {
+    socket.onmessage = async (event) => {
+      const msg = JSON.parse(event.data);
+
+      switch (msg.type) {
+        case 'room-created':
+          role = 'host';
+          roomCode = msg.code;
+          document.getElementById('room-code').textContent = msg.code;
+          document.getElementById('qr-code').src = 'https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=' + encodeURIComponent(shareLink());
+          updateUrl();
+          saveLocalSession();
+          showScreen('host');
+          loadChatHistory();
+          if (msg.rejoined) {
+            resetPeerConnection();
+            reselectBanner.classList.add('show');
+            setStatus(hostStatus, 'connecting', 'Reconectado à sala. A aguardar a outra pessoa...');
+          }
+          break;
+
+        case 'room-joined':
+          role = 'viewer';
+          roomCode = msg.code;
+          document.getElementById('viewer-code').textContent = msg.code;
+          updateUrl();
+          saveLocalSession();
+          showScreen('viewer');
+          loadChatHistory();
+          if (msg.rejoined) resetPeerConnection();
+          break;
+
+        case 'left-room':
+          clearChatHistory();
+          resetAllStateToHome();
+          break;
+
+        case 'error':
+          if (msg.expired) { roomCode = null; role = null; updateUrl(); clearLocalSession(); showScreen('home'); }
+          document.getElementById('home-error').textContent = msg.message;
+          break;
+
+        case 'peer-joined':
+          await ensurePeerConnection();
+          if (role === 'host') {
+            setStatus(hostStatus, 'connecting', msg.rejoined ? 'A pessoa voltou. A reconectar...' : 'A pessoa entrou! A iniciar transmissão...');
+            if (currentMode === 'file') {
+              if (filePlaylist.length) addMovieTracksIfNeeded();
+              else pendingPeer = true;
+            }
+          } else {
+            setStatus(viewerStatus, 'connecting', 'O anfitrião reconectou-se. A aguardar conteúdo...');
+          }
+          if (micStream && !micAdded && micEnabled) {
+            micStream.getAudioTracks().forEach(t => pc.addTrack(t, micStream));
+            micAdded = true;
+            updateMicButton();
+          }
+          break;
+
+        case 'offer':
+        case 'answer':
+          await handleSignal(msg);
+          break;
+
+        case 'ice-candidate':
+          await ensurePeerConnection();
+          if (!hasRemoteDescription) { pendingIceCandidates.push(msg.candidate); break; }
+          try { await pc.addIceCandidate(msg.candidate); }
+          catch (err) { if (!ignoreOffer) console.warn('ICE candidate rejeitado:', err); }
+          break;
+
+        case 'chat':
+          addMessage(msg.text, 'them');
+          if (!chatPanel.classList.contains('show')) {
+            unread++;
+            chatBadge.textContent = unread;
+            chatBadge.classList.add('show');
+          }
+          break;
+
+        case 'control':
+          await handleControlMessage(msg);
+          break;
+
+        case 'peer-disconnected-temp':
+          if (role === 'host') setStatus(hostStatus, 'connecting', 'A pessoa perdeu ligação — a aguardar que volte...');
+          if (role === 'viewer') setStatus(viewerStatus, 'connecting', 'O anfitrião perdeu ligação — a aguardar que volte...');
+          break;
+
+        case 'peer-left':
+          if (role === 'host') setStatus(hostStatus, 'err', 'A outra pessoa saiu da sala.');
+          if (role === 'viewer') setStatus(viewerStatus, 'err', 'O anfitrião saiu da sala.');
+          resetPeerConnection();
+          break;
+
+        default:
+          break;
+      }
+    };
+
+    socket.onopen = () => {
+      wsConnecting = false;
+      updateNetworkBanner(true);
+      wsReconnectDelay = 1000;
+      if (roomCode && role) wsSend({ type: 'rejoin-room', code: roomCode, role });
+    };
+    socket.onclose = () => {
+      wsConnecting = false;
+      updateNetworkBanner(false);
+      if (wsReconnectTimer) return;
+      const delay = wsReconnectDelay;
+      wsReconnectDelay = Math.min(wsReconnectDelay * 2, 10000);
+      wsReconnectTimer = setTimeout(() => { wsReconnectTimer = null; reconnectSocket(); }, delay);
+    };
+  }
+
+  function reconnectSocket() {
+    if (wsConnecting || (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING))) return;
+    wsConnecting = true;
+    ws = new WebSocket(wsProtocol + location.host);
+    wireSocket(ws);
+  }
+
+  wireSocket(ws);
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+
+  // ---------- RESTAURAR SESSÃO (link partilhado, refresh, ou reabrir o site) ----------
+  window.addEventListener('online', () => { if (!ws || ws.readyState !== WebSocket.OPEN) reconnectSocket(); });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && (!ws || ws.readyState === WebSocket.CLOSED)) reconnectSocket(); });
+
+  window.addEventListener('load', () => {
+    const params = new URL(location.href).searchParams;
+    let urlRoom = params.get('room');
+    let urlRole = params.get('role');
+
+    if (!urlRoom || !urlRole) {
+      try {
+        const saved = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null');
+        if (saved && saved.code && saved.role) {
+          urlRoom = saved.code;
+          urlRole = saved.role;
+        }
+      } catch (e) {}
+    }
+
+    if (urlRoom && urlRole) {
+      roomCode = urlRoom.toUpperCase();
+      role = urlRole;
+      const tryRejoin = () => wsSend({ type: 'rejoin-room', code: roomCode, role });
+      if (ws.readyState === WebSocket.OPEN) tryRejoin();
+      else ws.addEventListener('open', tryRejoin, { once: true });
+    }
+  });
+})();
+</script>
+
+</body>
+</html>
