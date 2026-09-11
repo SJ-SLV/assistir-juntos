@@ -5,179 +5,313 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>Assistir Juntos</title>
 <link rel="manifest" href="manifest.json" />
-<meta name="theme-color" content="#e50914" />
+<meta name="theme-color" content="#ff8a4c" />
 <link rel="icon" href="icon.svg" type="image/svg+xml" />
 <link rel="apple-touch-icon" href="icon.svg" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <style>
   :root {
-    --bg: #0b0c10;
-    --bg-grad: radial-gradient(circle at 20% 0%, #1a1d24 0%, #0b0c10 55%);
-    --card: #16181d;
-    --card-2: #1c1f26;
-    --accent: #e50914;
-    --accent-2: #ff4d5e;
-    --ok: #3ddc84;
-    --warn: #f5b942;
-    --text: #f2f2f2;
-    --muted: #9a9ea6;
-    --border: #262932;
+    --bg: #0b1220;
+    --bg-grad:
+      radial-gradient(circle at 15% -10%, rgba(255,138,76,0.14) 0%, transparent 45%),
+      radial-gradient(circle at 100% 0%, rgba(99,140,255,0.08) 0%, transparent 40%),
+      linear-gradient(180deg, #0e1626 0%, #0b1220 60%);
+    --surface: #121b2e;
+    --surface-2: #182238;
+    --card: linear-gradient(160deg, rgba(255,255,255,0.05), rgba(255,255,255,0.015) 60%), var(--surface);
+    --accent: #ff8a4c;
+    --accent-2: #ffc069;
+    --accent-glow: rgba(255,138,76,0.35);
+    --ok: #4ade80;
+    --warn: #ffd166;
+    --text: #f3f6fa;
+    --muted: #8993ad;
+    --border: rgba(255,255,255,0.08);
+    --on-accent: #1a1106;
+    --radius-lg: 18px;
+    --radius-md: 12px;
+    --radius-sm: 9px;
+    --font-display: 'Space Grotesk', 'Segoe UI', sans-serif;
+    --font-body: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   body {
     margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: var(--font-body);
     background: var(--bg-grad);
+    background-color: var(--bg);
     color: var(--text);
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+    -webkit-font-smoothing: antialiased;
   }
-  header { padding: 20px 20px 16px; text-align: center; }
-  header h1 { margin: 0; font-size: 21px; letter-spacing: 0.5px; font-weight: 700; }
-  header span { color: var(--accent); }
-  header p { margin: 4px 0 0; font-size: 12px; color: var(--muted); }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+  }
+  button:focus-visible, input:focus-visible, [tabindex]:focus-visible {
+    outline: 2px solid var(--accent-2); outline-offset: 2px;
+  }
+
+  header {
+    padding: 26px 20px 18px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+  .brand-mark {
+    width: 40px; height: 40px; border-radius: 12px; flex: none;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 6px 18px var(--accent-glow);
+    margin-bottom: 4px;
+  }
+  .brand-mark svg { width: 20px; height: 20px; }
+  header h1 { margin: 0; font-family: var(--font-display); font-size: 21px; letter-spacing: 0.2px; font-weight: 700; color: var(--text); }
+  header p { margin: 0; font-size: 12.5px; color: var(--muted); }
+
   main {
     flex: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 8px 16px 110px;
-    gap: 18px;
+    padding: 6px 16px 120px;
+    gap: 16px;
   }
   .screen { display: none; width: 100%; max-width: 460px; flex-direction: column; gap: 16px; }
-  .screen.active { display: flex; }
+  .screen.active { display: flex; animation: rise 0.35s ease both; }
+  @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
   .card {
-    background: linear-gradient(180deg, var(--card-2), var(--card));
+    background: var(--card);
     border: 1px solid var(--border);
-    border-radius: 16px;
+    border-radius: var(--radius-lg);
     padding: 20px;
     display: flex;
     flex-direction: column;
     gap: 14px;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.35);
   }
-  h2 { margin: 0; font-size: 16px; display: flex; align-items: center; gap: 8px; }
-  p.hint { color: var(--muted); font-size: 13px; margin: 0; line-height: 1.4; }
+  .card-primary {
+    border-color: rgba(255,138,76,0.35);
+    box-shadow: 0 10px 34px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,138,76,0.08) inset;
+  }
+  h2 {
+    margin: 0; font-family: var(--font-display); font-size: 15.5px; font-weight: 700; letter-spacing: 0.1px;
+    display: flex; align-items: center; gap: 8px; color: var(--text);
+  }
+  p.hint { color: var(--muted); font-size: 12.5px; margin: 0; line-height: 1.5; }
+
   button {
     background: linear-gradient(135deg, var(--accent), var(--accent-2));
-    color: #fff;
+    color: var(--on-accent);
     border: none;
-    border-radius: 12px;
+    border-radius: var(--radius-md);
     padding: 14px;
-    font-size: 15px;
-    font-weight: 600;
+    font-size: 14.5px;
+    font-weight: 700;
+    letter-spacing: 0.1px;
     cursor: pointer;
-    transition: transform 0.1s ease, opacity 0.15s ease;
+    box-shadow: 0 8px 20px var(--accent-glow);
+    transition: transform 0.12s ease, box-shadow 0.12s ease, opacity 0.15s ease, filter 0.12s ease;
   }
-  button:active { transform: scale(0.97); }
-  button.secondary { background: #24262d; border: 1px solid var(--border); color: var(--text); }
-  button.ghost { background: transparent; border: 1px solid var(--border); color: var(--muted); font-weight: 500; padding: 10px; font-size: 13px; }
-  button:disabled { opacity: 0.45; cursor: not-allowed; }
+  button:active { transform: scale(0.97); filter: brightness(0.95); box-shadow: 0 4px 10px var(--accent-glow); }
+  button.secondary {
+    background: var(--surface-2); border: 1px solid var(--border); color: var(--text);
+    box-shadow: none;
+  }
+  button.secondary:active { background: #21232b; }
+  button.ghost {
+    background: transparent; border: 1px solid var(--border); color: var(--muted);
+    font-weight: 600; padding: 11px; font-size: 12.5px; box-shadow: none;
+  }
+  button:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
+
   .row { display: flex; gap: 10px; }
   .row > * { flex: 1; }
+
   input[type="text"] {
-    background: #0f1013; border: 1px solid var(--border); color: var(--text);
-    padding: 14px; border-radius: 12px; font-size: 18px; text-transform: uppercase;
+    background: #0d0e11; border: 1px solid var(--border); color: var(--text);
+    padding: 14px; border-radius: var(--radius-md); font-size: 17px; text-transform: uppercase;
     letter-spacing: 4px; text-align: center; width: 100%; font-weight: 700;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
   }
-  input[type="text"]:focus { outline: 2px solid var(--accent); }
-  input[type="file"] { color: var(--muted); font-size: 13px; }
-  video { width: 100%; border-radius: 12px; background: #000; max-height: 55vh; }
-  .code-display { font-size: 36px; letter-spacing: 8px; text-align: center; font-weight: 800; color: var(--accent); padding: 8px 0; }
-  .status { font-size: 13px; color: var(--muted); text-align: center; display: flex; align-items: center; justify-content: center; gap: 8px; }
-  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex-shrink: 0; }
+  input[type="text"]:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+  input[type="file"] { color: var(--muted); font-size: 12.5px; }
+
+  video { width: 100%; border-radius: var(--radius-md); background: #000; max-height: 55vh; }
+
+  .code-display {
+    font-size: 34px; letter-spacing: 9px; text-align: center; font-weight: 800;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    padding: 6px 0;
+  }
+
+  .status {
+    font-size: 12.5px; font-weight: 600; text-align: center; display: inline-flex; align-self: center;
+    align-items: center; gap: 7px; padding: 7px 14px; border-radius: 999px;
+    background: rgba(255,255,255,0.04); border: 1px solid var(--border); color: var(--muted);
+  }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); flex-shrink: 0; }
+  .status.connecting { color: var(--warn); background: rgba(245,185,66,0.08); border-color: rgba(245,185,66,0.25); }
   .status.connecting .dot { background: var(--warn); animation: pulse 1.2s infinite; }
+  .status.ok { color: var(--ok); background: rgba(34,197,94,0.08); border-color: rgba(34,197,94,0.25); }
   .status.ok .dot { background: var(--ok); }
-  .status.err .dot { background: var(--accent); }
+  .status.err { color: var(--accent-2); background: rgba(229,9,20,0.08); border-color: rgba(229,9,20,0.25); }
+  .status.err .dot { background: var(--accent-2); }
   @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
   .banner {
-    background: rgba(245, 185, 66, 0.12); border: 1px solid rgba(245, 185, 66, 0.35);
-    color: var(--warn); padding: 12px 14px; border-radius: 10px; font-size: 13px; display: none;
+    background: rgba(245,185,66,0.1); border: 1px solid rgba(245,185,66,0.3);
+    color: var(--warn); padding: 12px 14px; border-radius: var(--radius-sm); font-size: 12.5px; display: none;
   }
   .banner.show { display: block; }
-  .divider { text-align: center; color: var(--muted); font-size: 12px; }
-  .error-msg { font-size: 13px; color: var(--accent); text-align: center; min-height: 16px; }
-  .now-playing { font-size: 14px; color: var(--text); background: #20222a; border-radius: 10px; padding: 10px 12px; display: none; }
+  .divider { text-align: center; color: var(--muted); font-size: 13px; opacity: 0.8; }
+  .error-msg { font-size: 12.5px; color: var(--accent-2); text-align: center; min-height: 16px; font-weight: 500; }
+  .now-playing {
+    font-size: 13.5px; font-weight: 600; color: var(--text);
+    background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 11px 14px; display: none;
+  }
 
   /* Botões flutuantes (chat / chamada) */
   .fab {
     position: fixed; bottom: 22px; width: 56px; height: 56px; border-radius: 50%;
-    display: none; align-items: center; justify-content: center; font-size: 24px;
-    box-shadow: 0 6px 18px rgba(0,0,0,0.4); z-index: 30; border: none;
+    display: none; align-items: center; justify-content: center; font-size: 23px;
+    box-shadow: 0 10px 24px rgba(0,0,0,0.5); z-index: 30; border: none;
+    transition: transform 0.15s ease;
   }
+  .fab:active { transform: scale(0.92); }
   .fab.show { display: flex; }
-  #chat-toggle { right: 20px; background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; }
-  #mic-toggle { left: 20px; background: #24262d; border: 1px solid var(--border); color: var(--text); }
-  #mic-toggle.active { background: linear-gradient(135deg, #2fae67, var(--ok)); color: #06210f; }
-  #mic-toggle.muted { background: #3a2b2b; color: var(--accent-2); }
+  #chat-toggle { right: 20px; background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: var(--on-accent); box-shadow: 0 10px 24px var(--accent-glow); }
+  #mic-toggle { left: 20px; background: var(--surface-2); border: 1px solid var(--border); color: var(--text); }
+  #mic-toggle.active { background: linear-gradient(135deg, #16a34a, var(--ok)); color: #06210f; box-shadow: 0 10px 24px rgba(34,197,94,0.35); }
+  #mic-toggle.muted { background: #2a1a1c; color: var(--accent-2); border-color: rgba(229,9,20,0.3); }
   .badge {
     position: absolute; top: -2px; right: -2px; background: var(--ok); color: #06210f;
-    font-size: 11px; font-weight: 800; min-width: 18px; height: 18px; border-radius: 9px;
+    font-size: 10.5px; font-weight: 800; min-width: 18px; height: 18px; border-radius: 9px;
     display: none; align-items: center; justify-content: center; padding: 0 4px;
+    border: 2px solid var(--bg);
   }
   .badge.show { display: flex; }
   #btn-audio-unmute {
     position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%);
-    z-index: 35; display: none; width: auto; padding: 10px 18px; font-size: 13px;
+    z-index: 35; display: none; width: auto; padding: 10px 18px; font-size: 12.5px;
   }
   #btn-audio-unmute.show { display: block; }
 
   #chat-panel {
     position: fixed; right: 0; bottom: 0; width: 100%; max-width: 400px; height: 62vh;
-    background: var(--card); border-top: 1px solid var(--border); border-left: 1px solid var(--border);
-    border-radius: 16px 16px 0 0; display: none; flex-direction: column; z-index: 40;
-    box-shadow: 0 -8px 30px rgba(0,0,0,0.45);
+    background: var(--surface); border-top: 1px solid var(--border); border-left: 1px solid var(--border);
+    border-radius: 20px 20px 0 0; display: flex; flex-direction: column; z-index: 40;
+    box-shadow: 0 -12px 36px rgba(0,0,0,0.5);
+    transform: translateY(110%); opacity: 0; pointer-events: none;
+    transition: transform 0.28s cubic-bezier(.22,1,.36,1), opacity 0.22s ease;
   }
-  #chat-panel.show { display: flex; }
-  .chat-header { padding: 14px 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight: 700; }
-  .chat-header button { background: transparent; color: var(--muted); padding: 4px 8px; font-size: 18px; }
-  #chat-messages { flex: 1; overflow-y: auto; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
-  .msg { max-width: 78%; padding: 9px 12px; border-radius: 14px; font-size: 14px; line-height: 1.35; word-wrap: break-word; }
-  .msg.me { align-self: flex-end; background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; border-bottom-right-radius: 4px; }
-  .msg.them { align-self: flex-start; background: #24262d; color: var(--text); border-bottom-left-radius: 4px; }
+  #chat-panel.show { transform: translateY(0); opacity: 1; pointer-events: auto; }
+  .chat-header {
+    padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex;
+    justify-content: space-between; align-items: center; font-size: 13.5px; font-weight: 700;
+  }
+  .chat-header button { background: transparent; color: var(--muted); padding: 4px 8px; font-size: 17px; box-shadow: none; }
+  #chat-messages { flex: 1; overflow-y: auto; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; }
+  .msg { max-width: 78%; padding: 9px 13px; border-radius: 16px; font-size: 13.5px; line-height: 1.4; word-wrap: break-word; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+  .msg.me { align-self: flex-end; background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: var(--on-accent); border-bottom-right-radius: 4px; }
+  .msg.them { align-self: flex-start; background: var(--surface-2); color: var(--text); border-bottom-left-radius: 4px; }
   .chat-input-row { display: flex; gap: 8px; padding: 12px; border-top: 1px solid var(--border); }
-  .chat-input-row input { flex: 1; background: #0f1013; border: 1px solid var(--border); color: var(--text); border-radius: 20px; padding: 10px 16px; font-size: 14px; }
-  .chat-input-row button { border-radius: 50%; width: 42px; height: 42px; padding: 0; font-size: 18px; flex: none; }
-  .mode-btn {
-    background: #24262d; border: 1px solid var(--border); color: var(--muted);
-    font-weight: 600; padding: 12px; border-radius: 10px; font-size: 14px;
+  .chat-input-row input {
+    flex: 1; background: #0d0e11; border: 1px solid var(--border); color: var(--text);
+    border-radius: 20px; padding: 10px 16px; font-size: 13.5px; outline: none;
   }
-  .mode-btn-active { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; border: none; }
-  #yt-player-host iframe, #yt-player-viewer iframe { width: 100%; aspect-ratio: 16/9; border-radius: 10px; }
+  .chat-input-row input:focus { border-color: var(--accent); }
+  .chat-input-row button { border-radius: 50%; width: 42px; height: 42px; padding: 0; font-size: 17px; flex: none; }
+
+  /* Seletor de modo (segmented control) */
+  .segmented {
+    display: flex; gap: 4px; background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 4px;
+  }
+  .mode-btn {
+    flex: 1; background: transparent; border: none; color: var(--muted); box-shadow: none;
+    font-weight: 700; padding: 10px; border-radius: 9px; font-size: 13.5px;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  .mode-btn-active { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: var(--on-accent); box-shadow: 0 4px 14px var(--accent-glow); }
+  #yt-player-host iframe, #yt-player-viewer iframe { width: 100%; aspect-ratio: 16/9; border-radius: var(--radius-md); }
 
   /* Playlist */
   .playlist { display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow-y: auto; }
+  .progress-ui { display: flex; flex-direction: column; gap: 6px; }
+  .progress-track { width: 100%; height: 10px; background: var(--surface-2); border-radius: 999px; overflow: hidden; }
+  .progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent), var(--accent-2)); border-radius: 999px; transition: width 0.2s ease; }
   .playlist-item {
-    display: flex; align-items: center; gap: 8px; background: #1c1e25; border: 1px solid var(--border);
-    border-radius: 10px; padding: 8px 10px; font-size: 13px;
+    display: flex; align-items: center; gap: 10px; background: var(--surface-2); border: 1px solid var(--border);
+    border-left: 3px solid transparent; border-radius: var(--radius-sm); padding: 9px 11px; font-size: 13px;
+    transition: border-color 0.15s ease, background 0.15s ease;
   }
-  .playlist-item.playing { border-color: var(--accent); background: rgba(229,9,20,0.1); }
-  .playlist-icon { flex: none; }
-  .playlist-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .playlist-item.playing { border-left-color: var(--accent); background: rgba(229,9,20,0.07); }
+  .playlist-icon {
+    flex: none; width: 26px; height: 26px; border-radius: 8px; background: rgba(255,255,255,0.06);
+    display: flex; align-items: center; justify-content: center; font-size: 13px;
+  }
+  .playlist-item.playing .playlist-icon { background: var(--accent-glow); }
+  .playlist-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
   .playlist-actions { display: flex; gap: 4px; flex: none; }
   .playlist-actions button {
-    background: #262933; border: none; color: var(--muted); width: 26px; height: 26px;
-    border-radius: 6px; padding: 0; font-size: 12px; line-height: 1;
+    background: rgba(255,255,255,0.05); border: none; color: var(--muted); width: 27px; height: 27px;
+    border-radius: 7px; padding: 0; font-size: 12px; line-height: 1; box-shadow: none;
   }
-  .playlist-actions button:hover { color: var(--text); }
+  .playlist-actions button:active { background: rgba(255,255,255,0.12); color: var(--text); }
 
   /* Barra de reprodução */
-  .player-bar { display: none; flex-direction: column; gap: 8px; background: #1c1e25; border: 1px solid var(--border); border-radius: 12px; padding: 12px; }
+  .player-bar {
+    display: none; flex-direction: column; gap: 10px; background: var(--surface-2);
+    border: 1px solid var(--border); border-radius: var(--radius-md); padding: 14px;
+  }
   .player-bar.show { display: flex; }
-  .player-title { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .player-controls { display: flex; align-items: center; gap: 10px; }
-  .player-controls button { background: #262933; border: none; color: var(--text); width: 40px; height: 40px; border-radius: 50%; padding: 0; font-size: 16px; flex: none; }
-  .player-controls button.play-pause { background: linear-gradient(135deg, var(--accent), var(--accent-2)); width: 46px; height: 46px; font-size: 18px; }
-  .player-seek-row { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--muted); }
-  .player-seek-row input[type="range"] { flex: 1; accent-color: var(--accent); }
+  .player-title { font-size: 13.5px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .player-controls { display: flex; align-items: center; justify-content: center; gap: 14px; }
+  .player-controls button {
+    background: rgba(255,255,255,0.06); border: none; color: var(--text); width: 40px; height: 40px;
+    border-radius: 50%; padding: 0; font-size: 15px; flex: none; box-shadow: none;
+  }
+  .player-controls button.play-pause {
+    background: linear-gradient(135deg, var(--accent), var(--accent-2)); width: 48px; height: 48px;
+    font-size: 17px; box-shadow: 0 6px 16px var(--accent-glow); color: var(--on-accent);
+  }
+  .player-seek-row { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+  input[type="range"] {
+    -webkit-appearance: none; appearance: none; flex: 1; height: 4px; border-radius: 4px;
+    background: rgba(255,255,255,0.12); outline: none;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 15px; height: 15px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    box-shadow: 0 2px 8px var(--accent-glow); cursor: pointer; border: 2px solid #fff;
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 15px; height: 15px; border-radius: 50%; border: 2px solid #fff;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2)); cursor: pointer;
+  }
 </style>
+
 </head>
 <body>
 
-<div id="network-banner" class="banner" style="position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:60;max-width:min(92vw,460px);width:max-content;box-shadow:0 8px 24px rgba(0,0,0,.35);">⚠️ Sem ligação ao servidor. A tentar reconectar…</div>
-
 <header>
-  <h1>Assistir <span>Juntos</span></h1>
+  <div class="brand-mark">
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="9.5" cy="12" r="6" fill="#fff" opacity="0.95"/>
+      <circle cx="15" cy="12" r="6" fill="none" stroke="#fff" stroke-width="1.6"/>
+    </svg>
+  </div>
+  <h1>Assistir Juntos</h1>
   <p>Vê o mesmo vídeo, ao mesmo tempo, em telefones diferentes</p>
 </header>
 
@@ -185,7 +319,7 @@
 
   <!-- ECRÃ INICIAL -->
   <section id="screen-home" class="screen active">
-    <div class="card">
+    <div class="card card-primary">
       <h2>🎬 Partilhar o meu vídeo</h2>
       <p class="hint">Escolhe um vídeo do teu telefone e cria uma sala para a outra pessoa assistir contigo.</p>
       <button id="btn-create">Criar sala</button>
@@ -217,7 +351,7 @@
       </div>
       <button id="btn-share-link" class="secondary">📤 Partilhar</button>
       <div id="qr-wrap" style="display:flex; justify-content:center;">
-        <img id="qr-code" alt="Código QR da sala" width="140" height="140" style="border-radius:10px; background:#fff; padding:6px;" />
+        <img id="qr-code" alt="Código QR da sala" width="140" height="140" style="border-radius:14px; background:#fff; padding:10px; box-shadow:0 10px 24px rgba(0,0,0,0.35);" />
       </div>
       <p class="hint">Envia o link (mais fácil) ou o código à outra pessoa. Ela também pode apontar a câmara ao QR.</p>
       <div class="row" style="align-items:center; gap:8px;">
@@ -230,13 +364,14 @@
 
     <div class="card">
       <h2>🎬 O que vais partilhar?</h2>
-      <div class="row">
-        <button id="mode-file-btn" class="mode-btn mode-btn-active">📱 Do telemóvel</button>
+      <div class="segmented">
+        <button id="mode-file-btn" class="mode-btn mode-btn-active">📱 Ao vivo</button>
+        <button id="mode-transfer-btn" class="mode-btn">📤 Enviar</button>
         <button id="mode-youtube-btn" class="mode-btn">▶️ YouTube</button>
       </div>
 
       <div id="mode-file-panel">
-        <p class="hint">Adiciona vídeos ou músicas do telemóvel — dá para adicionar vários de uma vez e criar uma playlist.</p>
+        <p class="hint">Transmite ao vivo — começa a ver de imediato, ideal para vídeos grandes. Adiciona vários de uma vez para criar uma playlist.</p>
         <input type="file" id="file-input" accept="video/*,audio/*" multiple />
         <video id="host-video" controls playsinline></video>
         <audio id="host-audio" style="display:none;"></audio>
@@ -256,6 +391,19 @@
         </div>
 
         <div class="playlist" id="file-playlist"></div>
+      </div>
+
+      <div id="mode-transfer-panel" style="display:none;">
+        <p class="hint">Envia o ficheiro por completo — demora mais a começar, mas depois toca com qualidade perfeita, mesmo com rede instável. Melhor para músicas e vídeos curtos.</p>
+        <input type="file" id="transfer-file-input" accept="video/*,audio/*" />
+
+        <div id="transfer-send-progress" class="progress-ui" style="display:none;">
+          <div class="progress-track"><div class="progress-fill" id="transfer-send-fill"></div></div>
+          <p class="hint" id="transfer-send-label">A enviar...</p>
+        </div>
+
+        <video id="transfer-host-video" controls playsinline style="display:none;"></video>
+        <audio id="transfer-host-audio" controls style="display:none; width:100%;"></audio>
       </div>
 
       <div id="mode-youtube-panel" style="display:none;">
@@ -287,6 +435,14 @@
       <p class="status connecting" id="viewer-status"><span class="dot"></span> A ligar...</p>
       <video id="viewer-video" playsinline autoplay></video>
       <div id="yt-player-viewer" style="display:none;"></div>
+
+      <div id="transfer-receive-progress" class="progress-ui" style="display:none;">
+        <div class="progress-track"><div class="progress-fill" id="transfer-receive-fill"></div></div>
+        <p class="hint" id="transfer-receive-label">A receber...</p>
+      </div>
+      <video id="transfer-viewer-video" playsinline style="display:none;"></video>
+      <audio id="transfer-viewer-audio" style="display:none; width:100%;"></audio>
+
       <div id="viewer-now-playing" class="now-playing"></div>
       <div class="row" style="align-items:center; gap:8px;">
         <label for="vol-content" style="font-size:12px; color:var(--muted); flex:0 0 auto;">🎬 Conteúdo</label>
@@ -331,17 +487,8 @@
   const wsProtocol = location.protocol === 'https:' ? 'wss://' : 'ws://';
   let ws = new WebSocket(wsProtocol + location.host);
   let wsReconnectDelay = 1000;
-  let wsReconnectTimer = null;
-  let wsConnecting = false;
 
   const SESSION_KEY = 'assistir_juntos_session_v1';
-
-  const networkBanner = document.getElementById('network-banner');
-  function updateNetworkBanner(online) { if (networkBanner) networkBanner.classList.toggle('show', !online); }
-  function wsSend(payload) {
-    if (!ws || ws.readyState !== WebSocket.OPEN) { updateNetworkBanner(false); return false; }
-    try { ws.send(JSON.stringify(payload)); return true; } catch (e) { updateNetworkBanner(false); return false; }
-  }
 
   const FALLBACK_ICE_SERVERS = [
     { urls: 'stun:stun.l.google.com:19302' },
@@ -410,8 +557,15 @@
   let currentMode = 'file';
   let ytPlayer = null;
   let ytApplyingRemote = false;
-  let pendingIceCandidates = [];
-  let hasRemoteDescription = false;
+
+  // Transferência de ficheiros (modo "📤 Enviar")
+  let fileChannel = null;
+  let transferKind = 'video';
+  let transferUrl = null;
+  let incomingMeta = null;
+  let incomingChunks = [];
+  let incomingReceived = 0;
+  let transferApplyingRemote = false;
 
   // Playlists (geridas pelo anfitrião)
   let filePlaylist = [];
@@ -457,7 +611,7 @@
   });
 
   document.getElementById('btn-create').addEventListener('click', () => {
-    if (!wsSend({ type: 'create-room' })) document.getElementById('home-error').textContent = 'A ligar ao servidor… tenta novamente em instantes.';
+    ws.send(JSON.stringify({ type: 'create-room' }));
   });
 
   document.getElementById('btn-paste-code').addEventListener('click', async () => {
@@ -476,12 +630,12 @@
       return;
     }
     document.getElementById('home-error').textContent = '';
-    if (!wsSend({ type: 'join-room', code })) { document.getElementById('home-error').textContent = 'Sem ligação ao servidor. A tentar reconectar…'; return; }
+    ws.send(JSON.stringify({ type: 'join-room', code }));
   });
 
   // ---------- SAIR DA SALA ----------
   function leaveRoom() {
-    wsSend({ type: 'leave-room' });
+    ws.send(JSON.stringify({ type: 'leave-room' }));
   }
   document.getElementById('btn-leave-host').addEventListener('click', leaveRoom);
   document.getElementById('btn-leave-viewer').addEventListener('click', leaveRoom);
@@ -499,6 +653,7 @@
     ytCurrentIndex = -1;
     if (ytPlayer && ytPlayer.destroy) { try { ytPlayer.destroy(); } catch (e) {} }
     ytPlayer = null;
+    cleanupTransferFile();
     showScreen('home');
   }
 
@@ -538,7 +693,7 @@
 
   function broadcastFileState() {
     const item = filePlaylist[fileCurrentIndex];
-    wsSend({ type: 'control', action: 'file-kind', kind: fileKind, title: item ? item.name : '' });
+    ws.send(JSON.stringify({ type: 'control', action: 'file-kind', kind: fileKind, title: item ? item.name : '' }));
   }
 
   function stopMovieTracks() {
@@ -719,36 +874,56 @@
   });
 
   // ---------- MODO: TELEMÓVEL vs YOUTUBE ----------
-  document.getElementById('mode-youtube-btn').addEventListener('click', () => {
-    currentMode = 'youtube';
-    document.getElementById('mode-youtube-btn').classList.add('mode-btn-active');
-    document.getElementById('mode-file-btn').classList.remove('mode-btn-active');
-    document.getElementById('mode-file-panel').style.display = 'none';
-    document.getElementById('mode-youtube-panel').style.display = 'block';
-    hostVideo.pause();
-    hostAudioEl.pause();
-    stopMovieTracks();
-    wsSend({ type: 'control', action: 'mode', mode: 'youtube' });
-  });
+  function setActiveModeButton(activeId) {
+    ['mode-file-btn', 'mode-transfer-btn', 'mode-youtube-btn'].forEach(id => {
+      document.getElementById(id).classList.toggle('mode-btn-active', id === activeId);
+    });
+    document.getElementById('mode-file-panel').style.display = activeId === 'mode-file-btn' ? 'block' : 'none';
+    document.getElementById('mode-transfer-panel').style.display = activeId === 'mode-transfer-btn' ? 'block' : 'none';
+    document.getElementById('mode-youtube-panel').style.display = activeId === 'mode-youtube-btn' ? 'block' : 'none';
+  }
 
   document.getElementById('mode-file-btn').addEventListener('click', () => {
     currentMode = 'file';
-    document.getElementById('mode-file-btn').classList.add('mode-btn-active');
-    document.getElementById('mode-youtube-btn').classList.remove('mode-btn-active');
-    document.getElementById('mode-file-panel').style.display = 'block';
-    document.getElementById('mode-youtube-panel').style.display = 'none';
+    setActiveModeButton('mode-file-btn');
     if (ytPlayer) ytPlayer.pauseVideo();
-    wsSend({ type: 'control', action: 'mode', mode: 'file' });
+    pauseTransferPlayback();
+    ws.send(JSON.stringify({ type: 'control', action: 'mode', mode: 'file' }));
   });
+
+  document.getElementById('mode-transfer-btn').addEventListener('click', () => {
+    currentMode = 'transfer';
+    setActiveModeButton('mode-transfer-btn');
+    hostVideo.pause();
+    hostAudioEl.pause();
+    stopMovieTracks();
+    if (ytPlayer) ytPlayer.pauseVideo();
+    ws.send(JSON.stringify({ type: 'control', action: 'mode', mode: 'transfer' }));
+  });
+
+  document.getElementById('mode-youtube-btn').addEventListener('click', () => {
+    currentMode = 'youtube';
+    setActiveModeButton('mode-youtube-btn');
+    hostVideo.pause();
+    hostAudioEl.pause();
+    stopMovieTracks();
+    pauseTransferPlayback();
+    ws.send(JSON.stringify({ type: 'control', action: 'mode', mode: 'youtube' }));
+  });
+
+  function pauseTransferPlayback() {
+    const el = getActiveTransferElement();
+    if (el) el.pause();
+  }
 
   function applyRemoteMode(mode) {
     if (role !== 'viewer') return;
-    if (mode === 'youtube') {
-      viewerVideo.style.display = 'none';
-      document.getElementById('yt-player-viewer').style.display = 'block';
-    } else {
-      viewerVideo.style.display = '';
-      document.getElementById('yt-player-viewer').style.display = 'none';
+    viewerVideo.style.display = mode === 'file' ? '' : 'none';
+    document.getElementById('yt-player-viewer').style.display = mode === 'youtube' ? 'block' : 'none';
+    if (mode !== 'transfer') {
+      document.getElementById('transfer-viewer-video').style.display = 'none';
+      document.getElementById('transfer-viewer-audio').style.display = 'none';
+      document.getElementById('transfer-receive-progress').style.display = 'none';
     }
   }
 
@@ -815,14 +990,14 @@
     polite = (role === 'viewer');
 
     pc.onicecandidate = (e) => {
-      if (e.candidate) wsSend({ type: 'ice-candidate', candidate: e.candidate });
+      if (e.candidate) ws.send(JSON.stringify({ type: 'ice-candidate', candidate: e.candidate }));
     };
 
     pc.onnegotiationneeded = async () => {
       try {
         makingOffer = true;
         await pc.setLocalDescription();
-        wsSend({ type: 'offer', offer: pc.localDescription });
+        ws.send(JSON.stringify({ type: 'offer', offer: pc.localDescription }));
       } catch (err) {
         console.error('Erro ao negociar ligação:', err);
       } finally {
@@ -851,6 +1026,18 @@
       }
     };
 
+    // Canal de dados dedicado à transferência de ficheiros (modo "📤 Enviar")
+    if (role === 'host') {
+      fileChannel = pc.createDataChannel('filetransfer', { ordered: true });
+      setupFileChannel(fileChannel);
+    }
+    pc.ondatachannel = (e) => {
+      if (e.channel.label === 'filetransfer') {
+        fileChannel = e.channel;
+        setupFileChannel(fileChannel);
+      }
+    };
+
     const statusEl = role === 'host' ? hostStatus : viewerStatus;
     attachIceMonitoring(pc, statusEl);
     return pc;
@@ -859,12 +1046,11 @@
   function resetPeerConnection() {
     if (pc) { try { pc.close(); } catch (e) {} }
     pc = null;
+    fileChannel = null;
     moviePublished = false;
     micAdded = false;
     movieStreamId = null;
     movieAudioAttached = false;
-    pendingIceCandidates = [];
-    hasRemoteDescription = false;
   }
 
   async function handleSignal(msg) {
@@ -876,14 +1062,9 @@
     if (ignoreOffer) return;
 
     await pc.setRemoteDescription(description);
-    hasRemoteDescription = true;
-    if (pendingIceCandidates.length) {
-      const queued = pendingIceCandidates.splice(0);
-      for (const candidate of queued) { try { await pc.addIceCandidate(candidate); } catch (err) {} }
-    }
     if (isOffer) {
       await pc.setLocalDescription();
-      wsSend({ type: 'answer', answer: pc.localDescription });
+      ws.send(JSON.stringify({ type: 'answer', answer: pc.localDescription }));
     }
   }
 
@@ -959,9 +1140,9 @@
     if (ytApplyingRemote || !ytPlayer) return;
     const currentTime = ytPlayer.getCurrentTime();
     if (e.data === YT.PlayerState.PLAYING) {
-      wsSend({ type: 'control', action: 'yt-play', time: currentTime });
+      ws.send(JSON.stringify({ type: 'control', action: 'yt-play', time: currentTime }));
     } else if (e.data === YT.PlayerState.PAUSED) {
-      wsSend({ type: 'control', action: 'yt-pause', time: currentTime });
+      ws.send(JSON.stringify({ type: 'control', action: 'yt-pause', time: currentTime }));
     } else if (e.data === YT.PlayerState.ENDED && role === 'host') {
       playNextYoutube();
     }
@@ -989,7 +1170,7 @@
     if (!ytPlayer) return;
     const time = ytPlayer.getCurrentTime();
     const playing = ytPlayer.getPlayerState() === YT.PlayerState.PLAYING;
-    wsSend({ type: 'control', action: 'yt-sync', time, playing });
+    ws.send(JSON.stringify({ type: 'control', action: 'yt-sync', time, playing }));
   }
   document.getElementById('yt-sync-btn').addEventListener('click', sendYtSync);
   document.getElementById('yt-sync-btn-viewer').addEventListener('click', sendYtSync);
@@ -998,7 +1179,7 @@
   setInterval(() => {
     if (ytPlayer && typeof ytPlayer.getPlayerState === 'function' &&
         ytPlayer.getPlayerState() === YT.PlayerState.PLAYING && !ytApplyingRemote) {
-      wsSend({ type: 'control', action: 'yt-heartbeat', time: ytPlayer.getCurrentTime() });
+      ws.send(JSON.stringify({ type: 'control', action: 'yt-heartbeat', time: ytPlayer.getCurrentTime() }));
     }
   }, 4000);
 
@@ -1042,7 +1223,7 @@
     document.getElementById('yt-player-bar').classList.add('show');
     document.getElementById('yt-sync-btn').style.display = 'inline-block';
     renderYtPlaylist();
-    wsSend({ type: 'control', action: 'yt-load', videoId: item.videoId, title: item.title });
+    ws.send(JSON.stringify({ type: 'control', action: 'yt-load', videoId: item.videoId, title: item.title }));
   }
 
   function playNextYoutube() {
@@ -1121,7 +1302,189 @@
         ytPlayer.seekTo(msg.time, true);
         setTimeout(() => { ytApplyingRemote = false; }, 400);
       }
+    } else if (msg.action === 'transfer-play' || msg.action === 'transfer-pause') {
+      const el = getActiveTransferElement();
+      if (!el || !el.src) return;
+      transferApplyingRemote = true;
+      el.currentTime = msg.time;
+      if (msg.action === 'transfer-play') el.play().catch(() => {}); else el.pause();
+      setTimeout(() => { transferApplyingRemote = false; }, 400);
+    } else if (msg.action === 'transfer-heartbeat') {
+      const el = getActiveTransferElement();
+      if (!el || !el.src) return;
+      if (Math.abs(el.currentTime - msg.time) > 1.5) {
+        transferApplyingRemote = true;
+        el.currentTime = msg.time;
+        setTimeout(() => { transferApplyingRemote = false; }, 400);
+      }
     }
+  }
+
+  // ---------- TRANSFERÊNCIA DE FICHEIROS (modo "📤 Enviar") ----------
+  function setupFileChannel(channel) {
+    channel.binaryType = 'arraybuffer';
+    channel.onmessage = handleFileChannelMessage;
+    channel.onerror = (err) => console.error('Erro no canal de transferência:', err);
+  }
+
+  function getActiveTransferElement() {
+    if (role === 'host') {
+      return transferKind === 'audio' ? document.getElementById('transfer-host-audio') : document.getElementById('transfer-host-video');
+    }
+    return transferKind === 'audio' ? document.getElementById('transfer-viewer-audio') : document.getElementById('transfer-viewer-video');
+  }
+
+  function wireTransferSyncElement(el) {
+    if (el.dataset.syncWired) return;
+    el.dataset.syncWired = '1';
+    el.addEventListener('play', () => {
+      if (!transferApplyingRemote) ws.send(JSON.stringify({ type: 'control', action: 'transfer-play', time: el.currentTime }));
+    });
+    el.addEventListener('pause', () => {
+      if (!transferApplyingRemote) ws.send(JSON.stringify({ type: 'control', action: 'transfer-pause', time: el.currentTime }));
+    });
+  }
+
+  // Corrige pequenos desvios de sincronia sem interromper a reprodução
+  setInterval(() => {
+    const el = getActiveTransferElement();
+    if (el && !el.paused && el.src && !transferApplyingRemote) {
+      ws.send(JSON.stringify({ type: 'control', action: 'transfer-heartbeat', time: el.currentTime }));
+    }
+  }, 4000);
+
+  document.getElementById('transfer-file-input').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    transferKind = file.type.startsWith('audio/') ? 'audio' : 'video';
+
+    // O anfitrião já tem o ficheiro — pode começar a ver de imediato,
+    // sem esperar que a transferência para a outra pessoa termine.
+    const localUrl = URL.createObjectURL(file);
+    const videoEl = document.getElementById('transfer-host-video');
+    const audioEl = document.getElementById('transfer-host-audio');
+    if (transferKind === 'audio') {
+      videoEl.style.display = 'none'; videoEl.pause(); videoEl.removeAttribute('src');
+      audioEl.style.display = 'block';
+      audioEl.src = localUrl;
+    } else {
+      audioEl.style.display = 'none'; audioEl.pause(); audioEl.removeAttribute('src');
+      videoEl.style.display = 'block';
+      videoEl.src = localUrl;
+    }
+    const activeEl = transferKind === 'audio' ? audioEl : videoEl;
+    wireTransferSyncElement(activeEl);
+    activeEl.play().catch(() => {});
+
+    await ensurePeerConnection();
+    sendFileViaDataChannel(file);
+  });
+
+  async function sendFileViaDataChannel(file) {
+    if (!fileChannel || fileChannel.readyState !== 'open') {
+      document.getElementById('transfer-send-label').textContent = 'A aguardar que a outra pessoa entre na sala...';
+      document.getElementById('transfer-send-progress').style.display = 'block';
+      await new Promise((resolve) => {
+        const check = setInterval(() => {
+          if (fileChannel && fileChannel.readyState === 'open') { clearInterval(check); resolve(); }
+        }, 500);
+      });
+    }
+
+    const progress = document.getElementById('transfer-send-progress');
+    const fill = document.getElementById('transfer-send-fill');
+    const label = document.getElementById('transfer-send-label');
+    progress.style.display = 'block';
+    fill.style.width = '0%';
+
+    const CHUNK_SIZE = 16 * 1024;
+    const LOW_THRESHOLD = 256 * 1024;
+    fileChannel.bufferedAmountLowThreshold = LOW_THRESHOLD;
+    fileChannel.send(JSON.stringify({ type: 'file-start', name: file.name, size: file.size, mime: file.type }));
+
+    let offset = 0;
+    while (offset < file.size) {
+      if (fileChannel.readyState !== 'open') { label.textContent = 'A transferência foi interrompida (ligação perdida).'; return; }
+      if (fileChannel.bufferedAmount > LOW_THRESHOLD) {
+        await new Promise((resolve) => {
+          fileChannel.onbufferedamountlow = () => { fileChannel.onbufferedamountlow = null; resolve(); };
+        });
+      }
+      const end = Math.min(offset + CHUNK_SIZE, file.size);
+      const buf = await file.slice(offset, end).arrayBuffer();
+      fileChannel.send(buf);
+      offset = end;
+      const pct = Math.round((offset / file.size) * 100);
+      fill.style.width = pct + '%';
+      label.textContent = `A enviar "${file.name}"... ${pct}%`;
+    }
+    fileChannel.send(JSON.stringify({ type: 'file-end' }));
+    label.textContent = '✅ Envio concluído — a outra pessoa já está a ver.';
+    setTimeout(() => { progress.style.display = 'none'; }, 2500);
+  }
+
+  function handleFileChannelMessage(e) {
+    if (typeof e.data === 'string') {
+      const msg = JSON.parse(e.data);
+      if (msg.type === 'file-start') {
+        incomingMeta = msg;
+        incomingChunks = [];
+        incomingReceived = 0;
+        transferKind = (msg.mime || '').startsWith('audio/') ? 'audio' : 'video';
+        applyRemoteMode('transfer');
+        document.getElementById('transfer-receive-progress').style.display = 'block';
+        document.getElementById('transfer-receive-fill').style.width = '0%';
+        document.getElementById('transfer-receive-label').textContent = `A receber "${msg.name}"... 0%`;
+      } else if (msg.type === 'file-end') {
+        finalizeIncomingFile();
+      }
+    } else {
+      incomingChunks.push(e.data);
+      incomingReceived += e.data.byteLength;
+      if (incomingMeta && incomingMeta.size) {
+        const pct = Math.round((incomingReceived / incomingMeta.size) * 100);
+        document.getElementById('transfer-receive-fill').style.width = pct + '%';
+        document.getElementById('transfer-receive-label').textContent = `A receber "${incomingMeta.name}"... ${pct}%`;
+      }
+    }
+  }
+
+  function finalizeIncomingFile() {
+    if (!incomingMeta) return;
+    const blob = new Blob(incomingChunks, { type: incomingMeta.mime || 'application/octet-stream' });
+    incomingChunks = [];
+    if (transferUrl) URL.revokeObjectURL(transferUrl);
+    transferUrl = URL.createObjectURL(blob);
+
+    const videoEl = document.getElementById('transfer-viewer-video');
+    const audioEl = document.getElementById('transfer-viewer-audio');
+    let activeEl;
+    if (transferKind === 'audio') {
+      videoEl.style.display = 'none'; videoEl.pause(); videoEl.removeAttribute('src');
+      audioEl.style.display = 'block';
+      audioEl.src = transferUrl;
+      activeEl = audioEl;
+    } else {
+      audioEl.style.display = 'none'; audioEl.pause(); audioEl.removeAttribute('src');
+      videoEl.style.display = 'block';
+      videoEl.src = transferUrl;
+      activeEl = videoEl;
+    }
+    wireTransferSyncElement(activeEl);
+    document.getElementById('transfer-receive-label').textContent = `✅ Pronto: ${incomingMeta.name}`;
+    setTimeout(() => { document.getElementById('transfer-receive-progress').style.display = 'none'; }, 1500);
+  }
+
+  function cleanupTransferFile() {
+    ['transfer-host-video', 'transfer-host-audio', 'transfer-viewer-video', 'transfer-viewer-audio'].forEach(id => {
+      const el = document.getElementById(id);
+      el.pause();
+      el.removeAttribute('src');
+      delete el.dataset.syncWired;
+    });
+    if (transferUrl) { URL.revokeObjectURL(transferUrl); transferUrl = null; }
+    incomingMeta = null;
+    incomingChunks = [];
   }
 
   // ---------- CHAT ----------
@@ -1171,7 +1534,7 @@
   function sendChat() {
     const text = chatInput.value.trim();
     if (!text) return;
-    wsSend({ type: 'chat', text });
+    ws.send(JSON.stringify({ type: 'chat', text }));
     addMessage(text, 'me');
     chatInput.value = '';
   }
@@ -1246,9 +1609,8 @@
 
         case 'ice-candidate':
           await ensurePeerConnection();
-          if (!hasRemoteDescription) { pendingIceCandidates.push(msg.candidate); break; }
           try { await pc.addIceCandidate(msg.candidate); }
-          catch (err) { if (!ignoreOffer) console.warn('ICE candidate rejeitado:', err); }
+          catch (err) { if (!ignoreOffer) console.error(err); }
           break;
 
         case 'chat':
@@ -1280,27 +1642,19 @@
       }
     };
 
-    socket.onopen = () => {
-      wsConnecting = false;
-      updateNetworkBanner(true);
-      wsReconnectDelay = 1000;
-      if (roomCode && role) wsSend({ type: 'rejoin-room', code: roomCode, role });
-    };
     socket.onclose = () => {
-      wsConnecting = false;
-      updateNetworkBanner(false);
-      if (wsReconnectTimer) return;
-      const delay = wsReconnectDelay;
+      setTimeout(reconnectSocket, wsReconnectDelay);
       wsReconnectDelay = Math.min(wsReconnectDelay * 2, 10000);
-      wsReconnectTimer = setTimeout(() => { wsReconnectTimer = null; reconnectSocket(); }, delay);
     };
   }
 
   function reconnectSocket() {
-    if (wsConnecting || (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING))) return;
-    wsConnecting = true;
     ws = new WebSocket(wsProtocol + location.host);
     wireSocket(ws);
+    ws.addEventListener('open', () => {
+      wsReconnectDelay = 1000;
+      if (roomCode && role) ws.send(JSON.stringify({ type: 'rejoin-room', code: roomCode, role }));
+    });
   }
 
   wireSocket(ws);
@@ -1310,9 +1664,6 @@
   }
 
   // ---------- RESTAURAR SESSÃO (link partilhado, refresh, ou reabrir o site) ----------
-  window.addEventListener('online', () => { if (!ws || ws.readyState !== WebSocket.OPEN) reconnectSocket(); });
-  document.addEventListener('visibilitychange', () => { if (!document.hidden && (!ws || ws.readyState === WebSocket.CLOSED)) reconnectSocket(); });
-
   window.addEventListener('load', () => {
     const params = new URL(location.href).searchParams;
     let urlRoom = params.get('room');
@@ -1331,7 +1682,7 @@
     if (urlRoom && urlRole) {
       roomCode = urlRoom.toUpperCase();
       role = urlRole;
-      const tryRejoin = () => wsSend({ type: 'rejoin-room', code: roomCode, role });
+      const tryRejoin = () => ws.send(JSON.stringify({ type: 'rejoin-room', code: roomCode, role }));
       if (ws.readyState === WebSocket.OPEN) tryRejoin();
       else ws.addEventListener('open', tryRejoin, { once: true });
     }
