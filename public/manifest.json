@@ -1,6 +1,6 @@
 {
-  "name": "Assistir Juntos",
-  "short_name": "Assistir Juntos",
+  "name": "2 on Streaming",
+  "short_name": "2 on Streaming",
   "description": "Vê o mesmo vídeo, música ou YouTube em sincronia com outra pessoa, cada um no seu telefone.",
   "start_url": "./",
   "scope": "./",
@@ -8,6 +8,6 @@
   "background_color": "#0b1220",
   "theme_color": "#ff8a4c",
   "icons": [
-    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+    { "src": "icon.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
   ]
 }

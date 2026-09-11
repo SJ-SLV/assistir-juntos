@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-<title>Assistir Juntos</title>
+<title>2 on Streaming</title>
 <link rel="manifest" href="manifest.json" />
 <meta name="theme-color" content="#ff8a4c" />
-<link rel="icon" href="icon.svg" type="image/svg+xml" />
-<link rel="apple-touch-icon" href="icon.svg" />
+<link rel="icon" href="icon.png" type="image/png" />
+<link rel="apple-touch-icon" href="icon.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -20,7 +20,8 @@
       linear-gradient(180deg, #0e1626 0%, #0b1220 60%);
     --surface: #121b2e;
     --surface-2: #182238;
-    --card: linear-gradient(160deg, rgba(255,255,255,0.05), rgba(255,255,255,0.015) 60%), var(--surface);
+    --card: linear-gradient(160deg, rgba(255,255,255,0.09), rgba(255,255,255,0.02) 60%), rgba(18,27,46,0.55);
+    --glass-border: rgba(255,255,255,0.12);
     --accent: #ff8a4c;
     --accent-2: #ffc069;
     --accent-glow: rgba(255,138,76,0.35);
@@ -56,23 +57,38 @@
   }
 
   header {
-    padding: 26px 20px 18px;
-    text-align: center;
+    padding: 16px 18px 14px;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 6px;
+    gap: 10px;
   }
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--glass-border);
+    border-radius: 999px;
+    padding: 6px 8px 6px 6px;
+    -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px);
+  }
+  .topbar-brand { display: flex; align-items: center; gap: 10px; }
+  .topbar-title { font-family: var(--font-display); font-weight: 700; font-size: 15.5px; }
+  .topbar-chip {
+    display: none; align-items: center; gap: 7px;
+    background: rgba(255,255,255,0.06); border: 1px solid var(--glass-border);
+    border-radius: 999px; padding: 7px 12px; font-family: var(--font-display);
+    font-size: 13px; font-weight: 700; letter-spacing: 2px; color: var(--accent-2);
+  }
+  .topbar-chip.show { display: flex; }
+  .dot-live { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 3px rgba(74,222,128,0.2); flex: none; }
+  header p.tagline { margin: 0 4px; font-size: 12.5px; color: var(--muted); }
   .brand-mark {
-    width: 40px; height: 40px; border-radius: 12px; flex: none;
-    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    width: 34px; height: 34px; border-radius: 11px; flex: none;
+    background: #000;
     display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 6px 18px var(--accent-glow);
-    margin-bottom: 4px;
+    box-shadow: 0 6px 16px var(--accent-glow);
+    overflow: hidden;
   }
-  .brand-mark svg { width: 20px; height: 20px; }
-  header h1 { margin: 0; font-family: var(--font-display); font-size: 21px; letter-spacing: 0.2px; font-weight: 700; color: var(--text); }
-  header p { margin: 0; font-size: 12.5px; color: var(--muted); }
+  .brand-mark img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
   main {
     flex: 1;
@@ -88,17 +104,18 @@
 
   .card {
     background: var(--card);
-    border: 1px solid var(--border);
+    border: 1px solid var(--glass-border);
     border-radius: var(--radius-lg);
     padding: 20px;
     display: flex;
     flex-direction: column;
     gap: 14px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+    -webkit-backdrop-filter: blur(22px); backdrop-filter: blur(22px);
   }
   .card-primary {
-    border-color: rgba(255,138,76,0.35);
-    box-shadow: 0 10px 34px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,138,76,0.08) inset;
+    border-color: rgba(255,138,76,0.4);
+    box-shadow: 0 10px 34px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,138,76,0.1) inset;
   }
   h2 {
     margin: 0; font-family: var(--font-display); font-size: 15.5px; font-weight: 700; letter-spacing: 0.1px;
@@ -179,19 +196,27 @@
     border-radius: var(--radius-sm); padding: 11px 14px; display: none;
   }
 
-  /* Botões flutuantes (chat / chamada) */
-  .fab {
-    position: fixed; bottom: 22px; width: 56px; height: 56px; border-radius: 50%;
-    display: none; align-items: center; justify-content: center; font-size: 23px;
-    box-shadow: 0 10px 24px rgba(0,0,0,0.5); z-index: 30; border: none;
-    transition: transform 0.15s ease;
+  /* Barra de ações flutuante (vidro fosco, em pílula) */
+  .action-bar {
+    position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%);
+    display: none; align-items: center; gap: 8px;
+    background: rgba(20,26,42,0.6);
+    -webkit-backdrop-filter: blur(24px) saturate(1.4); backdrop-filter: blur(24px) saturate(1.4);
+    border: 1px solid var(--glass-border);
+    border-radius: 999px; padding: 8px; z-index: 30;
+    box-shadow: 0 14px 34px rgba(0,0,0,0.45);
   }
-  .fab:active { transform: scale(0.92); }
-  .fab.show { display: flex; }
-  #chat-toggle { right: 20px; background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: var(--on-accent); box-shadow: 0 10px 24px var(--accent-glow); }
-  #mic-toggle { left: 20px; background: var(--surface-2); border: 1px solid var(--border); color: var(--text); }
-  #mic-toggle.active { background: linear-gradient(135deg, #16a34a, var(--ok)); color: #06210f; box-shadow: 0 10px 24px rgba(34,197,94,0.35); }
-  #mic-toggle.muted { background: #2a1a1c; color: var(--accent-2); border-color: rgba(229,9,20,0.3); }
+  .action-bar.show { display: flex; }
+  .action-btn {
+    position: relative; width: 50px; height: 50px; border-radius: 50%; flex: none;
+    display: flex; align-items: center; justify-content: center; font-size: 21px;
+    background: rgba(255,255,255,0.06); border: none; color: var(--text);
+    box-shadow: none; transition: transform 0.15s ease, background 0.15s ease;
+  }
+  .action-btn:active { transform: scale(0.92); }
+  .action-btn-accent { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: var(--on-accent); box-shadow: 0 6px 16px var(--accent-glow); }
+  #mic-toggle.active { background: linear-gradient(135deg, #16a34a, var(--ok)); color: #06210f; box-shadow: 0 6px 16px rgba(34,197,94,0.35); }
+  #mic-toggle.muted { background: rgba(255,77,94,0.15); color: var(--accent-2); }
   .badge {
     position: absolute; top: -2px; right: -2px; background: var(--ok); color: #06210f;
     font-size: 10.5px; font-weight: 800; min-width: 18px; height: 18px; border-radius: 9px;
@@ -245,26 +270,32 @@
   #yt-player-host iframe, #yt-player-viewer iframe { width: 100%; aspect-ratio: 16/9; border-radius: var(--radius-md); }
 
   /* Playlist */
-  .playlist { display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow-y: auto; }
+  .playlist { display: flex; flex-direction: column; gap: 7px; max-height: 240px; overflow-y: auto; }
   .progress-ui { display: flex; flex-direction: column; gap: 6px; }
   .progress-track { width: 100%; height: 10px; background: var(--surface-2); border-radius: 999px; overflow: hidden; }
   .progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent), var(--accent-2)); border-radius: 999px; transition: width 0.2s ease; }
   .playlist-item {
-    display: flex; align-items: center; gap: 10px; background: var(--surface-2); border: 1px solid var(--border);
-    border-left: 3px solid transparent; border-radius: var(--radius-sm); padding: 9px 11px; font-size: 13px;
+    display: flex; align-items: center; gap: 11px;
+    background: rgba(255,255,255,0.035); border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md); padding: 8px 10px 8px 8px; font-size: 13px;
     transition: border-color 0.15s ease, background 0.15s ease;
   }
-  .playlist-item.playing { border-left-color: var(--accent); background: rgba(229,9,20,0.07); }
+  .playlist-item.playing { border-color: rgba(255,138,76,0.4); background: rgba(255,138,76,0.08); }
   .playlist-icon {
-    flex: none; width: 26px; height: 26px; border-radius: 8px; background: rgba(255,255,255,0.06);
-    display: flex; align-items: center; justify-content: center; font-size: 13px;
+    flex: none; width: 34px; height: 34px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center; font-size: 15px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.25);
   }
-  .playlist-item.playing .playlist-icon { background: var(--accent-glow); }
-  .playlist-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+  .playlist-icon.kind-video { background: linear-gradient(135deg, #6d8cff, #a78bfa); }
+  .playlist-icon.kind-audio { background: linear-gradient(135deg, #4ade80, #34d3a6); }
+  .playlist-icon.kind-yt { background: linear-gradient(135deg, var(--accent), var(--accent-2)); }
+  .playlist-name-wrap { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+  .playlist-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+  .playlist-kind-label { font-size: 10.5px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
   .playlist-actions { display: flex; gap: 4px; flex: none; }
   .playlist-actions button {
     background: rgba(255,255,255,0.05); border: none; color: var(--muted); width: 27px; height: 27px;
-    border-radius: 7px; padding: 0; font-size: 12px; line-height: 1; box-shadow: none;
+    border-radius: 8px; padding: 0; font-size: 12px; line-height: 1; box-shadow: none;
   }
   .playlist-actions button:active { background: rgba(255,255,255,0.12); color: var(--text); }
 
@@ -305,14 +336,18 @@
 <body>
 
 <header>
-  <div class="brand-mark">
-    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="9.5" cy="12" r="6" fill="#fff" opacity="0.95"/>
-      <circle cx="15" cy="12" r="6" fill="none" stroke="#fff" stroke-width="1.6"/>
-    </svg>
+  <div class="topbar">
+    <div class="topbar-brand">
+      <div class="brand-mark">
+        <img src="icon.png" alt="2 on Streaming" />
+      </div>
+      <span class="topbar-title">2 on Streaming</span>
+    </div>
+    <div class="topbar-chip" id="topbar-room-chip">
+      <span class="dot-live"></span><span id="topbar-room-code">-----</span>
+    </div>
   </div>
-  <h1>Assistir Juntos</h1>
-  <p>Vê o mesmo vídeo, ao mesmo tempo, em telefones diferentes</p>
+  <p class="tagline">Vê o mesmo vídeo, ao mesmo tempo, em telefones diferentes</p>
 </header>
 
 <main>
@@ -467,8 +502,10 @@
 <button id="btn-audio-unmute" class="secondary">🔊 Ativar áudio da chamada</button>
 
 <!-- Botões flutuantes -->
-<button id="mic-toggle" class="fab" title="Chamada de voz" aria-label="Chamada de voz">🎤</button>
-<button id="chat-toggle" class="fab secondary" aria-label="Abrir mensagens">💬<span id="chat-badge" class="badge"></span></button>
+<div id="action-bar" class="action-bar">
+  <button id="mic-toggle" class="action-btn" title="Chamada de voz" aria-label="Chamada de voz">🎤</button>
+  <button id="chat-toggle" class="action-btn action-btn-accent" aria-label="Abrir mensagens">💬<span id="chat-badge" class="badge"></span></button>
+</div>
 
 <div id="chat-panel">
   <div class="chat-header">
@@ -518,8 +555,16 @@
   function showScreen(name) {
     Object.values(screens).forEach(s => s.classList.remove('active'));
     screens[name].classList.add('active');
-    document.getElementById('chat-toggle').classList.toggle('show', name !== 'home');
-    document.getElementById('mic-toggle').classList.toggle('show', name !== 'home');
+    document.getElementById('action-bar').classList.toggle('show', name !== 'home');
+    if (name === 'home') hideTopbarChip();
+  }
+
+  function showTopbarChip(code) {
+    document.getElementById('topbar-room-code').textContent = code;
+    document.getElementById('topbar-room-chip').classList.add('show');
+  }
+  function hideTopbarChip() {
+    document.getElementById('topbar-room-chip').classList.remove('show');
   }
 
   function setStatus(el, cls, text) {
@@ -719,8 +764,11 @@
     }
     container.innerHTML = filePlaylist.map((item, i) => `
       <div class="playlist-item ${i === fileCurrentIndex ? 'playing' : ''}">
-        <span class="playlist-icon">${item.kind === 'audio' ? '🎵' : '🎬'}</span>
-        <span class="playlist-name">${escapeHtml(item.name)}</span>
+        <span class="playlist-icon kind-${item.kind}">${item.kind === 'audio' ? '🎵' : '🎬'}</span>
+        <div class="playlist-name-wrap">
+          <span class="playlist-name">${escapeHtml(item.name)}</span>
+          <span class="playlist-kind-label">${item.kind === 'audio' ? 'Música' : 'Vídeo'}</span>
+        </div>
         <div class="playlist-actions">
           <button data-action="play" data-index="${i}" title="Tocar agora">▶</button>
           <button data-action="up" data-index="${i}" title="Mover para cima">↑</button>
@@ -860,7 +908,7 @@
   document.getElementById('btn-share-link').addEventListener('click', async () => {
     const url = shareLink();
     if (navigator.share) {
-      try { await navigator.share({ title: 'Assistir Juntos', text: 'Entra na minha sala para assistirmos juntos:', url }); return; }
+      try { await navigator.share({ title: '2 on Streaming', text: 'Entra na minha sala para assistirmos juntos:', url }); return; }
       catch (e) { /* utilizador cancelou ou não suportado — cai para copiar */ }
     }
     await copyText(url);
@@ -1192,8 +1240,11 @@
     }
     container.innerHTML = ytPlaylist.map((item, i) => `
       <div class="playlist-item ${i === ytCurrentIndex ? 'playing' : ''}">
-        <span class="playlist-icon">▶️</span>
-        <span class="playlist-name">${escapeHtml(item.title || item.videoId)}</span>
+        <span class="playlist-icon kind-yt">▶️</span>
+        <div class="playlist-name-wrap">
+          <span class="playlist-name">${escapeHtml(item.title || item.videoId)}</span>
+          <span class="playlist-kind-label">YouTube</span>
+        </div>
         <div class="playlist-actions">
           <button data-action="play" data-index="${i}" title="Tocar agora">▶</button>
           <button data-action="up" data-index="${i}" title="Mover para cima">↑</button>
@@ -1555,6 +1606,7 @@
           updateUrl();
           saveLocalSession();
           showScreen('host');
+          showTopbarChip(msg.code);
           loadChatHistory();
           if (msg.rejoined) {
             resetPeerConnection();
@@ -1570,6 +1622,7 @@
           updateUrl();
           saveLocalSession();
           showScreen('viewer');
+          showTopbarChip(msg.code);
           loadChatHistory();
           if (msg.rejoined) resetPeerConnection();
           break;
@@ -1577,6 +1630,7 @@
         case 'left-room':
           clearChatHistory();
           resetAllStateToHome();
+          hideTopbarChip();
           break;
 
         case 'error':
