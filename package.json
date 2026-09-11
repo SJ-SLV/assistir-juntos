@@ -1,7 +1,7 @@
 {
-  "name": "assistir-juntos",
+  "name": "2-on-streaming",
   "version": "1.0.0",
-  "description": "Assistir filmes em sincronia, cada um pelo seu telefone",
+  "description": "2 on Streaming — assiste filmes/música em sincronia, cada um pelo seu telefone",
   "main": "server.js",
   "engines": {
     "node": ">=18"

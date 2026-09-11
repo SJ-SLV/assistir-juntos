@@ -1,8 +1,12 @@
-# Assistir Juntos
+# 2 on Streaming
 
 Site para duas pessoas assistirem ao mesmo vídeo/música em sincronia, cada uma no seu telefone, via WebRTC — com chat de texto, chamada de voz, playlists de música/vídeo do telemóvel e do YouTube.
 
+**Nota:** o nome de exibição da app é "2 on Streaming", mas a pasta/repositório continua chamada `assistir-juntos` (o Render e o link já publicado continuam a funcionar sem qualquer alteração — só o que aparece no ecrã mudou).
+
 ## Novidades desta versão
+
+- **Barra de ações flutuante em pílula.** Os botões de chamada de voz (🎤) e chat (💬) — antes dois círculos soltos — agora partilham um único invólucro em vidro fosco, inspirado em interfaces modernas de apps de ficheiros/produtividade.
 
 - **Novo modo: 📤 Enviar ficheiro.** Em vez de transmitir o vídeo ao vivo, agora podes enviar o ficheiro por completo para a outra pessoa (transferência direta entre os dois telefones, via `RTCDataChannel` do WebRTC — não passa pelo nosso servidor). Depois de recebido, cada telefone toca a sua própria cópia local, com qualidade perfeita e sem depender da rede a partir daí. Ideal para músicas e vídeos curtos; para filmes inteiros, o modo "📱 Ao vivo" continua a ser melhor (começa a ver de imediato, sem esperar a transferência toda).
   - O ficheiro nunca é gravado no telefone de quem recebe — fica só na memória do browser e desaparece sozinho quando a reprodução termina ou se sai da sala.
