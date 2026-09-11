@@ -1,116 +1,103 @@
-# Assistir Juntos — versão profissional
+# Assistir Juntos
 
-Plataforma web para duas pessoas assistirem ao mesmo vídeo, música ou conteúdo do YouTube em sincronia, cada uma no seu telefone. A aplicação usa WebSocket para sinalização e WebRTC para a comunicação P2P.
+Site para duas pessoas assistirem ao mesmo vídeo/música em sincronia, cada uma no seu telefone, via WebRTC — com chat de texto, chamada de voz, playlists de música/vídeo do telemóvel e do YouTube.
 
-## O que foi melhorado
+## Novidades desta versão
 
-- Reconexão automática com backoff e recuperação após refresh/queda de rede.
-- WebSocket protegido contra envio quando a ligação está fechada.
-- Heartbeat do servidor para limpar ligações mortas.
-- Limpeza automática de salas abandonadas e limite de salas em memória.
-- Validação de mensagens e limite de tamanho/rate limit básico.
-- Endpoint `/health` e `/api/health` para monitorização/Render.
-- Headers HTTP de segurança e cache controlado.
-- Fila de candidatos ICE no cliente para evitar perda de candidatos durante a negociação.
-- Melhor monitorização da ligação WebRTC.
-- Service Worker com cache apenas do shell da aplicação; sinalização, saúde e ICE continuam sempre em rede.
-- PWA com manifest melhorado e ícone incluído.
-- Dependências atualizadas para versões estáveis da linha usada pelo projeto.
+- **Novo modo: 📤 Enviar ficheiro.** Em vez de transmitir o vídeo ao vivo, agora podes enviar o ficheiro por completo para a outra pessoa (transferência direta entre os dois telefones, via `RTCDataChannel` do WebRTC — não passa pelo nosso servidor). Depois de recebido, cada telefone toca a sua própria cópia local, com qualidade perfeita e sem depender da rede a partir daí. Ideal para músicas e vídeos curtos; para filmes inteiros, o modo "📱 Ao vivo" continua a ser melhor (começa a ver de imediato, sem esperar a transferência toda).
+  - O ficheiro nunca é gravado no telefone de quem recebe — fica só na memória do browser e desaparece sozinho quando a reprodução termina ou se sai da sala.
+  - Barra de progresso em tempo real dos dois lados.
+  - Sincronização de play/pausa/avanço, com correção automática de pequenos desvios.
 
-## Funcionalidades
+- **Identidade visual nova.** A cor de destaque anterior (`#e50914`) era literalmente a cor da Netflix — trocada por uma paleta própria: azul-noite profundo (`#0b1220`) com um dourado-coral quente (`#ff8a4c → #ffc069`), evocando o brilho do ecrã do telemóvel no escuro. Tipografia também nova — **Space Grotesk** para títulos/marca, **Inter** para o resto — via Google Fonts.
+- Ícone da marca trocado de um "play" genérico para dois círculos sobrepostos (o motivo de "duas pessoas, um momento").
+- Hierarquia visual mais clara: o cartão de ação principal ("Criar sala") tem um tratamento distinto do secundário, em vez de dois cartões idênticos lado a lado.
+- Contraste de texto corrigido em todos os botões/elementos sobre fundo em destaque (a cor mais clara exigia texto escuro, não branco, para cumprir os mínimos de acessibilidade).
+- Respeita a preferência do sistema por "reduzir animações" (`prefers-reduced-motion`), e todos os botões têm anel de foco visível ao navegar por teclado.
 
-- Sala privada de 5 caracteres.
-- Link partilhável e QR Code.
-- Vídeos e músicas do telefone via WebRTC.
-- Playlist local.
-- YouTube com sincronização de play/pausa/posição.
-- Chat de texto com histórico local.
-- Chamada de voz via WebRTC.
-- Controlo separado do volume de conteúdo e chamada.
-- Recuperação da sessão depois de atualizar a página.
+- **Partilha mais fácil:** botão "📤 Partilhar" (usa o menu nativo do telemóvel — WhatsApp, SMS, etc.) e um **código QR** para a outra pessoa apontar a câmara e entrar direto.
+- **Controlo de volume separado:** o viewer pode ajustar o volume do conteúdo (vídeo/música) e da chamada de voz de forma independente. O anfitrião também pode ajustar o volume da chamada recebida.
+- **Chat com histórico persistente:** as mensagens já não se perdem ao atualizar a página — ficam guardadas por sala no telemóvel.
+- **Reconexão mais robusta:** se o servidor ficar indisponível momentaneamente (ex: o Render "a acordar"), o site tenta ligar-se de novo com esperas crescentes (1s, 2s, 4s... até 10s), em vez de martelar sempre ao mesmo ritmo.
+- **Instalável como app:** em telemóveis Android/Chrome, aparece a opção "Adicionar ao ecrã principal" — passa a abrir como uma app normal, com ícone próprio.
+- **A sala não se perde ao atualizar a página.** Antes bastava recarregar; agora a sessão fica guardada no telemóvel (mesmo sem link nem código à mão) e só termina se tocares em **"🚪 Sair da sala"**, ou se a outra pessoa saiu e não voltou dentro do tempo de tolerância. Podes atualizar a página as vezes que quiseres sem perder o lugar na sala.
+- **Playlists.** Tanto para música/vídeo do telemóvel como para o YouTube, o anfitrião pode agora adicionar vários ficheiros/links de seguida, reordenar (↑↓), tocar um item específico, remover, e a reprodução avança automaticamente para o próximo quando um termina.
+- **Leitor melhorado.** Para música (do telemóvel), há uma barra de reprodução própria — título da faixa, barra de progresso arrastável, tempo atual/total, play/pausa, anterior/seguinte. Para YouTube, o título de cada vídeo é obtido automaticamente, e há botões de anterior/seguinte para navegar na fila.
+- **Sincronização do YouTube mais robusta.** Além do botão manual "Sincronizar agora", agora há uma verificação automática a cada poucos segundos que corrige pequenos desvios sem interromper a reprodução.
 
-## Estrutura
+## Os 3 modos de partilha
 
-```text
-assistir-juntos/
-├── server.js
-├── package.json
-├── README.md
-└── public/
-    ├── index.html
-    ├── manifest.json
-    ├── sw.js
-    └── icon.svg
-```
+No ecrã do anfitrião há três separadores:
 
-## Instalação local
+- **📱 Ao vivo** — transmite o vídeo/música do telemóvel em tempo real (P2P, via WebRTC). Aceita vídeo e áudio, dá para criar uma playlist com vários ficheiros de uma vez. Começa a ver de imediato — ideal para vídeos grandes.
+- **📤 Enviar** — envia o ficheiro por completo para a outra pessoa (ver secção acima). Ideal para músicas e vídeos curtos.
+- **▶️ YouTube** — cola o link (ou só o código) de um vídeo ou música do YouTube e toca em "Adicionar". **Importante: isto funciona de forma diferente dos outros dois modos** — não há transmissão P2P nem transferência; cada telefone carrega o vídeo diretamente do YouTube, e nós só sincronizamos play/pausa/avanço entre os dois. Isto tem até vantagens: não depende do TURN, não gasta dados a "reenviar" vídeo, e a qualidade é a mesma que terias a ver o YouTube normalmente.
+
+Em qualquer um dos modos, qualquer um dos dois lados pode dar play/pausa — sincroniza automaticamente para o outro. As playlists (do telemóvel e do YouTube) são geridas pelo **anfitrião** — é quem tem os ficheiros/escolhe os links. A pessoa do outro lado vê sempre o que está a tocar.
+
+## Chamada de voz (microfone)
+
+Além do chat de texto (SMS), há um botão flutuante **🎤** (canto inferior esquerdo) em ambos os ecrãs:
+
+- Ao tocar pela primeira vez, o telemóvel pede permissão para usar o microfone.
+- Depois de aceitar, o áudio do microfone passa a ser enviado ao vivo para a outra pessoa (chamada de voz durante o vídeo).
+- Toques seguintes no botão silenciam/ativam o microfone (🎙️ = ativo, 🔇 = mudo).
+- Cada lado ativa o microfone de forma independente — não é preciso os dois ativarem ao mesmo tempo.
+- Se o áudio da chamada não tocar automaticamente (comum em telemóveis por restrições do browser), aparece um botão "🔊 Ativar áudio da chamada" — basta tocar uma vez.
+
+Tecnicamente, isto usa a mesma ligação WebRTC que já transmite o vídeo, apenas com uma faixa de áudio adicional bidirecional — não precisa de nenhum servidor extra.
+
+**Nota:** se usares música do telemóvel (não vídeo) e chamada de voz ao mesmo tempo, pode haver conflito no áudio recebido do outro lado — é uma limitação conhecida desta versão, por afetar poucos casos de uso reais.
+
+## Recapitulando as funcionalidades
+
+- **Vídeo/música em sincronia:** o anfitrião escolhe um ficheiro do telefone (vídeo ou áudio) ou um link do YouTube, e é sincronizado com a outra pessoa.
+- **Link partilhável:** botão "Copiar link" para a outra pessoa entrar sem escrever código.
+- **Reconexão automática:** refresh de página ou queda de rede não obriga a criar sala nova.
+- **TURN fiável (opcional, recomendado):** configura `METERED_TURN_USERNAME` e `METERED_TURN_CREDENTIAL` nas variáveis de ambiente do Render para ligações mais estáveis (ver secção abaixo).
+- **Chat de texto:** botão flutuante 💬.
+- **Chamada de voz:** botão flutuante 🎤.
+- **YouTube em sincronia:** vídeos e música do YouTube, com play/pausa sincronizados.
+
+## TURN fiável (Metered) — recomendado
+
+Já vais precisar disto ativo, porque configuraste uma credencial TURN. No Render:
+
+1. Vai ao teu serviço → separador **Environment**.
+2. Adiciona:
+   - `METERED_TURN_USERNAME` = `55ac5a01892e44b0a89f3388`
+   - `METERED_TURN_CREDENTIAL` = `eKohXOnTnDqTa5/h`
+3. Guarda — o Render reinicia sozinho e passa a usar este TURN fiável.
+
+Sem isto, o site usa um TURN de reserva público, menos fiável em algumas redes móveis.
+
+## Correr localmente
 
 ```bash
+cd assistir-juntos
 npm install
-npm run check
 npm start
 ```
 
-Depois abre `http://localhost:3000`.
+## Publicar gratuitamente (Render.com)
 
-## Render
+1. Conta grátis em https://render.com
+2. Sobe este código a um repositório no GitHub.
+3. No Render: **New → Web Service** → liga o repositório.
+4. **Build Command:** `npm install` — **Start Command:** `node server.js` — **Plano:** Free.
 
-- **Build Command:** `npm install`
-- **Start Command:** `node server.js`
-- O Render fornece automaticamente `PORT`.
-- O serviço expõe `GET /health` para health checks.
+## Limitações
 
-### TURN recomendado
+- Redes muito restritivas podem continuar difíceis mesmo com TURN.
+- `captureStream()` pode variar entre versões do Safari/iOS.
+- Pensado para uso pessoal entre duas pessoas, não distribuição de conteúdo protegido.
 
-No Render, configura estas variáveis:
+## Estrutura do projeto
 
-```text
-METERED_TURN_USERNAME=...
-METERED_TURN_CREDENTIAL=...
 ```
-
-Não coloques credenciais TURN reais no GitHub, README ou código-fonte. O servidor entrega-as ao navegador apenas através de `/ice-servers`.
-
-## Variáveis opcionais
-
-```text
-PORT=3000
-GRACE_MS=45000
-ROOM_TTL_MS=21600000
-MAX_ROOMS=5000
+assistir-juntos/
+├── server.js          # servidor Node — sinalização, chat, credenciais TURN
+├── package.json
+└── public/
+    └── index.html      # interface e lógica do cliente (vídeo + voz + chat)
 ```
-
-## Limitações técnicas
-
-- A reprodução P2P de ficheiros locais depende das capacidades WebRTC do navegador.
-- Safari/iOS pode apresentar diferenças em `captureStream()`.
-- A PWA precisa de rede para salas, sinalização e conteúdo remoto.
-- O projeto foi desenhado para duas pessoas por sala.
-- Conteúdo do YouTube é carregado diretamente pelo YouTube; a aplicação sincroniza o estado de reprodução.
-- O projeto não deve ser usado para redistribuir conteúdo protegido sem autorização.
-
-## Segurança e estabilidade
-
-O servidor não guarda os ficheiros de vídeo dos utilizadores. Os ficheiros locais são selecionados no navegador e transmitidos através do WebRTC. As salas vivem em memória e são eliminadas quando ficam abandonadas.
-
-Para produção, recomenda-se usar HTTPS/WSS no domínio público, configurar TURN próprio e acompanhar `/health` através do sistema de monitorização do alojamento.
-
-
-## Modo Ficheiro P2P (novo)
-
-O modo **Do telemóvel** usa WebRTC DataChannel para transferir o ficheiro diretamente entre os dois dispositivos, quando a rede permite. O servidor participa apenas na sinalização WebSocket; o vídeo/áudio não é enviado através do servidor.
-
-### Fluxo
-1. O anfitrião escolhe um vídeo ou áudio.
-2. O ficheiro é dividido em blocos de 64 KB.
-3. Os blocos são enviados pelo DataChannel com controlo de backpressure.
-4. O dispositivo convidado guarda temporariamente os blocos em IndexedDB, reconstrói o Blob e começa a reprodução local.
-5. O anfitrião envia eventos leves de `play`, `pause` e `seek`, mantendo as duas reproduções sincronizadas.
-6. Ao terminar, o conteúdo temporário recebido é removido e o Object URL é revogado.
-
-### Importante
-- A transferência P2P não elimina a necessidade de Internet/rede para estabelecer a ligação WebRTC.
-- TURN é importante em redes móveis/NAT mais restritivas. Configure `METERED_TURN_USERNAME` e `METERED_TURN_CREDENTIAL` no Render para melhorar a conectividade.
-- O limite atual do cliente é 1,5 GB por ficheiro.
-- O navegador controla o armazenamento temporário; a aplicação não tenta apagar ficheiros arbitrários do armazenamento do telefone.
-- O modo YouTube continua a usar a sincronização online normal.
