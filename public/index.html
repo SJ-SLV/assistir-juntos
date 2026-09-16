@@ -43,12 +43,17 @@
     font-family: var(--font-body);
     background: var(--bg-grad);
     background-color: var(--bg);
+    background-size: 160% 160%;
     color: var(--text);
     min-height: 100vh;
     display: flex;
     flex-direction: column;
     -webkit-font-smoothing: antialiased;
   }
+  @media (prefers-reduced-motion: no-preference) {
+    body { animation: bgDrift 22s ease-in-out infinite alternate; }
+  }
+  @keyframes bgDrift { from { background-position: 0% 0%; } to { background-position: 60% 40%; } }
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
   }
@@ -81,6 +86,38 @@
   .topbar-chip.show { display: flex; }
   .dot-live { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 3px rgba(74,222,128,0.2); flex: none; }
   header p.tagline { margin: 0 4px; font-size: 12.5px; color: var(--muted); }
+
+  .accent-bar {
+    height: 3px; margin: 10px auto 0; width: 72px; border-radius: 999px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2), var(--accent));
+    background-size: 200% auto;
+    animation: accentShift 5s linear infinite;
+  }
+  @keyframes accentShift { to { background-position: 200% center; } }
+
+  .feature-strip {
+    display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 4px;
+    -webkit-overflow-scrolling: touch; scrollbar-width: none;
+  }
+  .feature-strip::-webkit-scrollbar { display: none; }
+  .feature-pill {
+    flex: none; display: flex; align-items: center; gap: 7px;
+    background: rgba(255,255,255,0.04); border: 1px solid var(--glass-border);
+    -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+    border-radius: 999px; padding: 6px 14px 6px 6px;
+    font-size: 12px; font-weight: 600; color: var(--muted);
+  }
+  .feature-icon {
+    width: 26px; height: 26px; border-radius: 50%; flex: none;
+    display: flex; align-items: center; justify-content: center; font-size: 13px;
+  }
+
+  #screen-home.active { animation: none; }
+  #screen-home.active .card:nth-of-type(1) { animation: rise 0.4s ease both; }
+  #screen-home.active .feature-strip { animation: rise 0.35s ease both; }
+  #screen-home.active .divider { animation: rise 0.4s ease 0.05s both; }
+  #screen-home.active .card:nth-of-type(2) { animation: rise 0.4s ease 0.1s both; }
+
   .brand-mark {
     width: 34px; height: 34px; border-radius: 11px; flex: none;
     background: #000;
@@ -396,6 +433,7 @@
       <span class="dot-live"></span><span id="topbar-room-code">-----</span>
     </div>
   </div>
+  <div class="accent-bar"></div>
   <p class="tagline">Vê o mesmo vídeo, ao mesmo tempo, em telefones diferentes</p>
 </header>
 
@@ -403,6 +441,13 @@
 
   <!-- ECRÃ INICIAL -->
   <section id="screen-home" class="screen active">
+    <div class="feature-strip">
+      <div class="feature-pill"><span class="feature-icon g-live">🎬</span>Ao vivo</div>
+      <div class="feature-pill"><span class="feature-icon g-yt">▶️</span>YouTube</div>
+      <div class="feature-pill"><span class="feature-icon g-send">📤</span>Enviar</div>
+      <div class="feature-pill"><span class="feature-icon g-chat">💬</span>Chat</div>
+      <div class="feature-pill"><span class="feature-icon g-audio">🎤</span>Voz</div>
+    </div>
     <div class="card card-primary">
       <h2>🎬 Partilhar o meu vídeo</h2>
       <p class="hint">Escolhe um vídeo do teu telefone e cria uma sala para a outra pessoa assistir contigo.</p>
@@ -582,7 +627,6 @@
 
 <footer class="site-footer">
   <p>Desenvolvido pela <strong>2-On Tecnolong</strong></p>
-  <p>Fonte de inspiração: minha Tchuchuquinha 💕</p>
 </footer>
 
 <!-- Áudio remoto da chamada de voz (sem interface própria) -->
