@@ -6,6 +6,10 @@ Site para duas pessoas assistirem ao mesmo vídeo/música em sincronia, cada uma
 
 ## Novidades desta versão
 
+- **Novo ecrã do anfitrião, tipo "launcher".** Em vez dos separadores empilhados, agora há uma grelha de 9 ícones ("O que vais fazer?") — Partilhar, Playlist, Áudio, Ao vivo, YouTube, Enviar, Mensagens, Conectados, Sair — cada um a abrir a funcionalidade certa, com scroll automático até ao painel. Baseado numa maquete fornecida, adaptado à identidade visual já existente.
+- **Botão "📲 Instalar app"** no cartão da sala — aparece automaticamente em telemóveis Android/Chrome quando a app pode ser instalada, e dispara o pedido de instalação nativo.
+- **Cartão da sala com destaque visual** (efeito de brilho/gradiente), a comunicar melhor que é o ponto principal do ecrã.
+
 - **Barra de ações flutuante em pílula.** Os botões de chamada de voz (🎤) e chat (💬) — antes dois círculos soltos — agora partilham um único invólucro em vidro fosco, inspirado em interfaces modernas de apps de ficheiros/produtividade.
 
 - **Novo modo: 📤 Enviar ficheiro.** Em vez de transmitir o vídeo ao vivo, agora podes enviar o ficheiro por completo para a outra pessoa (transferência direta entre os dois telefones, via `RTCDataChannel` do WebRTC — não passa pelo nosso servidor). Depois de recebido, cada telefone toca a sua própria cópia local, com qualidade perfeita e sem depender da rede a partir daí. Ideal para músicas e vídeos curtos; para filmes inteiros, o modo "📱 Ao vivo" continua a ser melhor (começa a ver de imediato, sem esperar a transferência toda).
