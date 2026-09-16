@@ -6,6 +6,11 @@ Site para duas pessoas assistirem ao mesmo vídeo/música em sincronia, cada uma
 
 ## Novidades desta versão
 
+- **Ecrã inicial mais estiloso.** Barra de destaque animada por baixo do cabeçalho, e uma nova faixa horizontal com as funcionalidades principais (Ao vivo, YouTube, Enviar, Chat, Voz) em pílulas coloridas, antes dos cartões de "Criar sala"/"Entrar numa sala".
+- **Fundo com deriva subtil** — o brilho de fundo desloca-se lentamente (desativa-se sozinho se tiveres "reduzir animações" ligado no telemóvel).
+- **Entrada escalonada** dos elementos do ecrã inicial (cada cartão aparece com um pequeno desfasamento, em vez de tudo ao mesmo tempo).
+- Removida a linha de dedicatória do rodapé — fica só o crédito "Desenvolvido pela 2-On Tecnolong".
+
 - **Interface reorganizada, sem redundâncias.** Antes havia 2-3 formas de fazer a mesma coisa (ex: "Partilhar" e "Sair" apareciam duas vezes; a barra flutuante duplicava dois ícones da grelha). Agora cada ação tem um único sítio:
   - Removida a barra flutuante (🎤💬) — essas ações já estão na grelha ("Áudio" e "Mensagens").
   - Cartão da sala simplificado: QR em destaque, "Copiar link" + "Partilhar" como ações principais, "Copiar só o código" como opção secundária discreta.
