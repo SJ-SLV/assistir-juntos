@@ -123,6 +123,44 @@
     border-color: rgba(255,138,76,0.4);
     box-shadow: 0 10px 34px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,138,76,0.1) inset;
   }
+
+  .hero-card {
+    position: relative; overflow: hidden;
+    border-color: rgba(255,138,76,0.35);
+  }
+  .hero-card::before {
+    content: ''; position: absolute; top: -60%; right: -30%; width: 260px; height: 260px;
+    background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .hero-tagline { margin: 0; text-align: center; font-size: 13px; color: var(--muted); position: relative; }
+  .hero-card > * { position: relative; }
+
+  .icon-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px 10px; }
+  .grid-item {
+    background: transparent; box-shadow: none; padding: 2px; border: none;
+    display: flex; flex-direction: column; align-items: center; gap: 7px;
+    color: var(--muted); font-size: 11.5px; font-weight: 600; letter-spacing: 0.1px;
+  }
+  .grid-item:active { transform: scale(0.93); }
+  .grid-icon {
+    width: 54px; height: 54px; border-radius: 17px; flex: none;
+    display: flex; align-items: center; justify-content: center; font-size: 22px;
+    box-shadow: 0 8px 18px rgba(0,0,0,0.4);
+  }
+  .g-share { background: linear-gradient(135deg, var(--accent), var(--accent-2)); }
+  .g-playlist { background: linear-gradient(135deg, #a78bfa, #7dd3fc); }
+  .g-audio { background: linear-gradient(135deg, #34d399, #6ee7b7); }
+  .g-live { background: linear-gradient(135deg, #fb7185, #fda4af); }
+  .g-yt { background: linear-gradient(135deg, #f87171, #fca5a5); }
+  .g-send { background: linear-gradient(135deg, #60a5fa, #93c5fd); }
+  .g-chat { background: linear-gradient(135deg, #facc15, #fde68a); }
+  .g-members { background: linear-gradient(135deg, #38bdf8, #a5f3fc); }
+  .g-leave { background: linear-gradient(135deg, #64748b, #94a3b8); }
+
+  @keyframes statusPulse { 0%,100% { box-shadow: 0 0 0 0 var(--accent-glow); } 50% { box-shadow: 0 0 0 8px transparent; } }
+  .status.pulse-highlight { animation: statusPulse 0.6s ease 2; }
+
   h2 {
     margin: 0; font-family: var(--font-display); font-size: 15.5px; font-weight: 700; letter-spacing: 0.1px;
     display: flex; align-items: center; gap: 8px; color: var(--text);
@@ -383,29 +421,64 @@
     <div class="banner" id="host-reselect-banner">
       ⚠️ A ligação foi restabelecida. Por segurança do telemóvel, a playlist local perdeu-se — volta a adicionar os ficheiros para continuares a partilhar.
     </div>
-    <div class="card">
-      <h2>A tua sala</h2>
+
+    <div class="card hero-card">
+      <p class="hero-tagline">Partilha os melhores momentos, ao vivo.</p>
       <div class="code-display" id="room-code">-----</div>
+      <p class="status" id="host-status"><span class="dot"></span> A aguardar que alguém entre...</p>
       <div class="row">
         <button id="btn-copy-link">🔗 Copiar link</button>
         <button id="btn-copy-code" class="secondary">Copiar código</button>
       </div>
-      <button id="btn-share-link" class="secondary">📤 Partilhar</button>
-      <div id="qr-wrap" style="display:flex; justify-content:center;">
-        <img id="qr-code" alt="Código QR da sala" width="140" height="140" style="border-radius:14px; background:#fff; padding:10px; box-shadow:0 10px 24px rgba(0,0,0,0.35);" />
+      <div class="row">
+        <button id="btn-share-link" class="secondary">📤 Partilhar</button>
+        <button id="btn-install-app" class="secondary" style="display:none;">📲 Instalar app</button>
       </div>
-      <p class="hint">Envia o link (mais fácil) ou o código à outra pessoa. Ela também pode apontar a câmara ao QR.</p>
+      <div id="qr-wrap" style="display:flex; justify-content:center;">
+        <img id="qr-code" alt="Código QR da sala" width="120" height="120" style="border-radius:14px; background:#fff; padding:8px; box-shadow:0 10px 24px rgba(0,0,0,0.35);" />
+      </div>
+      <p class="hint" style="text-align:center;">Envia o link ou o código à outra pessoa — ela também pode apontar a câmara ao QR.</p>
       <div class="row" style="align-items:center; gap:8px;">
         <label for="vol-call-host" style="font-size:12px; color:var(--muted); flex:0 0 auto;">🎤 Volume da chamada</label>
         <input type="range" id="vol-call-host" min="0" max="100" value="100" style="flex:1;" />
       </div>
-      <p class="status" id="host-status"><span class="dot"></span> A aguardar que alguém entre...</p>
-      <button id="btn-leave-host" class="ghost">🚪 Sair da sala</button>
     </div>
 
     <div class="card">
-      <h2>🎬 O que vais partilhar?</h2>
-      <div class="segmented">
+      <h2>O que vais fazer?</h2>
+      <div class="icon-grid" id="action-grid">
+        <button type="button" class="grid-item" data-action="share">
+          <span class="grid-icon g-share">🔗</span><span>Partilhar</span>
+        </button>
+        <button type="button" class="grid-item" data-action="playlist">
+          <span class="grid-icon g-playlist">🎵</span><span>Playlist</span>
+        </button>
+        <button type="button" class="grid-item" data-action="audio">
+          <span class="grid-icon g-audio">🎤</span><span>Áudio</span>
+        </button>
+        <button type="button" class="grid-item" data-action="mode-file">
+          <span class="grid-icon g-live">🎬</span><span>Ao vivo</span>
+        </button>
+        <button type="button" class="grid-item" data-action="mode-youtube">
+          <span class="grid-icon g-yt">▶️</span><span>YouTube</span>
+        </button>
+        <button type="button" class="grid-item" data-action="mode-transfer">
+          <span class="grid-icon g-send">📤</span><span>Enviar</span>
+        </button>
+        <button type="button" class="grid-item" data-action="chat">
+          <span class="grid-icon g-chat">💬</span><span>Mensagens</span>
+        </button>
+        <button type="button" class="grid-item" data-action="members">
+          <span class="grid-icon g-members">👥</span><span>Conectados</span>
+        </button>
+        <button type="button" class="grid-item" data-action="leave">
+          <span class="grid-icon g-leave">🚪</span><span>Sair</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="card" id="content-panel-card" style="display:none;">
+      <div class="segmented" style="display:none;">
         <button id="mode-file-btn" class="mode-btn mode-btn-active">📱 Ao vivo</button>
         <button id="mode-transfer-btn" class="mode-btn">📤 Enviar</button>
         <button id="mode-youtube-btn" class="mode-btn">▶️ YouTube</button>
@@ -467,6 +540,8 @@
         <div class="playlist" id="yt-playlist"></div>
       </div>
     </div>
+
+    <button id="btn-leave-host" class="ghost">🚪 Sair da sala</button>
   </section>
 
   <!-- ECRÃ DO VIEWER -->
@@ -930,6 +1005,69 @@
 
   document.getElementById('vol-call-host').addEventListener('input', (e) => {
     remoteAudio.volume = Number(e.target.value) / 100;
+  });
+
+  // ---------- GRELHA DE AÇÕES (launcher) ----------
+  document.getElementById('action-grid').addEventListener('click', (e) => {
+    const btn = e.target.closest('.grid-item');
+    if (!btn) return;
+    const action = btn.dataset.action;
+
+    if (action === 'share') {
+      document.getElementById('btn-share-link').click();
+    } else if (action === 'playlist') {
+      revealContentPanel();
+      document.getElementById('mode-file-btn').click();
+      setTimeout(() => {
+        document.getElementById('file-playlist').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 150);
+    } else if (action === 'audio') {
+      document.getElementById('mic-toggle').click();
+    } else if (action === 'mode-file') {
+      revealContentPanel();
+      document.getElementById('mode-file-btn').click();
+    } else if (action === 'mode-youtube') {
+      revealContentPanel();
+      document.getElementById('mode-youtube-btn').click();
+    } else if (action === 'mode-transfer') {
+      revealContentPanel();
+      document.getElementById('mode-transfer-btn').click();
+    } else if (action === 'chat') {
+      document.getElementById('chat-toggle').click();
+    } else if (action === 'members') {
+      pulseConnectionStatus();
+    } else if (action === 'leave') {
+      leaveRoom();
+    }
+  });
+
+  function revealContentPanel() {
+    const panel = document.getElementById('content-panel-card');
+    panel.style.display = 'flex';
+    setTimeout(() => panel.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+  }
+
+  function pulseConnectionStatus() {
+    hostStatus.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    hostStatus.classList.remove('pulse-highlight');
+    void hostStatus.offsetWidth; // reinicia a animação mesmo se já tiver corrido
+    hostStatus.classList.add('pulse-highlight');
+  }
+
+  // Sugestão de instalação da PWA ("Instalar app")
+  let deferredInstallPrompt = null;
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    const btn = document.getElementById('btn-install-app');
+    if (btn) btn.style.display = 'block';
+  });
+  document.getElementById('btn-install-app').addEventListener('click', async () => {
+    if (!deferredInstallPrompt) return;
+    deferredInstallPrompt.prompt();
+    await deferredInstallPrompt.userChoice;
+    deferredInstallPrompt = null;
+    document.getElementById('btn-install-app').style.display = 'none';
   });
 
   // ---------- MODO: TELEMÓVEL vs YOUTUBE ----------
