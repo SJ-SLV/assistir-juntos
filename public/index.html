@@ -144,6 +144,7 @@
   }
   .grid-item:active { transform: scale(0.93); }
   .grid-icon {
+    position: relative;
     width: 54px; height: 54px; border-radius: 17px; flex: none;
     display: flex; align-items: center; justify-content: center; font-size: 22px;
     box-shadow: 0 8px 18px rgba(0,0,0,0.4);
@@ -156,7 +157,11 @@
   .g-send { background: linear-gradient(135deg, #60a5fa, #93c5fd); }
   .g-chat { background: linear-gradient(135deg, #facc15, #fde68a); }
   .g-members { background: linear-gradient(135deg, #38bdf8, #a5f3fc); }
+  .g-install { background: linear-gradient(135deg, #c084fc, #ddd6fe); }
   .g-leave { background: linear-gradient(135deg, #64748b, #94a3b8); }
+  .grid-icon.is-active { box-shadow: 0 0 0 3px rgba(52,211,153,0.5), 0 8px 18px rgba(0,0,0,0.4); }
+  .grid-icon.is-muted { box-shadow: 0 0 0 3px rgba(255,77,94,0.45), 0 8px 18px rgba(0,0,0,0.4); }
+  .grid-icon .badge { top: -4px; right: -4px; }
 
   @keyframes statusPulse { 0%,100% { box-shadow: 0 0 0 0 var(--accent-glow); } 50% { box-shadow: 0 0 0 8px transparent; } }
   .status.pulse-highlight { animation: statusPulse 0.6s ease 2; }
@@ -426,19 +431,19 @@
       <p class="hero-tagline">Partilha os melhores momentos, ao vivo.</p>
       <div class="code-display" id="room-code">-----</div>
       <p class="status" id="host-status"><span class="dot"></span> A aguardar que alguém entre...</p>
+
+      <div id="qr-wrap" style="display:flex; justify-content:center;">
+        <img id="qr-code" alt="Código QR da sala" width="128" height="128" style="border-radius:14px; background:#fff; padding:8px; box-shadow:0 10px 24px rgba(0,0,0,0.35);" />
+      </div>
+      <p class="hint" style="text-align:center;">Aponta a câmara ao QR, ou usa um dos links abaixo.</p>
+
       <div class="row">
         <button id="btn-copy-link">🔗 Copiar link</button>
-        <button id="btn-copy-code" class="secondary">Copiar código</button>
-      </div>
-      <div class="row">
         <button id="btn-share-link" class="secondary">📤 Partilhar</button>
-        <button id="btn-install-app" class="secondary" style="display:none;">📲 Instalar app</button>
       </div>
-      <div id="qr-wrap" style="display:flex; justify-content:center;">
-        <img id="qr-code" alt="Código QR da sala" width="120" height="120" style="border-radius:14px; background:#fff; padding:8px; box-shadow:0 10px 24px rgba(0,0,0,0.35);" />
-      </div>
-      <p class="hint" style="text-align:center;">Envia o link ou o código à outra pessoa — ela também pode apontar a câmara ao QR.</p>
-      <div class="row" style="align-items:center; gap:8px;">
+      <button id="btn-copy-code" class="ghost" style="padding:8px;">Copiar só o código</button>
+
+      <div class="row" id="call-volume-row" style="align-items:center; gap:8px; display:none;">
         <label for="vol-call-host" style="font-size:12px; color:var(--muted); flex:0 0 auto;">🎤 Volume da chamada</label>
         <input type="range" id="vol-call-host" min="0" max="100" value="100" style="flex:1;" />
       </div>
@@ -447,14 +452,11 @@
     <div class="card">
       <h2>O que vais fazer?</h2>
       <div class="icon-grid" id="action-grid">
-        <button type="button" class="grid-item" data-action="share">
-          <span class="grid-icon g-share">🔗</span><span>Partilhar</span>
-        </button>
         <button type="button" class="grid-item" data-action="playlist">
           <span class="grid-icon g-playlist">🎵</span><span>Playlist</span>
         </button>
         <button type="button" class="grid-item" data-action="audio">
-          <span class="grid-icon g-audio">🎤</span><span>Áudio</span>
+          <span class="grid-icon g-audio" id="grid-icon-audio">🎤</span><span>Áudio</span>
         </button>
         <button type="button" class="grid-item" data-action="mode-file">
           <span class="grid-icon g-live">🎬</span><span>Ao vivo</span>
@@ -466,10 +468,13 @@
           <span class="grid-icon g-send">📤</span><span>Enviar</span>
         </button>
         <button type="button" class="grid-item" data-action="chat">
-          <span class="grid-icon g-chat">💬</span><span>Mensagens</span>
+          <span class="grid-icon g-chat" id="grid-icon-chat">💬<span id="chat-badge-grid" class="badge"></span></span><span>Mensagens</span>
         </button>
         <button type="button" class="grid-item" data-action="members">
           <span class="grid-icon g-members">👥</span><span>Conectados</span>
+        </button>
+        <button type="button" class="grid-item" data-action="install">
+          <span class="grid-icon g-install">📲</span><span>Instalar</span>
         </button>
         <button type="button" class="grid-item" data-action="leave">
           <span class="grid-icon g-leave">🚪</span><span>Sair</span>
@@ -541,7 +546,6 @@
       </div>
     </div>
 
-    <button id="btn-leave-host" class="ghost">🚪 Sair da sala</button>
   </section>
 
   <!-- ECRÃ DO VIEWER -->
@@ -588,7 +592,7 @@
 <button id="btn-audio-unmute" class="secondary">🔊 Ativar áudio da chamada</button>
 
 <!-- Botões flutuantes -->
-<div id="action-bar" class="action-bar">
+<div id="action-bar" class="action-bar" style="display:none !important;">
   <button id="mic-toggle" class="action-btn" title="Chamada de voz" aria-label="Chamada de voz">🎤</button>
   <button id="chat-toggle" class="action-btn action-btn-accent" aria-label="Abrir mensagens">💬<span id="chat-badge" class="badge"></span></button>
 </div>
@@ -641,7 +645,6 @@
   function showScreen(name) {
     Object.values(screens).forEach(s => s.classList.remove('active'));
     screens[name].classList.add('active');
-    document.getElementById('action-bar').classList.toggle('show', name !== 'home');
     if (name === 'home') hideTopbarChip();
   }
 
@@ -768,7 +771,6 @@
   function leaveRoom() {
     ws.send(JSON.stringify({ type: 'leave-room' }));
   }
-  document.getElementById('btn-leave-host').addEventListener('click', leaveRoom);
   document.getElementById('btn-leave-viewer').addEventListener('click', leaveRoom);
 
   function resetAllStateToHome() {
@@ -1013,9 +1015,7 @@
     if (!btn) return;
     const action = btn.dataset.action;
 
-    if (action === 'share') {
-      document.getElementById('btn-share-link').click();
-    } else if (action === 'playlist') {
+    if (action === 'playlist') {
       revealContentPanel();
       document.getElementById('mode-file-btn').click();
       setTimeout(() => {
@@ -1036,6 +1036,8 @@
       document.getElementById('chat-toggle').click();
     } else if (action === 'members') {
       pulseConnectionStatus();
+    } else if (action === 'install') {
+      handleInstallRequest();
     } else if (action === 'leave') {
       leaveRoom();
     }
@@ -1054,21 +1056,21 @@
     hostStatus.classList.add('pulse-highlight');
   }
 
-  // Sugestão de instalação da PWA ("Instalar app")
+  // Instalação da PWA ("📲 Instalar" na grelha)
   let deferredInstallPrompt = null;
   window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredInstallPrompt = e;
-    const btn = document.getElementById('btn-install-app');
-    if (btn) btn.style.display = 'block';
   });
-  document.getElementById('btn-install-app').addEventListener('click', async () => {
-    if (!deferredInstallPrompt) return;
-    deferredInstallPrompt.prompt();
-    await deferredInstallPrompt.userChoice;
-    deferredInstallPrompt = null;
-    document.getElementById('btn-install-app').style.display = 'none';
-  });
+  async function handleInstallRequest() {
+    if (deferredInstallPrompt) {
+      deferredInstallPrompt.prompt();
+      await deferredInstallPrompt.userChoice;
+      deferredInstallPrompt = null;
+    } else {
+      alert('Para instalar: abre o menu do browser (⋮) e escolhe "Adicionar ao ecrã principal" ou "Instalar app".');
+    }
+  }
 
   // ---------- MODO: TELEMÓVEL vs YOUTUBE ----------
   function setActiveModeButton(activeId) {
@@ -1273,9 +1275,22 @@
 
   function updateMicButton() {
     micToggle.classList.remove('active', 'muted');
-    if (!micAdded) { micToggle.textContent = '🎤'; }
-    else if (micEnabled) { micToggle.textContent = '🎙️'; micToggle.classList.add('active'); }
-    else { micToggle.textContent = '🔇'; micToggle.classList.add('muted'); }
+    const gridIcon = document.getElementById('grid-icon-audio');
+    const volRow = document.getElementById('call-volume-row');
+    if (gridIcon) gridIcon.classList.remove('is-active', 'is-muted');
+
+    if (!micAdded) {
+      micToggle.textContent = '🎤';
+      if (volRow) volRow.style.display = 'none';
+    } else if (micEnabled) {
+      micToggle.textContent = '🎙️'; micToggle.classList.add('active');
+      if (gridIcon) gridIcon.classList.add('is-active');
+      if (volRow) volRow.style.display = 'flex';
+    } else {
+      micToggle.textContent = '🔇'; micToggle.classList.add('muted');
+      if (gridIcon) gridIcon.classList.add('is-muted');
+      if (volRow) volRow.style.display = 'flex';
+    }
   }
 
   micToggle.addEventListener('click', async () => {
@@ -1728,6 +1743,8 @@
     chatPanel.classList.add('show');
     unread = 0;
     chatBadge.classList.remove('show');
+    const gridBadge = document.getElementById('chat-badge-grid');
+    if (gridBadge) gridBadge.classList.remove('show');
   });
   document.getElementById('chat-close').addEventListener('click', () => chatPanel.classList.remove('show'));
 
@@ -1822,6 +1839,8 @@
             unread++;
             chatBadge.textContent = unread;
             chatBadge.classList.add('show');
+            const gridBadge = document.getElementById('chat-badge-grid');
+            if (gridBadge) { gridBadge.textContent = unread; gridBadge.classList.add('show'); }
           }
           break;
 
