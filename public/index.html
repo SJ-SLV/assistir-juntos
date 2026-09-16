@@ -102,6 +102,12 @@
   .screen.active { display: flex; animation: rise 0.35s ease both; }
   @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
+  .site-footer {
+    text-align: center; padding: 4px 20px 28px; margin-top: -8px;
+  }
+  .site-footer p { margin: 2px 0; font-size: 11.5px; color: var(--muted); }
+  .site-footer strong { color: var(--text); font-weight: 600; }
+
   .card {
     background: var(--card);
     border: 1px solid var(--glass-border);
@@ -494,6 +500,11 @@
   </section>
 
 </main>
+
+<footer class="site-footer">
+  <p>Desenvolvido pela <strong>2-On Tecnolong</strong></p>
+  <p>Fonte de inspiração: minha Tchuchuquinha 💕</p>
+</footer>
 
 <!-- Áudio remoto da chamada de voz (sem interface própria) -->
 <audio id="remote-audio" autoplay playsinline></audio>
