@@ -6,6 +6,14 @@ Site para duas pessoas assistirem ao mesmo vídeo/música em sincronia, cada uma
 
 ## Novidades desta versão
 
+- **Interface reorganizada, sem redundâncias.** Antes havia 2-3 formas de fazer a mesma coisa (ex: "Partilhar" e "Sair" apareciam duas vezes; a barra flutuante duplicava dois ícones da grelha). Agora cada ação tem um único sítio:
+  - Removida a barra flutuante (🎤💬) — essas ações já estão na grelha ("Áudio" e "Mensagens").
+  - Cartão da sala simplificado: QR em destaque, "Copiar link" + "Partilhar" como ações principais, "Copiar só o código" como opção secundária discreta.
+  - Volume da chamada só aparece depois de a chamada de voz estar ativa (antes disso, não faz sentido mostrá-lo).
+  - "Instalar app" passou a ser o 9º ícone da grelha (antes era mais um botão a competir por atenção no cartão da sala).
+  - O aviso de mensagens não lidas mudou-se para o ícone "Mensagens" da grelha.
+  - O ícone "Áudio" muda de cor (verde = ativo, vermelho = mudo) para dares conta do estado da chamada à distância.
+
 - **Novo ecrã do anfitrião, tipo "launcher".** Em vez dos separadores empilhados, agora há uma grelha de 9 ícones ("O que vais fazer?") — Partilhar, Playlist, Áudio, Ao vivo, YouTube, Enviar, Mensagens, Conectados, Sair — cada um a abrir a funcionalidade certa, com scroll automático até ao painel. Baseado numa maquete fornecida, adaptado à identidade visual já existente.
 - **Botão "📲 Instalar app"** no cartão da sala — aparece automaticamente em telemóveis Android/Chrome quando a app pode ser instalada, e dispara o pedido de instalação nativo.
 - **Cartão da sala com destaque visual** (efeito de brilho/gradiente), a comunicar melhor que é o ponto principal do ecrã.
