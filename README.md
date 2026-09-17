@@ -1,33 +1,30 @@
-# Assistir Juntos 2.0
+# Assistir Juntos 2.1
 
-Versão 2.0 do Assistir Juntos, baseada no projeto original enviado.
+Versão avançada do Assistir Juntos para duas pessoas assistirem vídeo/música em sincronização.
 
-## Incluído
-- Salas privadas de 2 pessoas com código e link.
-- Reconexão e período de tolerância de 60 segundos.
-- WebRTC para transmissão de vídeo/áudio local e chamada de voz.
-- STUN/TURN configurável por `METERED_TURN_USERNAME` e `METERED_TURN_CREDENTIAL`.
-- Player com play/pause, -10s, +10s, seek, volume e fullscreen.
-- Playlist local e playlist YouTube.
-- Sincronização de reprodução, posição e avanço automático de ficheiros locais.
-- Chat persistente localmente, indicador de escrita e contador de não lidas.
-- Reações em tempo real.
-- Partilha por link, QR e menu nativo do telefone.
-- PWA instalável.
-- Interface responsiva para Android/desktop.
+## Melhorias 2.1
+- Interface mais limpa e responsiva.
+- Modo Cinema.
+- Botão de sincronização imediata.
+- Indicador de latência em tempo real.
+- Instalação PWA com botão próprio quando o navegador oferece a opção.
+- Nomes persistentes no dispositivo.
+- Reações com animação no ecrã.
+- Presença atualizada quando a outra pessoa entra, sai ou reconecta.
+- Limitação de tamanho de mensagens e rate-limit básico no WebSocket.
+- Endpoint `/health` para monitorização.
+- Expiração de salas inativas.
+- TURN próprio continua configurável por `METERED_TURN_USERNAME` e `METERED_TURN_CREDENTIAL`.
 
 ## Executar
 ```bash
 npm install
 npm start
 ```
-Depois abrir `http://localhost:3000`.
+Abra `http://localhost:3000`.
 
 ## Render
-- Build: `npm install`
-- Start: `npm start`
-- Node: 18+
-- Configure as variáveis TURN no ambiente do servidor.
+Defina as variáveis de ambiente do TURN no serviço e use o comando `npm start`.
 
-## Nota técnica
-Os ficheiros locais continuam no telefone do anfitrião. O WebRTC transmite o conteúdo para o convidado; o YouTube é carregado diretamente pelo navegador de cada utilizador e a aplicação sincroniza o estado.
+## Nota
+Vídeos locais são transmitidos diretamente entre os dois navegadores através de WebRTC; o servidor funciona principalmente como sinalização. YouTube é carregado diretamente pelo YouTube e apenas os comandos de sincronização passam pela sala.
