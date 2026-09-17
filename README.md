@@ -6,6 +6,10 @@ Site para duas pessoas assistirem ao mesmo vídeo/música em sincronia, cada uma
 
 ## Novidades desta versão
 
+- **Redesign visual completo — conceito "Bilhete de Cinema".** Trocado por completo: fundo escuro → fundo claro tipo papel; tipografia Space Grotesk/Inter → **IBM Plex Mono** (títulos, tipo impressora de bilhetes) + **IBM Plex Sans** (texto); cor de destaque laranja → **verde profundo**; cartões em vidro fosco → cartões lisos com bordas finas; grelha de ícones → **menu em lista** com seta, ao estilo de opções de bilhete.
+- **Linguagem renovada:** "Criar sala" → "Emitir bilhete"; "Entrar numa sala" → "Usar um bilhete"; "Sair da sala" → "Encerrar bilhete/sessão"; o código da sala é agora apresentado como um canhoto de bilhete, com linha de perfuração a separar o número do resto do cartão.
+- Toda a funcionalidade (sincronização, playlists, chat, chamada de voz, transferência de ficheiros, PWA) continua exatamente igual — mudou só a roupa que o site veste.
+
 - **Ecrã inicial mais estiloso.** Barra de destaque animada por baixo do cabeçalho, e uma nova faixa horizontal com as funcionalidades principais (Ao vivo, YouTube, Enviar, Chat, Voz) em pílulas coloridas, antes dos cartões de "Criar sala"/"Entrar numa sala".
 - **Fundo com deriva subtil** — o brilho de fundo desloca-se lentamente (desativa-se sozinho se tiveres "reduzir animações" ligado no telemóvel).
 - **Entrada escalonada** dos elementos do ecrã inicial (cada cartão aparece com um pequeno desfasamento, em vez de tudo ao mesmo tempo).
