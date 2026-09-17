@@ -1,16 +1,2 @@
 {
-  "name": "2-on-streaming",
-  "version": "1.0.0",
-  "description": "2 on Streaming — assiste filmes/música em sincronia, cada um pelo seu telefone",
-  "main": "server.js",
-  "engines": {
-    "node": ">=18"
-  },
-  "scripts": {
-    "start": "node server.js"
-  },
-  "dependencies": {
-    "express": "^4.19.2",
-    "ws": "^8.17.0"
-  }
-}
+  "name":"assistir-juntos","version":"2.0.0","description":"Assistir Juntos 2.0 — vídeos, música e YouTube em sincronia","main":"server.js","engines":{"node":">=18"},"scripts":{"start":"node server.js"},"dependencies":{"express":"^4.19.2","ws":"^8.17.0"}}

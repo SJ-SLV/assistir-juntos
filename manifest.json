@@ -1,0 +1,3 @@
+{
+  "name":"Assistir Juntos 2.0","short_name":"Assistir Juntos","description":"Vê vídeos, música e YouTube em sincronia com outra pessoa.","start_url":"./","scope":"./","display":"standalone","background_color":"#07080b","theme_color":"#e50914","icons":[{"src":"icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]
+}
