@@ -1,30 +1,24 @@
-# Assistir Juntos 2.1
+# Assistir Juntos 2.2
 
-Versão avançada do Assistir Juntos para duas pessoas assistirem vídeo/música em sincronização.
+Versão 2.2 focada em continuidade de sessão e uma interface mais limpa e humana.
 
-## Melhorias 2.1
-- Interface mais limpa e responsiva.
-- Modo Cinema.
-- Botão de sincronização imediata.
-- Indicador de latência em tempo real.
-- Instalação PWA com botão próprio quando o navegador oferece a opção.
-- Nomes persistentes no dispositivo.
-- Reações com animação no ecrã.
-- Presença atualizada quando a outra pessoa entra, sai ou reconecta.
-- Limitação de tamanho de mensagens e rate-limit básico no WebSocket.
-- Endpoint `/health` para monitorização.
-- Expiração de salas inativas.
-- TURN próprio continua configurável por `METERED_TURN_USERNAME` e `METERED_TURN_CREDENTIAL`.
+## Novidades
+- A sala é restaurada automaticamente depois de atualizar a página.
+- Reconexão automática do WebSocket e tentativa de reentrada na sala.
+- A sessão só é apagada quando o utilizador escolhe sair ou quando a sala expira.
+- Janela de tolerância de 5 minutos para uma desconexão temporária.
+- Interface redesenhada: menos efeitos, menos gradientes, tipografia mais discreta, espaçamento consistente e aparência de produto real.
+- Playlist do YouTube guardada localmente por sala.
+- Link `?room=XXXXX` continua a permitir entrar numa sala partilhada.
+- Manifest/PWA ajustado para abrir a aplicação pela raiz.
+
+## Nota importante
+Vídeos e músicas escolhidos diretamente do telefone não podem ser recuperados automaticamente apenas com localStorage depois de um refresh. Nesta versão a sala é restaurada, mas os ficheiros locais precisam ser selecionados novamente. A próxima etapa pode usar IndexedDB para guardar ficheiros locais de forma persistente.
 
 ## Executar
 ```bash
 npm install
 npm start
 ```
-Abra `http://localhost:3000`.
 
-## Render
-Defina as variáveis de ambiente do TURN no serviço e use o comando `npm start`.
-
-## Nota
-Vídeos locais são transmitidos diretamente entre os dois navegadores através de WebRTC; o servidor funciona principalmente como sinalização. YouTube é carregado diretamente pelo YouTube e apenas os comandos de sincronização passam pela sala.
+O servidor usa a variável `PORT` quando disponível. Para produção, configure as credenciais TURN através das variáveis de ambiente `METERED_TURN_USERNAME` e `METERED_TURN_CREDENTIAL`.

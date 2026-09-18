@@ -1,6 +1,6 @@
 {
   "name":"assistir-juntos",
-  "version":"2.1.0",
+  "version":"2.2.0",
   "description":"Assistir Juntos — salas privadas para vídeo, música e YouTube em sincronia.",
   "main":"server.js",
   "engines":{"node":">=18"},

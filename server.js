@@ -7,7 +7,7 @@ const app=express();
 app.disable('x-powered-by');
 app.use(express.static(path.join(__dirname,'public')));
 const server=http.createServer(app); const wss=new WebSocket.Server({server});
-const rooms=new Map(); const GRACE_MS=60000; const ROOM_TTL_MS=6*60*60*1000;
+const rooms=new Map(); const GRACE_MS=5*60*1000; const ROOM_TTL_MS=6*60*60*1000;
 const MAX_MSG=1200;
 const FALLBACK=[
  {urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'},
@@ -15,7 +15,7 @@ const FALLBACK=[
  {urls:'turn:openrelay.metered.ca:443',username:'openrelayproject',credential:'openrelayproject'},
  {urls:'turn:openrelay.metered.ca:443?transport=tcp',username:'openrelayproject',credential:'openrelayproject'}
 ];
-app.get('/health',(req,res)=>res.json({ok:true,service:'assistir-juntos',version:'2.1.0',rooms:rooms.size}));
+app.get('/health',(req,res)=>res.json({ok:true,service:'assistir-juntos',version:'2.2.0',rooms:rooms.size}));
 app.get('/ice-servers',(req,res)=>{const u=process.env.METERED_TURN_USERNAME,c=process.env.METERED_TURN_CREDENTIAL;if(!u||!c)return res.json(FALLBACK);res.json([
  {urls:'stun:stun.relay.metered.ca:80'},{urls:'turn:global.relay.metered.ca:80',username:u,credential:c},{urls:'turn:global.relay.metered.ca:80?transport=tcp',username:u,credential:c},{urls:'turn:global.relay.metered.ca:443',username:u,credential:c},{urls:'turns:global.relay.metered.ca:443?transport=tcp',username:u,credential:c}]);});
 function send(ws,data){if(ws&&ws.readyState===WebSocket.OPEN)ws.send(JSON.stringify(data));}
