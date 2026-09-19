@@ -1,24 +1,55 @@
-# Assistir Juntos 2.2
+# 2 on Streaming 4.0
 
-Versão 2.2 focada em continuidade de sessão e uma interface mais limpa e humana.
+Aplicação web para duas pessoas assistirem ao mesmo conteúdo em sincronia.
 
-## Novidades
-- A sala é restaurada automaticamente depois de atualizar a página.
-- Reconexão automática do WebSocket e tentativa de reentrada na sala.
-- A sessão só é apagada quando o utilizador escolhe sair ou quando a sala expira.
-- Janela de tolerância de 5 minutos para uma desconexão temporária.
-- Interface redesenhada: menos efeitos, menos gradientes, tipografia mais discreta, espaçamento consistente e aparência de produto real.
-- Playlist do YouTube guardada localmente por sala.
-- Link `?room=XXXXX` continua a permitir entrar numa sala partilhada.
-- Manifest/PWA ajustado para abrir a aplicação pela raiz.
+## Melhorias
 
-## Nota importante
-Vídeos e músicas escolhidos diretamente do telefone não podem ser recuperados automaticamente apenas com localStorage depois de um refresh. Nesta versão a sala é restaurada, mas os ficheiros locais precisam ser selecionados novamente. A próxima etapa pode usar IndexedDB para guardar ficheiros locais de forma persistente.
+- Interface redesenhada com aparência de produto real, sem excesso de efeitos.
+- Identidade visual própria do 2 on Streaming.
+- Layout responsivo para telemóvel, tablet e desktop.
+- Sessões com código, link de convite e partilha.
+- Reconexão automática da sessão após perda temporária de WebSocket.
+- Persistência da sessão atual no navegador.
+- Indicadores de ligação e latência.
+- Chat, reações e microfone via WebRTC.
+- Modo cinema e ecrã inteiro.
+- PWA com service worker atualizado.
+- Cabeçalhos básicos de segurança no servidor.
+- Limite de payload e proteção básica contra spam no WebSocket.
+- Correção do fluxo de transmissão de vídeo/áudio local usando `captureStream()` e substituição de tracks WebRTC.
+- Endpoint `/health` e `/ice-servers`.
 
 ## Executar
+
 ```bash
 npm install
 npm start
 ```
 
-O servidor usa a variável `PORT` quando disponível. Para produção, configure as credenciais TURN através das variáveis de ambiente `METERED_TURN_USERNAME` e `METERED_TURN_CREDENTIAL`.
+Depois abre `http://localhost:3000`.
+
+## TURN
+
+Para redes onde P2P direto não funciona bem, recomenda-se configurar um servidor TURN próprio.
+
+Variáveis aceites:
+- `METERED_TURN_USERNAME`
+- `METERED_TURN_CREDENTIAL`
+
+## Nota sobre vídeos locais
+
+Os vídeos escolhidos no telefone continuam a ser ficheiros locais do dispositivo anfitrião. Uma atualização da página não consegue recuperar automaticamente o `File` escolhido sem armazenamento persistente. IndexedDB continua a ser a próxima etapa recomendada para biblioteca local persistente.
+
+## Estrutura
+
+```text
+2-on-streaming/
+├── server.js
+├── package.json
+├── README.md
+└── public/
+    ├── index.html
+    ├── manifest.json
+    ├── sw.js
+    └── icon.svg
+```

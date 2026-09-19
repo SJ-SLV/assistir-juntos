@@ -1,44 +1,249 @@
-const express=require('express');
-const http=require('http');
-const path=require('path');
-const crypto=require('crypto');
-const WebSocket=require('ws');
-const app=express();
+const express = require('express');
+const http = require('http');
+const path = require('path');
+const crypto = require('crypto');
+const WebSocket = require('ws');
+
+const app = express();
 app.disable('x-powered-by');
-app.use(express.static(path.join(__dirname,'public')));
-const server=http.createServer(app); const wss=new WebSocket.Server({server});
-const rooms=new Map(); const GRACE_MS=5*60*1000; const ROOM_TTL_MS=6*60*60*1000;
-const MAX_MSG=1200;
-const FALLBACK=[
- {urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'},
- {urls:'turn:openrelay.metered.ca:80',username:'openrelayproject',credential:'openrelayproject'},
- {urls:'turn:openrelay.metered.ca:443',username:'openrelayproject',credential:'openrelayproject'},
- {urls:'turn:openrelay.metered.ca:443?transport=tcp',username:'openrelayproject',credential:'openrelayproject'}
-];
-app.get('/health',(req,res)=>res.json({ok:true,service:'assistir-juntos',version:'2.2.0',rooms:rooms.size}));
-app.get('/ice-servers',(req,res)=>{const u=process.env.METERED_TURN_USERNAME,c=process.env.METERED_TURN_CREDENTIAL;if(!u||!c)return res.json(FALLBACK);res.json([
- {urls:'stun:stun.relay.metered.ca:80'},{urls:'turn:global.relay.metered.ca:80',username:u,credential:c},{urls:'turn:global.relay.metered.ca:80?transport=tcp',username:u,credential:c},{urls:'turn:global.relay.metered.ca:443',username:u,credential:c},{urls:'turns:global.relay.metered.ca:443?transport=tcp',username:u,credential:c}]);});
-function send(ws,data){if(ws&&ws.readyState===WebSocket.OPEN)ws.send(JSON.stringify(data));}
-function cleanName(v,fallback){return String(v||fallback).replace(/[<>\u0000-\u001f]/g,'').trim().slice(0,24)||fallback;}
-function cleanText(v){return String(v||'').replace(/[<>\u0000-\u001f]/g,'').slice(0,MAX_MSG);}
-function code(){let c;do{c=crypto.randomBytes(8).toString('hex').toUpperCase().replace(/[01]/g,'').slice(0,5);}while(c.length<5||rooms.has(c));return c;}
-function roomState(r){return {code:r.code,hostName:r.hostName,viewerName:r.viewerName,hasViewer:!!r.viewer,createdAt:r.createdAt};}
-function touch(r){r.lastActivity=Date.now();}
-function notifyPresence(r){const s=roomState(r);send(r.host,{type:'presence',...s});send(r.viewer,{type:'presence',...s});}
-function removeAfterDisconnect(r,role){clearTimeout(r.timers[role]);r.timers[role]=setTimeout(()=>{if(!rooms.has(r.code))return;r[role]=null;r[role+'Name']=null;touch(r);notifyPresence(r);const other=role==='host'?r.viewer:r.host;send(other,{type:'peer-left',reason:'timeout'});if(!r.host&&!r.viewer)rooms.delete(r.code);},GRACE_MS);}
-function forward(r,ws,m){const target=ws.role==='host'?r.viewer:r.host;if(!target)return; if(m.type==='chat')m.text=cleanText(m.text); send(target,m);}
-wss.on('connection',ws=>{ws.room=null;ws.role=null;ws.isAlive=true;ws.msgWindow=[];ws.on('pong',()=>ws.isAlive=true);
- ws.on('message',raw=>{let m;try{m=JSON.parse(raw.toString())}catch{return}if(!m||typeof m.type!=='string')return;
-  const now=Date.now(); ws.msgWindow=ws.msgWindow.filter(t=>now-t<10000); if(!['ice-candidate','offer','answer','app-ping'].includes(m.type)){if(ws.msgWindow.length>=60)return;ws.msgWindow.push(now);}
-  if(m.type==='app-ping')return send(ws,{type:'app-pong',t:m.t});
-  if(m.type==='create-room'){const c=code();const r={code:c,host:ws,viewer:null,hostName:cleanName(m.name,'Anfitrião'),viewerName:null,timers:{host:null,viewer:null},createdAt:Date.now(),lastActivity:Date.now()};rooms.set(c,r);ws.room=c;ws.role='host';send(ws,{type:'room-created',...roomState(r)});return;}
-  if(m.type==='join-room'){const c=String(m.code||'').toUpperCase().trim(),r=rooms.get(c);if(!r)return send(ws,{type:'error',message:'Sala não encontrada. Confirma o código.'});if(r.viewer&&r.viewer.readyState===WebSocket.OPEN)return send(ws,{type:'error',message:'Esta sala já tem duas pessoas.'});clearTimeout(r.timers.viewer);r.viewer=ws;r.viewerName=cleanName(m.name,'Convidado');ws.room=c;ws.role='viewer';touch(r);send(ws,{type:'room-joined',...roomState(r)});send(r.host,{type:'peer-joined',...roomState(r)});notifyPresence(r);return;}
-  if(m.type==='rejoin-room'){const c=String(m.code||'').toUpperCase().trim(),role=m.role,r=rooms.get(c);if(!r||!['host','viewer'].includes(role))return send(ws,{type:'error',expired:true,message:'A sala expirou. Cria uma nova sala.'});const old=r[role];if(old&&old!==ws)try{old.close()}catch{};clearTimeout(r.timers[role]);r[role]=ws;ws.room=c;ws.role=role;if(m.name)r[role+'Name']=cleanName(m.name,role==='host'?'Anfitrião':'Convidado');touch(r);send(ws,{type:role==='host'?'room-created':'room-joined',rejoined:true,...roomState(r)});send(role==='host'?r.viewer:r.host,{type:'peer-joined',rejoined:true,...roomState(r)});notifyPresence(r);return;}
-  const r=rooms.get(ws.room);if(!r)return;touch(r);
-  if(m.type==='leave-room'){if(r[ws.role]===ws){clearTimeout(r.timers[ws.role]);r[ws.role]=null;r[ws.role+'Name']=null;const other=ws.role==='host'?r.viewer:r.host;send(other,{type:'peer-left',reason:'left'});notifyPresence(r);if(!r.host&&!r.viewer)rooms.delete(r.code);}ws.room=null;ws.role=null;return send(ws,{type:'left-room'});}
-  if(['offer','answer','ice-candidate','chat','reaction','control','typing'].includes(m.type)){if(m.type==='chat')m.name=cleanName(m.name,'Pessoa');forward(r,ws,m);return;}
- });
- ws.on('close',()=>{const r=rooms.get(ws.room);if(!r||r[ws.role]!==ws)return;const other=ws.role==='host'?r.viewer:r.host;send(other,{type:'peer-disconnected-temp'});removeAfterDisconnect(r,ws.role);});
+app.use((req,res,next)=>{
+  res.setHeader('X-Content-Type-Options','nosniff');
+  res.setHeader('Referrer-Policy','strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy','camera=(), geolocation=(), payment=(), usb=()');
+  next();
 });
-setInterval(()=>{const now=Date.now();for(const [c,r] of rooms){if(!r.host&&!r.viewer||now-r.lastActivity>ROOM_TTL_MS)rooms.delete(c);}wss.clients.forEach(ws=>{if(ws.isAlive===false)return ws.terminate();ws.isAlive=false;ws.ping();});},30000);
-const PORT=process.env.PORT||3000;server.listen(PORT,()=>console.log('Assistir Juntos 2.1 na porta '+PORT));
+app.use(express.static(path.join(__dirname, 'public'), { etag:true, maxAge:'1h' }));
+app.get('/', (_req,res)=>res.sendFile(path.join(__dirname,'public','index.html')));
+
+const server = http.createServer(app);
+const wss = new WebSocket.Server({ server, maxPayload: 256 * 1024 });
+
+const rooms = new Map();
+const GRACE_MS = 5 * 60 * 1000;
+const ROOM_TTL_MS = 6 * 60 * 60 * 1000;
+const MAX_MSG = 1200;
+const RATE_WINDOW_MS = 10_000;
+const MAX_NORMAL_MESSAGES = 60;
+
+const FALLBACK_ICE_SERVERS = [
+  { urls: 'stun:stun.l.google.com:19302' },
+  { urls: 'stun:stun1.l.google.com:19302' },
+  { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
+  { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
+  { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' }
+];
+
+function send(ws, data) {
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    try { ws.send(JSON.stringify(data)); } catch (_) {}
+  }
+}
+
+function cleanName(value, fallback) {
+  const s = String(value ?? '').replace(/[<>\u0000-\u001f]/g, '').trim().slice(0, 24);
+  return s || fallback;
+}
+
+function cleanText(value) {
+  return String(value ?? '').replace(/[\u0000-\u001f]/g, '').slice(0, MAX_MSG);
+}
+
+function generateCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code;
+  do {
+    const bytes = crypto.randomBytes(5);
+    code = Array.from(bytes, b => chars[b % chars.length]).join('');
+  } while (rooms.has(code));
+  return code;
+}
+
+function roomState(room) {
+  return {
+    code: room.code,
+    hostName: room.hostName,
+    viewerName: room.viewerName,
+    hasViewer: !!room.viewer,
+    createdAt: room.createdAt
+  };
+}
+
+function touch(room) {
+  room.lastActivity = Date.now();
+}
+
+function notifyPresence(room) {
+  const state = roomState(room);
+  send(room.host, { type: 'presence', ...state });
+  send(room.viewer, { type: 'presence', ...state });
+}
+
+function scheduleRemoval(room, role) {
+  clearTimeout(room.timers[role]);
+  room.timers[role] = setTimeout(() => {
+    if (!rooms.has(room.code)) return;
+    room[role] = null;
+    room[role + 'Name'] = null;
+    touch(room);
+    notifyPresence(room);
+    const other = role === 'host' ? room.viewer : room.host;
+    send(other, { type: 'peer-left', reason: 'timeout' });
+    if (!room.host && !room.viewer) rooms.delete(room.code);
+  }, GRACE_MS);
+}
+
+app.get('/health', (_req, res) => {
+  res.json({ ok: true, service: '2-on-streaming', version: '4.0.0', rooms: rooms.size });
+});
+
+app.get('/ice-servers', (_req, res) => {
+  const username = process.env.METERED_TURN_USERNAME;
+  const credential = process.env.METERED_TURN_CREDENTIAL;
+  if (!username || !credential) return res.json(FALLBACK_ICE_SERVERS);
+  res.json([
+    { urls: 'stun:stun.relay.metered.ca:80' },
+    { urls: 'turn:global.relay.metered.ca:80', username, credential },
+    { urls: 'turn:global.relay.metered.ca:80?transport=tcp', username, credential },
+    { urls: 'turn:global.relay.metered.ca:443', username, credential },
+    { urls: 'turns:global.relay.metered.ca:443?transport=tcp', username, credential }
+  ]);
+});
+
+wss.on('connection', ws => {
+  ws.room = null;
+  ws.role = null;
+  ws.isAlive = true;
+  ws.msgWindow = [];
+
+  ws.on('pong', () => { ws.isAlive = true; });
+
+  ws.on('message', raw => {
+    let msg;
+    try { msg = JSON.parse(raw.toString()); } catch (_) { return; }
+    if (!msg || typeof msg.type !== 'string') return;
+
+    const now = Date.now();
+    ws.msgWindow = ws.msgWindow.filter(t => now - t < RATE_WINDOW_MS);
+    const exempt = new Set(['ice-candidate', 'offer', 'answer', 'app-ping']);
+    if (!exempt.has(msg.type)) {
+      if (ws.msgWindow.length >= MAX_NORMAL_MESSAGES) return;
+      ws.msgWindow.push(now);
+    }
+
+    if (msg.type === 'app-ping') return send(ws, { type: 'app-pong', t: msg.t });
+
+    if (msg.type === 'create-room') {
+      if (ws.room) return send(ws, { type: 'error', message: 'Já estás numa sala.' });
+      const code = generateCode();
+      const room = {
+        code, host: ws, viewer: null,
+        hostName: cleanName(msg.name, 'Anfitrião'), viewerName: null,
+        timers: { host: null, viewer: null },
+        createdAt: Date.now(), lastActivity: Date.now()
+      };
+      rooms.set(code, room);
+      ws.room = code;
+      ws.role = 'host';
+      return send(ws, { type: 'room-created', ...roomState(room) });
+    }
+
+    if (msg.type === 'join-room') {
+      const code = String(msg.code || '').toUpperCase().trim();
+      const room = rooms.get(code);
+      if (!room) return send(ws, { type: 'error', message: 'Sala não encontrada. Confirma o código ou pede um link novo.' });
+      if (room.viewer && room.viewer.readyState === WebSocket.OPEN) {
+        return send(ws, { type: 'error', message: 'Esta sala já tem duas pessoas.' });
+      }
+      clearTimeout(room.timers.viewer);
+      room.viewer = ws;
+      room.viewerName = cleanName(msg.name, 'Convidado');
+      ws.room = code;
+      ws.role = 'viewer';
+      touch(room);
+      send(ws, { type: 'room-joined', ...roomState(room) });
+      send(room.host, { type: 'peer-joined', ...roomState(room) });
+      notifyPresence(room);
+      return;
+    }
+
+    if (msg.type === 'rejoin-room') {
+      const code = String(msg.code || '').toUpperCase().trim();
+      const role = msg.role;
+      const room = rooms.get(code);
+      if (!room || !['host', 'viewer'].includes(role)) {
+        return send(ws, { type: 'error', expired: true, message: 'A sala expirou. Cria uma nova sala.' });
+      }
+      const old = room[role];
+      if (old && old !== ws) {
+        try { old.close(); } catch (_) {}
+      }
+      clearTimeout(room.timers[role]);
+      room[role] = ws;
+      room[role + 'Name'] = cleanName(msg.name, role === 'host' ? 'Anfitrião' : 'Convidado');
+      ws.room = code;
+      ws.role = role;
+      touch(room);
+      send(ws, { type: role === 'host' ? 'room-created' : 'room-joined', rejoined: true, ...roomState(room) });
+      send(role === 'host' ? room.viewer : room.host, { type: 'peer-joined', rejoined: true, ...roomState(room) });
+      notifyPresence(room);
+      return;
+    }
+
+    const room = rooms.get(ws.room);
+    if (!room) return;
+    touch(room);
+
+    if (msg.type === 'leave-room') {
+      if (room[ws.role] === ws) {
+        clearTimeout(room.timers[ws.role]);
+        room[ws.role] = null;
+        room[ws.role + 'Name'] = null;
+        const other = ws.role === 'host' ? room.viewer : room.host;
+        send(other, { type: 'peer-left', reason: 'left' });
+        notifyPresence(room);
+        if (!room.host && !room.viewer) rooms.delete(room.code);
+      }
+      ws.room = null;
+      ws.role = null;
+      return send(ws, { type: 'left-room' });
+    }
+
+    if (['offer', 'answer', 'ice-candidate', 'chat', 'reaction', 'control', 'typing'].includes(msg.type)) {
+      if (msg.type === 'chat') {
+        msg.text = cleanText(msg.text);
+        msg.name = cleanName(msg.name, room[ws.role + 'Name'] || 'Pessoa');
+        if (!msg.text) return;
+      }
+      if (msg.type === 'typing') msg.name = cleanName(msg.name, room[ws.role + 'Name'] || 'Pessoa');
+      const target = ws.role === 'host' ? room.viewer : room.host;
+      return send(target, msg);
+    }
+  });
+
+  ws.on('close', () => {
+    const room = rooms.get(ws.room);
+    if (!room || room[ws.role] !== ws) return;
+    const other = ws.role === 'host' ? room.viewer : room.host;
+    send(other, { type: 'peer-disconnected-temp' });
+    scheduleRemoval(room, ws.role);
+  });
+});
+
+setInterval(() => {
+  const now = Date.now();
+  for (const [code, room] of rooms) {
+    if ((!room.host && !room.viewer) || now - room.lastActivity > ROOM_TTL_MS) {
+      clearTimeout(room.timers.host);
+      clearTimeout(room.timers.viewer);
+      rooms.delete(code);
+    }
+  }
+  wss.clients.forEach(ws => {
+    if (ws.isAlive === false) return ws.terminate();
+    ws.isAlive = false;
+    ws.ping();
+  });
+}, 30_000);
+
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => console.log(`2 on Streaming 4.0 a correr na porta ${PORT}`));
