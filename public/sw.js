@@ -1,14 +1,4 @@
-// Service worker mínimo, só para tornar o site instalável ("Adicionar ao ecrã
-// principal"). Não faz cache agressivo de nada — o site precisa sempre de
-// rede para a sala/vídeo funcionar, por isso todos os pedidos passam direto.
-self.addEventListener('install', (event) => {
-  self.skipWaiting();
-});
-
-self.addEventListener('activate', (event) => {
-  event.waitUntil(self.clients.claim());
-});
-
-self.addEventListener('fetch', (event) => {
-  event.respondWith(fetch(event.request));
-});
+const CACHE = '2onstreaming-v2';
+self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./','./index.html','./manifest.json','./icon.svg']))); self.skipWaiting(); });
+self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k))))); self.clients.claim(); });
+self.addEventListener('fetch', e => { if(e.request.method !== 'GET')return; e.respondWith(fetch(e.request).then(r => {const clone=r.clone();caches.open(CACHE).then(c=>c.put(e.request,clone));return r;}).catch(()=>caches.match(e.request))); });
