@@ -307,6 +307,10 @@ main{padding:0 18px 48px;gap:14px;position:relative;margin-top:-20px;z-index:3}.
 .welcome-note{position:relative;z-index:1;margin:18px auto 0;max-width:340px;text-align:center;color:#7b8191;font-size:10.5px;line-height:1.5}.welcome-note strong{color:#9ca2b1;font-weight:600}
 .welcome-foot{position:relative;z-index:1;text-align:center;color:#6e7483;font-size:10px;padding-top:18px;font-family:var(--font-display)}
 @media(max-width:520px){#welcome-screen{min-height:calc(100vh - 108px)}.welcome-symbol{width:64px;height:64px;border-radius:20px;font-size:28px;margin-bottom:15px}.welcome-title{font-size:27px}.welcome-panel{padding:18px;border-radius:23px}.entry-btn{padding:14px}.welcome-copy{font-size:12.5px}}
+
+/* 2-ON functional overlays and navigation */
+.home-nav{display:grid;grid-template-columns:40px 1fr 40px;align-items:center;margin:0 2px -2px;color:#6c748b;font-size:12px;font-weight:700}.home-nav button{width:36px;height:36px;padding:0;border-radius:12px;background:#fff;color:#35416f;box-shadow:0 5px 16px rgba(31,44,90,.08);font-size:24px;line-height:1}.home-nav span:nth-child(2){text-align:center}.app-modal{position:fixed;inset:0;z-index:80;display:none}.app-modal.show{display:block}.app-modal-backdrop{position:absolute;inset:0;background:rgba(7,13,37,.48);backdrop-filter:blur(4px)}.app-modal-sheet{position:absolute;left:50%;bottom:0;transform:translateX(-50%);width:min(520px,100%);max-height:78vh;overflow:auto;background:#fff;border-radius:26px 26px 0 0;box-shadow:0 -20px 60px rgba(11,20,60,.25);padding:18px 18px 24px}.app-modal-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:2px 2px 14px;border-bottom:1px solid #edf0f6}.app-modal-head h2{margin:3px 0 0;font-size:18px;color:#151a31}.modal-kicker{font-size:9px;letter-spacing:1.3px;color:#6a68ed;font-weight:800}.app-modal-head button{width:36px;height:36px;border-radius:50%;padding:0;background:#f1f3f8;color:#49516a;box-shadow:none;font-size:23px}.app-modal-body{padding-top:16px;color:#555e74;font-size:13px;line-height:1.55}.modal-card{background:#f6f8fd;border:1px solid #e8ebf3;border-radius:16px;padding:13px;margin-bottom:10px}.modal-card strong{display:block;color:#18203a;margin-bottom:4px}.modal-stat{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid #e8ebf3}.modal-stat:last-child{border-bottom:0}.modal-actions{display:flex;gap:8px;margin-top:14px}.modal-actions button{flex:1}.modal-actions .secondary{background:#eef1f8;color:#27304d;border-color:#dfe4ef}.storage-meter{height:8px;border-radius:99px;background:#e9edf5;overflow:hidden;margin:10px 0}.storage-meter span{display:block;height:100%;width:0;background:linear-gradient(90deg,#5268ff,#7b57f4)}
+@media(max-width:520px){.app-modal-sheet{padding-bottom:calc(22px + env(safe-area-inset-bottom))}}
 </style>
 
 </head>
@@ -356,7 +360,8 @@ main{padding:0 18px 48px;gap:14px;position:relative;margin-top:-20px;z-index:3}.
   </section>
 
   <!-- ECRÃ DE OPÇÕES / SEGUNDO PAINEL -->
-  <section id="screen-home" class="screen active home-dashboard">
+  <section id="screen-home" class="screen home-dashboard">
+    <div class="home-nav"><button id="home-back" type="button" aria-label="Voltar">‹</button><span>Início</span><span></span></div>
     <div class="home-search">
       <input type="text" id="input-code" maxlength="5" placeholder="Pesquisar ou inserir código da sala" inputmode="text" autocomplete="off" autocapitalize="characters" aria-label="Código da sala" />
       <button id="btn-join" class="search-submit" aria-label="Entrar na sala">⌕</button>
@@ -370,12 +375,12 @@ main{padding:0 18px 48px;gap:14px;position:relative;margin-top:-20px;z-index:3}.
     </div>
 
     <div class="home-grid">
-      <button class="home-tile" data-home-action="create-playlist"><span class="tile-icon orange">▰</span><span>Armazenamento</span></button>
-      <button class="home-tile" data-home-action="create-live"><span class="tile-icon blue">◆</span><span>Enviar vídeos</span></button>
-      <button class="home-tile" data-home-action="create-playlist"><span class="tile-icon pink">≋</span><span>Criar Playlist</span></button>
-      <button class="home-tile" data-home-action="create-live"><span class="tile-icon black">▶</span><span>Ao vivo</span></button>
+      <button class="home-tile" data-home-action="storage"><span class="tile-icon orange">▰</span><span>Armazenamento</span></button>
+      <button class="home-tile" data-home-action="upload"><span class="tile-icon blue">◆</span><span>Enviar vídeos</span></button>
+      <button class="home-tile" data-home-action="playlist"><span class="tile-icon pink">≋</span><span>Criar Playlist</span></button>
+      <button class="home-tile" data-home-action="live"><span class="tile-icon black">▶</span><span>Ao vivo</span></button>
       <button class="home-tile" data-home-action="youtube"><span class="tile-icon red">▶</span><span>YouTube</span></button>
-      <button class="home-tile" data-home-action="create-live"><span class="tile-icon violet">▣</span><span>Partilhar vídeo</span></button>
+      <button class="home-tile" data-home-action="share"><span class="tile-icon violet">▣</span><span>Partilhar vídeo</span></button>
       <button class="home-tile" data-home-action="info"><span class="tile-icon cobalt">i</span><span>Informações da APP</span></button>
       <button class="home-tile" data-home-action="members"><span class="tile-icon people">●●</span><span>Membros Conectados</span></button>
       <button class="home-tile" data-home-action="leave"><span class="tile-icon violet">↻</span><span>Terminar sessão</span></button>
@@ -561,6 +566,14 @@ main{padding:0 18px 48px;gap:14px;position:relative;margin-top:-20px;z-index:3}.
   <button id="chat-toggle" class="action-btn action-btn-accent" aria-label="Abrir mensagens">💬<span id="chat-badge" class="badge"></span></button>
 </div>
 
+<div id="app-modal" class="app-modal" aria-hidden="true">
+  <div class="app-modal-backdrop" data-modal-close></div>
+  <section class="app-modal-sheet" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="app-modal-head"><div><span class="modal-kicker">2-ON</span><h2 id="modal-title">Informação</h2></div><button type="button" id="modal-close" aria-label="Fechar">×</button></div>
+    <div id="modal-body" class="app-modal-body"></div>
+  </section>
+</div>
+
 <div id="chat-panel">
   <div class="chat-header">
     <span>Mensagens</span>
@@ -703,6 +716,48 @@ main{padding:0 18px 48px;gap:14px;position:relative;margin-top:-20px;z-index:3}.
     catch (e) { return false; }
   }
 
+  // ---------- MODAIS DO PAINEL PRINCIPAL ----------
+  const appModal = document.getElementById('app-modal');
+  const modalTitle = document.getElementById('modal-title');
+  const modalBody = document.getElementById('modal-body');
+  function openAppModal(title, html) {
+    modalTitle.textContent = title;
+    modalBody.innerHTML = html;
+    appModal.classList.add('show');
+    appModal.setAttribute('aria-hidden', 'false');
+  }
+  function closeAppModal() {
+    appModal.classList.remove('show');
+    appModal.setAttribute('aria-hidden', 'true');
+  }
+  document.getElementById('modal-close').addEventListener('click', closeAppModal);
+  appModal.addEventListener('click', (e) => {
+    if (e.target.matches('[data-modal-close]')) closeAppModal();
+    const go = e.target.closest('[data-modal-go]');
+    if (!go) return;
+    closeAppModal();
+    if (go.dataset.modalGo === 'create') { showScreen('home'); setTimeout(() => document.getElementById('btn-create')?.focus(), 80); }
+    if (go.dataset.modalGo === 'join') { showScreen('home'); setTimeout(() => document.getElementById('input-code')?.focus(), 80); }
+  });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAppModal(); });
+
+  function renderInfoModal() {
+    return '<div class="modal-card"><strong>Assistir em sincronia</strong>O 2-ON cria uma sala privada para duas pessoas assistirem ao mesmo conteúdo em dispositivos diferentes.</div><div class="modal-card"><strong>Modos disponíveis</strong>Vídeo ao vivo, envio completo de ficheiro, playlists, YouTube, áudio, mensagens e partilha do acesso por link ou QR.</div><div class="modal-card"><strong>Privacidade</strong>O código da sala é temporário e a sessão é ligada diretamente entre os dispositivos conforme a infraestrutura WebRTC/WebSocket da aplicação.</div>';
+  }
+
+  async function renderStorageModal() {
+    let used = 0, quota = 0;
+    try { const est = await navigator.storage?.estimate?.() || {}; used = Number(est.usage || 0); quota = Number(est.quota || 0); } catch (e) {}
+    const pct = quota ? Math.min(100, (used / quota) * 100) : 0;
+    const fmt = (n) => n < 1024*1024 ? Math.round(n/1024) + ' KB' : (n/(1024*1024)).toFixed(1) + ' MB';
+    return '<div class="modal-card"><strong>Espaço utilizado pelo site</strong><div class="storage-meter"><span style="width:'+pct.toFixed(1)+'%"></span></div><div class="modal-stat"><span>Utilizado</span><b>'+fmt(used)+'</b></div><div class="modal-stat"><span>Limite estimado</span><b>'+ (quota ? fmt(quota) : 'não informado') +'</b></div></div><div class="modal-card"><strong>Biblioteca da sessão</strong>Os ficheiros escolhidos para transmissão usam recursos temporários do dispositivo. Ao terminar a sessão, os dados temporários podem ser libertados pelo navegador.</div>';
+  }
+
+  document.querySelector('.profile-button').addEventListener('click', () => openAppModal('Informações da APP', renderInfoModal()));
+  document.querySelector('.menu-button').addEventListener('click', () => {
+    openAppModal('Menu', '<div class="modal-card"><strong>Acesso rápido</strong>Escolhe uma ação para continuar sem sair do painel.</div><div class="modal-actions"><button type="button" data-modal-go="create">Criar Sala</button><button type="button" class="secondary" data-modal-go="join">Iniciar Sessão</button></div>');
+  });
+
   // ---------- PRIMEIRO PAINEL ----------
   document.getElementById('welcome-create').addEventListener('click', () => {
     showScreen('home');
@@ -735,13 +790,16 @@ main{padding:0 18px 48px;gap:14px;position:relative;margin-top:-20px;z-index:3}.
   document.querySelectorAll('[data-home-action]').forEach((tile) => {
     tile.addEventListener('click', () => {
       const action = tile.dataset.homeAction;
-      if (action === 'leave') { try { localStorage.removeItem(SESSION_KEY); } catch (e) {} document.getElementById('home-error').textContent = 'Sessão local terminada.'; return; }
-      if (action === 'info') { document.getElementById('home-error').textContent = '2 on Streaming — assiste em sincronia com outra pessoa, em qualquer dispositivo.'; return; }
-      if (action === 'members') { document.getElementById('home-error').textContent = 'Entra numa sala para veres os participantes conectados.'; return; }
+      if (action === 'storage') { renderStorageModal().then(html => openAppModal('Armazenamento', html)); return; }
+      if (action === 'info') { openAppModal('Informações da APP', renderInfoModal()); return; }
+      if (action === 'members') { openAppModal('Membros conectados', '<div class="modal-card"><strong>Ainda não há uma sala ativa.</strong>Os participantes aparecem aqui depois de criares ou entrares numa sala.</div><div class="modal-actions"><button type="button" data-modal-go="create">Criar Sala</button><button type="button" class="secondary" data-modal-go="join">Iniciar Sessão</button></div>'); return; }
+      if (action === 'leave') { clearLocalSession(); roomCode = null; role = null; updateUrl(); document.getElementById('home-error').textContent = ''; showScreen('welcome'); return; }
       window.__homeAfterCreate = action;
       ws.send(JSON.stringify({ type: 'create-room' }));
     });
   });
+
+  document.getElementById('home-back').addEventListener('click', () => showScreen('welcome'));
 
   document.getElementById('btn-join').addEventListener('click', () => {
     const code = inputCode.value.trim().toUpperCase();
@@ -1763,7 +1821,9 @@ main{padding:0 18px 48px;gap:14px;position:relative;margin-top:-20px;z-index:3}.
           const homeAction = window.__homeAfterCreate;
           window.__homeAfterCreate = null;
           if (homeAction === 'youtube') { revealContentPanel(); document.getElementById('mode-youtube-btn').click(); }
-          else if (homeAction === 'create-playlist' || homeAction === 'create-live') { revealContentPanel(); document.getElementById('mode-file-btn').click(); }
+          else if (homeAction === 'upload') { revealContentPanel(); document.getElementById('mode-transfer-btn').click(); }
+          else if (homeAction === 'playlist') { revealContentPanel(); document.getElementById('mode-file-btn').click(); setTimeout(() => document.getElementById('file-playlist')?.scrollIntoView({behavior:'smooth', block:'center'}), 150); }
+          else if (homeAction === 'live' || homeAction === 'share') { revealContentPanel(); document.getElementById('mode-file-btn').click(); }
           if (msg.rejoined) {
             resetPeerConnection();
             reselectBanner.classList.add('show');
@@ -1790,7 +1850,7 @@ main{padding:0 18px 48px;gap:14px;position:relative;margin-top:-20px;z-index:3}.
           break;
 
         case 'error':
-          if (msg.expired) { roomCode = null; role = null; updateUrl(); clearLocalSession(); showScreen('home'); }
+          if (msg.expired) { roomCode = null; role = null; updateUrl(); clearLocalSession(); showScreen('welcome'); }
           document.getElementById('home-error').textContent = msg.message;
           break;
 
