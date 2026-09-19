@@ -5,42 +5,35 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>2 on Streaming</title>
 <link rel="manifest" href="manifest.json" />
-<meta name="theme-color" content="#1f4d3d" />
-<link rel="icon" href="icon.svg" type="image/png" />
-<link rel="apple-touch-icon" href="icon.svg" />
+<meta name="theme-color" content="#4c6fff" />
+<link rel="icon" href="icon.png" type="image/png" />
+<link rel="apple-touch-icon" href="icon.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 <style>
   :root {
-    --bg: #f3efe4;
-    --bg-wash: radial-gradient(circle at 12% 0%, rgba(31,77,61,0.06) 0%, transparent 45%),
-               radial-gradient(circle at 100% 10%, rgba(63,122,92,0.05) 0%, transparent 40%);
-    --surface: #fffdf8;
-    --surface-2: #eae3d2;
-    --card: var(--surface);
-    --ink: #221f19;
-    --muted: #726b58;
-    --accent: #1f4d3d;
-    --accent-2: #3f7a5c;
-    --accent-glow: rgba(31,77,61,0.16);
-    --on-accent: #fbf8f0;
-    --ok: #2f7a4d;
-    --warn: #a3690f;
-    --err: #9c3b2e;
-    --border: rgba(34,31,25,0.16);
-    --glass-border: var(--border);
-    --radius-lg: 14px;
-    --radius-md: 9px;
-    --radius-sm: 5px;
-    --font-display: 'IBM Plex Mono', 'Courier New', monospace;
-    --font-body: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --bg: #16181d;
+    --surface: #1e2128;
+    --surface-2: #262a33;
+    --ink: #eef0f4;
+    --muted: #8b909c;
+    --accent: #4c6fff;
+    --accent-ink: #ffffff;
+    --ok: #3ba55d;
+    --warn: #d9a03b;
+    --err: #ed4245;
+    --border: rgba(255,255,255,0.09);
+    --radius-lg: 12px;
+    --radius-md: 8px;
+    --radius-sm: 6px;
+    --font: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   body {
     margin: 0;
-    font-family: var(--font-body);
-    background: var(--bg-wash), var(--bg);
+    font-family: var(--font);
+    background: var(--bg);
     color: var(--ink);
     min-height: 100vh;
     display: flex;
@@ -53,56 +46,51 @@
   button:focus-visible, input:focus-visible, [tabindex]:focus-visible {
     outline: 2px solid var(--accent); outline-offset: 2px;
   }
+  .icon { width: 18px; height: 18px; flex: none; }
+  .icon-sm { width: 15px; height: 15px; }
 
-  header { padding: 22px 20px 16px; text-align: center; }
+  header { padding: 20px 20px 14px; text-align: center; }
   .topbar {
     display: flex; align-items: center; justify-content: space-between; gap: 10px;
     background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
-    padding: 10px 14px; box-shadow: 0 2px 10px rgba(34,31,25,0.06);
+    padding: 10px 14px;
   }
   .topbar-brand { display: flex; align-items: center; gap: 11px; }
   .brand-mark {
-    width: 34px; height: 34px; border-radius: 8px; flex: none;
+    width: 32px; height: 32px; border-radius: 8px; flex: none;
     background: #000; display: flex; align-items: center; justify-content: center;
     overflow: hidden; border: 1px solid var(--border);
   }
   .brand-mark img { width: 100%; height: 100%; object-fit: cover; display: block; }
-  .topbar-title { font-family: var(--font-display); font-weight: 700; font-size: 15px; letter-spacing: 0.2px; color: var(--ink); }
+  .topbar-title { font-weight: 700; font-size: 15px; color: var(--ink); }
   .topbar-chip {
     display: flex; align-items: center; gap: 6px; background: var(--surface-2);
     border: 1px solid var(--border); border-radius: 999px; padding: 5px 12px;
-    font-family: var(--font-display); font-size: 12px; font-weight: 600; color: var(--ink);
+    font-size: 12px; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums;
   }
   .dot-live { width: 6px; height: 6px; border-radius: 50%; background: var(--ok); flex: none; }
-
-  .accent-bar {
-    height: 2px; margin: 12px auto 0; width: 48px; border-radius: 999px;
-    background: var(--accent);
-  }
-  header p.tagline, p.tagline { margin: 10px 4px 0; font-size: 12.5px; color: var(--muted); }
+  header p.tagline, p.tagline { margin: 12px 4px 0; font-size: 12.5px; color: var(--muted); }
 
   main { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 6px 16px 60px; gap: 16px; }
   .screen { display: none; width: 100%; max-width: 460px; flex-direction: column; gap: 16px; }
   .screen.active { display: flex; }
-  #screen-home.active { animation: none; }
-  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-  #screen-home.active .feature-strip { animation: rise 0.3s ease both; }
-  #screen-home.active .card:nth-of-type(1) { animation: rise 0.32s ease 0.03s both; }
-  #screen-home.active .divider { animation: rise 0.32s ease 0.06s both; }
-  #screen-home.active .card:nth-of-type(2) { animation: rise 0.32s ease 0.09s both; }
+  @keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+  #screen-home.active .feature-strip,
+  #screen-home.active .card,
+  #screen-home.active .divider { animation: rise 0.28s ease both; }
 
   .feature-strip { display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 4px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
   .feature-strip::-webkit-scrollbar { display: none; }
   .feature-pill {
     flex: none; display: flex; align-items: center; gap: 7px;
     background: var(--surface); border: 1px solid var(--border);
-    border-radius: 999px; padding: 6px 14px 6px 6px;
+    border-radius: 999px; padding: 7px 14px 7px 8px;
     font-size: 12px; font-weight: 600; color: var(--muted);
   }
   .feature-icon {
-    width: 24px; height: 24px; border-radius: 50%; flex: none;
-    display: flex; align-items: center; justify-content: center; font-size: 12px;
-    background: var(--surface-2); border: 1px solid var(--border);
+    width: 22px; height: 22px; border-radius: 50%; flex: none;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--surface-2); color: var(--ink);
   }
 
   .card {
@@ -111,35 +99,35 @@
     border-radius: var(--radius-lg);
     padding: 20px;
     display: flex; flex-direction: column; gap: 14px;
-    box-shadow: 0 2px 12px rgba(34,31,25,0.06);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.3);
   }
-  .card-primary { border-color: var(--accent); box-shadow: 0 2px 14px rgba(31,77,61,0.12); }
+  .card-primary { border-color: var(--accent); }
 
-  h2 { margin: 0; font-family: var(--font-display); font-size: 14.5px; font-weight: 700; letter-spacing: 0.1px; display: flex; align-items: center; gap: 8px; color: var(--ink); }
+  h2 { margin: 0; font-size: 15px; font-weight: 700; color: var(--ink); }
   p.hint { color: var(--muted); font-size: 13px; margin: 0; line-height: 1.5; }
   .error-msg { font-size: 13px; color: var(--err); text-align: center; min-height: 16px; }
-  .divider { text-align: center; color: var(--muted); font-size: 12px; position: relative; }
+  .divider { text-align: center; color: var(--muted); font-size: 12px; }
 
   button {
-    background: var(--accent); color: var(--on-accent); border: none;
-    border-radius: var(--radius-md); padding: 14px; font-size: 14.5px; font-weight: 600;
-    font-family: var(--font-body); letter-spacing: 0.1px; cursor: pointer;
-    box-shadow: 0 2px 8px rgba(34,31,25,0.1);
-    transition: transform 0.1s ease, filter 0.12s ease;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    background: var(--accent); color: var(--accent-ink); border: none;
+    border-radius: var(--radius-md); padding: 13px; font-size: 14.5px; font-weight: 600;
+    font-family: var(--font); cursor: pointer;
+    transition: filter 0.12s ease, transform 0.05s ease;
   }
-  button:active { transform: scale(0.97); filter: brightness(0.94); }
-  button.secondary { background: var(--surface-2); color: var(--ink); border: 1px solid var(--border); box-shadow: none; }
-  button.ghost { background: transparent; border: 1px dashed var(--border); color: var(--muted); font-weight: 500; box-shadow: none; }
+  button:active { transform: scale(0.98); filter: brightness(0.92); }
+  button.secondary { background: var(--surface-2); color: var(--ink); border: 1px solid var(--border); }
+  button.ghost { background: transparent; border: 1px solid var(--border); color: var(--muted); font-weight: 500; }
   button:disabled { opacity: 0.45; cursor: not-allowed; }
 
   .row { display: flex; gap: 10px; }
   .row > * { flex: 1; }
 
   input[type="text"] {
-    background: var(--surface); border: 1px solid var(--border); color: var(--ink);
+    background: var(--bg); border: 1px solid var(--border); color: var(--ink);
     padding: 14px; border-radius: var(--radius-md); font-size: 17px;
-    font-family: var(--font-display); text-transform: uppercase;
-    letter-spacing: 3px; text-align: center; width: 100%; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 3px; text-align: center;
+    width: 100%; font-weight: 700; font-family: var(--font);
   }
   input[type="text"]:focus { outline: 2px solid var(--accent); }
   input[type="file"] { color: var(--muted); font-size: 13px; }
@@ -147,100 +135,93 @@
   video { width: 100%; border-radius: var(--radius-md); background: #000; max-height: 55vh; }
 
   .code-display {
-    font-family: var(--font-display); font-size: 32px; letter-spacing: 7px; text-align: center;
-    font-weight: 700; color: var(--accent); padding: 10px 0; position: relative;
+    font-size: 32px; letter-spacing: 6px; text-align: center;
+    font-weight: 800; color: var(--ink); padding: 6px 0; font-variant-numeric: tabular-nums;
   }
-  .ticket-tear {
-    height: 1px; margin: 0 -20px; position: relative;
-    background-image: repeating-linear-gradient(to right, var(--border) 0 8px, transparent 8px 16px);
-  }
-  .ticket-tear::before, .ticket-tear::after {
-    content: ''; position: absolute; top: -7px; width: 14px; height: 14px; border-radius: 50%;
-    background: var(--bg); border: 1px solid var(--border);
-  }
-  .ticket-tear::before { left: -27px; }
-  .ticket-tear::after { right: -27px; }
+  .hr-divider { height: 1px; background: var(--border); margin: 0 -20px; }
 
-  .status { font-size: 12.5px; color: var(--muted); text-align: center; display: flex; align-items: center; justify-content: center; gap: 8px; font-family: var(--font-display); }
+  .status { font-size: 12.5px; color: var(--muted); text-align: center; display: flex; align-items: center; justify-content: center; gap: 8px; }
   .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); flex-shrink: 0; }
   .status.connecting .dot { background: var(--warn); animation: pulse 1.2s infinite; }
   .status.ok .dot { background: var(--ok); }
   .status.err .dot { background: var(--err); }
   @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.25; } }
-  @keyframes statusPulse { 0%,100% { box-shadow: 0 0 0 0 var(--accent-glow); } 50% { box-shadow: 0 0 0 8px transparent; } }
-  .status.pulse-highlight { animation: statusPulse 0.6s ease 2; }
+  @keyframes statusPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(76,111,255,0.35); } 50% { box-shadow: 0 0 0 6px transparent; } }
+  .status.pulse-highlight { animation: statusPulse 0.6s ease 2; border-radius: 999px; }
 
-  .banner { background: #fff8ea; border: 1px dashed var(--warn); color: #7a4d0b; padding: 12px 14px; border-radius: var(--radius-md); font-size: 13px; display: none; }
+  .banner { background: rgba(217,160,59,0.1); border: 1px solid rgba(217,160,59,0.4); color: #e8b768; padding: 12px 14px; border-radius: var(--radius-md); font-size: 13px; display: none; }
   .banner.show { display: block; }
 
   .hero-card { position: relative; }
   .hero-tagline { margin: 0; text-align: center; font-size: 13px; color: var(--muted); }
 
-  /* Menu de ações em lista (bilhete de opções) */
+  /* Menu de ações em lista */
   .icon-grid { display: flex; flex-direction: column; }
   .grid-item {
     background: transparent; box-shadow: none; border: none; border-bottom: 1px solid var(--border);
     border-radius: 0; padding: 13px 2px; display: flex; align-items: center; gap: 13px;
-    color: var(--ink); font-size: 14px; font-weight: 600; font-family: var(--font-body);
+    color: var(--ink); font-size: 14px; font-weight: 500; font-family: var(--font);
   }
   .icon-grid .grid-item:last-child { border-bottom: none; }
   .grid-item:active { background: var(--surface-2); }
   .grid-item span:last-child { text-align: left; flex: 1; }
-  .grid-item::after { content: '›'; color: var(--muted); font-size: 19px; font-family: var(--font-display); }
-  .grid-icon {
-    position: relative; width: 38px; height: 38px; border-radius: var(--radius-sm); flex: none;
-    display: flex; align-items: center; justify-content: center; font-size: 17px;
-    background: var(--surface-2); border: 1px solid var(--border); border-left: 3px solid var(--accent);
+  .grid-item::after {
+    content: ''; width: 8px; height: 8px; flex: none;
+    border-right: 1.5px solid var(--muted); border-bottom: 1.5px solid var(--muted);
+    transform: rotate(-45deg); margin-right: 2px;
   }
-  .g-playlist, .g-live, .g-yt, .g-send, .g-chat, .g-members, .g-install, .g-audio, .g-leave { border-left-color: var(--accent); background: var(--surface-2); }
-  .g-leave { border-left-color: var(--err); }
-  .grid-icon.is-active { border-left-color: var(--ok); box-shadow: 0 0 0 2px rgba(47,122,77,0.25); }
-  .grid-icon.is-muted { border-left-color: var(--err); box-shadow: 0 0 0 2px rgba(156,59,46,0.2); }
+  .grid-icon {
+    position: relative; width: 34px; height: 34px; border-radius: var(--radius-sm); flex: none;
+    display: flex; align-items: center; justify-content: center; color: var(--ink);
+    background: var(--surface-2); border: 1px solid var(--border);
+  }
+  .grid-icon.is-active { color: var(--ok); box-shadow: 0 0 0 2px rgba(59,165,93,0.3); }
+  .grid-icon.is-muted { color: var(--err); box-shadow: 0 0 0 2px rgba(237,66,69,0.25); }
   .grid-icon .badge { top: -5px; right: -5px; }
+  #grid-icon-leave { color: var(--err); }
 
   /* Seletor de modo (oculto - navegação faz-se pela lista) */
   .segmented { display: flex; gap: 6px; }
   .mode-btn { background: var(--surface-2); border: 1px solid var(--border); color: var(--muted); font-weight: 600; padding: 11px; border-radius: var(--radius-sm); font-size: 13px; }
-  .mode-btn-active { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+  .mode-btn-active { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
 
   /* Playlist */
   .playlist { display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow-y: auto; }
   .playlist-item {
-    display: flex; align-items: center; gap: 10px; background: var(--surface);
+    display: flex; align-items: center; gap: 10px; background: var(--bg);
     border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 8px 10px; font-size: 13px;
   }
-  .playlist-item.playing { border-color: var(--accent); background: rgba(31,77,61,0.05); }
+  .playlist-item.playing { border-color: var(--accent); }
   .playlist-icon {
-    width: 30px; height: 30px; border-radius: var(--radius-sm); flex: none;
-    display: flex; align-items: center; justify-content: center; font-size: 14px;
+    width: 28px; height: 28px; border-radius: var(--radius-sm); flex: none;
+    display: flex; align-items: center; justify-content: center; color: var(--ink);
     background: var(--surface-2); border: 1px solid var(--border);
   }
   .playlist-name-wrap { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
   .playlist-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; color: var(--ink); }
-  .playlist-kind-label { font-size: 10.5px; color: var(--muted); font-family: var(--font-display); }
+  .playlist-kind-label { font-size: 10.5px; color: var(--muted); }
   .playlist-actions { display: flex; gap: 4px; flex: none; }
   .playlist-actions button { background: var(--surface-2); border: 1px solid var(--border); color: var(--muted); width: 26px; height: 26px; border-radius: var(--radius-sm); padding: 0; font-size: 12px; box-shadow: none; }
 
   /* Barra de reprodução */
-  .player-bar { display: none; flex-direction: column; gap: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 12px; }
+  .player-bar { display: none; flex-direction: column; gap: 8px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 12px; }
   .player-bar.show { display: flex; }
-  .player-title { font-family: var(--font-display); font-size: 12.5px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink); }
+  .player-title { font-size: 12.5px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink); }
   .player-controls { display: flex; align-items: center; gap: 10px; }
-  .player-controls button { background: var(--surface-2); border: 1px solid var(--border); color: var(--ink); width: 38px; height: 38px; border-radius: 50%; padding: 0; font-size: 15px; flex: none; box-shadow: none; }
-  .player-controls button.play-pause { background: var(--accent); color: var(--on-accent); width: 44px; height: 44px; font-size: 17px; border: none; }
-  .player-seek-row { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--muted); font-family: var(--font-display); }
+  .player-controls button { background: var(--surface-2); border: 1px solid var(--border); color: var(--ink); width: 36px; height: 36px; border-radius: 50%; padding: 0; flex: none; box-shadow: none; }
+  .player-controls button.play-pause { background: var(--accent); color: var(--accent-ink); width: 42px; height: 42px; border: none; }
+  .player-seek-row { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--muted); }
   .player-seek-row input[type="range"] { flex: 1; }
 
   /* Barra de progresso */
   .progress-ui { display: flex; flex-direction: column; gap: 6px; }
-  .progress-track { width: 100%; height: 8px; background: var(--surface-2); border-radius: 999px; overflow: hidden; border: 1px solid var(--border); }
+  .progress-track { width: 100%; height: 6px; background: var(--surface-2); border-radius: 999px; overflow: hidden; }
   .progress-fill { height: 100%; width: 0%; background: var(--accent); border-radius: 999px; transition: width 0.2s ease; }
 
   .now-playing { font-size: 13px; color: var(--ink); background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; display: none; }
 
   #yt-player-host iframe, #yt-player-viewer iframe { width: 100%; aspect-ratio: 16/9; border-radius: var(--radius-md); }
 
-  /* Barra de ações (legado, sempre oculta - navegação faz-se pela lista) */
   .action-bar { display: none !important; }
   #btn-audio-unmute {
     position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
@@ -248,8 +229,8 @@
   }
   #btn-audio-unmute.show { display: block; }
   .badge {
-    position: absolute; top: -2px; right: -2px; background: var(--ok); color: var(--on-accent);
-    font-size: 10px; font-weight: 800; min-width: 17px; height: 17px; border-radius: 9px;
+    position: absolute; top: -2px; right: -2px; background: var(--ok); color: #fff;
+    font-size: 10px; font-weight: 800; min-width: 16px; height: 16px; border-radius: 8px;
     display: none; align-items: center; justify-content: center; padding: 0 4px;
     border: 2px solid var(--bg);
   }
@@ -260,29 +241,57 @@
     position: fixed; right: 0; bottom: 0; width: 100%; max-width: 400px; height: 62vh;
     background: var(--surface); border-top: 1px solid var(--border); border-left: 1px solid var(--border);
     border-radius: var(--radius-lg) var(--radius-lg) 0 0; display: none; flex-direction: column; z-index: 40;
-    box-shadow: 0 -8px 30px rgba(34,31,25,0.15);
+    box-shadow: 0 -4px 24px rgba(0,0,0,0.4);
   }
   #chat-panel.show { display: flex; }
-  .chat-header { padding: 14px 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 700; font-family: var(--font-display); color: var(--ink); }
-  .chat-header button { background: transparent; color: var(--muted); padding: 4px 8px; font-size: 18px; box-shadow: none; }
+  .chat-header { padding: 14px 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 700; color: var(--ink); }
+  .chat-header button { background: transparent; color: var(--muted); padding: 4px 8px; box-shadow: none; }
   #chat-messages { flex: 1; overflow-y: auto; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
   .msg { max-width: 78%; padding: 9px 12px; border-radius: var(--radius-md); font-size: 14px; line-height: 1.35; word-wrap: break-word; }
-  .msg.me { align-self: flex-end; background: var(--accent); color: var(--on-accent); border-bottom-right-radius: 3px; }
-  .msg.them { align-self: flex-start; background: var(--surface-2); color: var(--ink); border: 1px solid var(--border); border-bottom-left-radius: 3px; }
+  .msg.me { align-self: flex-end; background: var(--accent); color: var(--accent-ink); border-bottom-right-radius: 3px; }
+  .msg.them { align-self: flex-start; background: var(--surface-2); color: var(--ink); border-bottom-left-radius: 3px; }
   .chat-input-row { display: flex; gap: 8px; padding: 12px; border-top: 1px solid var(--border); }
-  .chat-input-row input { flex: 1; background: var(--surface); border: 1px solid var(--border); color: var(--ink); border-radius: 20px; padding: 10px 16px; font-size: 14px; font-family: var(--font-body); text-transform: none; letter-spacing: normal; }
-  .chat-input-row button { border-radius: 50%; width: 40px; height: 40px; padding: 0; font-size: 17px; flex: none; }
+  .chat-input-row input { flex: 1; background: var(--bg); border: 1px solid var(--border); color: var(--ink); border-radius: 20px; padding: 10px 16px; font-size: 14px; text-transform: none; letter-spacing: normal; font-weight: 400; }
+  .chat-input-row button { border-radius: 50%; width: 38px; height: 38px; padding: 0; flex: none; }
+
+  /* Presença (avatar + nomes) e latência */
+  .presence-row { display: flex; align-items: center; gap: 10px; }
+  .avatar {
+    width: 36px; height: 36px; border-radius: 50%; flex: none;
+    background: var(--surface-2); border: 1px solid var(--border); color: var(--ink);
+    display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px;
+  }
+  .presence-info { flex: 1; overflow: hidden; }
+  .presence-name { font-size: 13.5px; font-weight: 600; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .presence-sub { font-size: 11.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .latency { flex: none; font-size: 10.5px; color: var(--muted); background: var(--surface-2); border: 1px solid var(--border); border-radius: 999px; padding: 3px 8px; }
+  .latency.good { color: var(--ok); }
+  .latency.bad { color: var(--err); }
+
+  /* Reações */
+  .reactions-row { display: flex; gap: 8px; justify-content: space-between; }
+  .react-btn {
+    flex: 1; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-md);
+    padding: 10px 0; font-size: 19px; box-shadow: none;
+  }
+  #reaction-layer { position: fixed; inset: 0; pointer-events: none; z-index: 60; overflow: hidden; }
+  .reaction-pop { position: absolute; bottom: 90px; font-size: 30px; animation: reactionRise 2.2s ease-out forwards; }
+  @keyframes reactionRise {
+    0% { opacity: 0; transform: translateY(0) scale(0.6); }
+    15% { opacity: 1; transform: translateY(-20px) scale(1.05); }
+    100% { opacity: 0; transform: translateY(-260px) scale(1); }
+  }
+
+  /* Indicador "a escrever" */
+  .typing-indicator { padding: 0 16px 6px; font-size: 12px; color: var(--muted); font-style: italic; }
+
+  /* Controlos extra do vídeo (recuar / avançar / ecrã inteiro) */
+  .video-controls-row { display: flex; gap: 8px; justify-content: center; }
+  .icon-btn { background: var(--surface-2); border: 1px solid var(--border); color: var(--ink); width: 40px; height: 40px; border-radius: 50%; padding: 0; box-shadow: none; }
 
   .site-footer { text-align: center; padding: 4px 20px 24px; }
-  .site-footer p { margin: 2px 0; font-size: 11px; color: var(--muted); font-family: var(--font-display); }
-  .site-footer strong { color: var(--ink); font-weight: 700; }
-
-/* 2 on Streaming — entrada e acesso: fluxo em três ecrãs */
-.name-field{display:flex;flex-direction:column;gap:7px}.name-field label{font-size:12px;font-weight:700;color:var(--ink)}
-.name-field input{background:#fff;border:1px solid #d9dce5;color:#17191f;border-radius:12px;padding:14px 15px;font-size:15px;width:100%;font-family:var(--font-body);outline:none;box-sizing:border-box}
-.name-field input:focus{border-color:#5b63d8;box-shadow:0 0 0 3px rgba(91,99,216,.10)}
-.home-hero{padding:24px 20px 20px;text-align:left}.home-logo{width:58px;height:58px;border-radius:16px;overflow:hidden;background:#101a4c;margin-bottom:16px;border:1px solid #dfe2eb}.home-logo img{width:100%;height:100%;object-fit:cover}.home-title{font-family:var(--font-display);font-size:26px;line-height:1.08;margin:0;color:#17191f}.home-subtitle{margin:8px 0 0!important;font-size:13px!important;color:#737887!important}.choice-list{display:flex;flex-direction:column;border:1px solid #dfe1e8;border-radius:14px;overflow:hidden;background:#fff}.choice-btn{appearance:none;border:0;border-radius:0!important;box-shadow:none!important;background:#fff!important;color:#191b21!important;display:flex;align-items:center;gap:13px;text-align:left;padding:15px 14px!important;min-height:72px}.choice-btn+.choice-btn{border-top:1px solid #e3e4e9}.choice-icon{width:42px;height:42px;display:grid;place-items:center;border-radius:11px;background:#f5f6fb;border:1px solid #e1e3eb;font-size:21px;flex:none}.choice-copy{display:flex;flex-direction:column;gap:3px;min-width:0}.choice-copy strong{font-size:14px}.choice-copy small{font-size:11px;color:#777c88;font-weight:400}.choice-arrow{margin-left:auto;font-size:23px;color:#74786d}.access-card{text-align:left}.access-room{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:#f6f7fb;border:1px solid #e1e3ea;border-radius:12px}.access-room small{display:block;color:#777c88;font-size:10px}.access-room strong{font-family:var(--font-display);font-size:20px;letter-spacing:4px}.access-qr{width:104px;height:104px;object-fit:contain;background:#fff;border:1px solid #ddd;border-radius:12px;padding:7px;display:block;margin:4px auto 2px}.back-link{background:transparent!important;color:#747887!important;box-shadow:none!important;padding:8px!important;font-size:12px!important}
-@media(max-width:520px){.home-title{font-size:23px}.home-hero{padding:20px 17px}.choice-btn{min-height:68px;padding:13px!important}}
+  .site-footer p { margin: 2px 0; font-size: 11.5px; color: var(--muted); }
+  .site-footer strong { color: var(--ink); font-weight: 600; }
 </style>
 
 </head>
@@ -292,7 +301,7 @@
   <div class="topbar">
     <div class="topbar-brand">
       <div class="brand-mark">
-        <img src="icon.svg" alt="2 on Streaming" />
+        <img src="icon.png" alt="2 on Streaming" />
       </div>
       <span class="topbar-title">2 on Streaming</span>
     </div>
@@ -306,74 +315,54 @@
 
 <main>
 
-  <!-- ECRÃ 1 — INÍCIO -->
+  <!-- ECRÃ INICIAL -->
   <section id="screen-home" class="screen active">
-    <div class="card home-hero">
-      <div class="home-logo"><img src="icon.svg" alt="2 on Streaming"></div>
-      <h1 class="home-title">2 on Streaming</h1>
-      <p class="home-subtitle">Assiste em sincronia. Mesmo à distância.</p>
+    <div class="feature-strip">
+      <div class="feature-pill"><span class="feature-icon"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg></span>Ao vivo</div>
+      <div class="feature-pill"><span class="feature-icon"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></span>YouTube</div>
+      <div class="feature-pill"><span class="feature-icon"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg></span>Enviar</div>
+      <div class="feature-pill"><span class="feature-icon"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg></span>Chat</div>
+      <div class="feature-pill"><span class="feature-icon"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg></span>Voz</div>
     </div>
-
+    <div class="card card-primary">
+      <h2>Criar sessão</h2>
+      <p class="hint">Escolhe um vídeo do teu telefone e cria uma sessão para a outra pessoa assistir contigo.</p>
+      <input type="text" id="host-name" maxlength="24" placeholder="O teu nome" style="text-transform:none; letter-spacing:normal; font-size:15px; font-weight:500;" />
+      <button id="btn-create">Criar sessão</button>
+    </div>
+    <div class="divider">— ou —</div>
     <div class="card">
-      <div class="name-field">
-        <label for="user-name">Como queres ser chamado?</label>
-        <input id="user-name" type="text" maxlength="40" placeholder="O teu nome" autocomplete="name">
+      <h2>Entrar numa sessão</h2>
+      <p class="hint">Cola o código de 5 letras que a outra pessoa te enviou (ou abre o link diretamente, se te mandaram um).</p>
+      <input type="text" id="viewer-name" maxlength="24" placeholder="O teu nome" style="text-transform:none; letter-spacing:normal; font-size:15px; font-weight:500;" />
+      <div class="row">
+        <input type="text" id="input-code" maxlength="5" placeholder="CÓDIGO" inputmode="text" autocomplete="off" autocapitalize="characters" />
+        <button id="btn-paste-code" class="secondary" style="flex:0 0 auto; padding: 14px 16px;">Colar</button>
       </div>
-    </div>
-
-    <div class="choice-list">
-      <button type="button" class="choice-btn" id="btn-create">
-        <span class="choice-icon">🎬</span>
-        <span class="choice-copy"><strong>Criar uma sala</strong><small>Cria uma sessão e convida outra pessoa</small></span>
-        <span class="choice-arrow">›</span>
-      </button>
-      <button type="button" class="choice-btn" id="btn-open-access">
-        <span class="choice-icon">🔗</span>
-        <span class="choice-copy"><strong>Entrar numa sala</strong><small>Usa um código, link ou QR Code</small></span>
-        <span class="choice-arrow">›</span>
-      </button>
-    </div>
-    <p class="error-msg" id="home-error"></p>
-  </section>
-
-  <!-- ECRÃ 3 — ACESSO À SALA -->
-  <section id="screen-access" class="screen">
-    <div class="card home-hero">
-      <div class="home-logo"><img src="icon.svg" alt="2 on Streaming"></div>
-      <h1 class="home-title">Entrar numa sala</h1>
-      <p class="home-subtitle">Usa o código recebido ou abre o link/QR Code enviado pelo anfitrião.</p>
-    </div>
-    <div class="card access-card">
-      <div class="access-room" id="access-room-box" style="display:none;">
-        <span><small>Sala</small><strong id="access-room-code">-----</strong></span>
-        <span>🔒</span>
-      </div>
-      <div class="name-field">
-        <label for="access-name">O teu nome</label>
-        <input id="access-name" type="text" maxlength="40" placeholder="Como queres ser chamado?" autocomplete="name">
-      </div>
-      <div class="name-field">
-        <label for="access-code">Código da sala</label>
-        <input id="access-code" type="text" maxlength="5" placeholder="EX: ML688" inputmode="text" autocomplete="off" autocapitalize="characters">
-      </div>
-      <img id="access-qr" class="access-qr" alt="QR Code da sala" style="display:none;">
-      <button type="button" id="btn-access-join">Entrar na sala</button>
-      <p class="error-msg" id="access-error"></p>
-      <button type="button" id="btn-access-back" class="back-link">‹ Voltar</button>
+      <button id="btn-join">Entrar</button>
+      <p class="error-msg" id="home-error"></p>
     </div>
   </section>
 
   <!-- ECRÃ DO ANFITRIÃO -->
   <section id="screen-host" class="screen">
     <div class="banner" id="host-reselect-banner">
-      ⚠️ A ligação foi restabelecida. Por segurança do telemóvel, a playlist local perdeu-se — volta a adicionar os ficheiros para continuares a partilhar.
+      <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg> A ligação foi restabelecida. Por segurança do telemóvel, a playlist local perdeu-se — volta a adicionar os ficheiros para continuares a partilhar.
     </div>
 
     <div class="card hero-card">
-      <p class="hero-tagline">O teu bilhete está pronto.</p>
+      <div class="presence-row">
+        <div class="avatar" id="my-avatar">A</div>
+        <div class="presence-info">
+          <div class="presence-name" id="my-name">Tu</div>
+          <div class="presence-sub" id="other-name">A aguardar...</div>
+        </div>
+        <div class="latency" id="latency-badge">—</div>
+      </div>
+      <p class="hero-tagline">A tua sessão está pronta.</p>
       <div class="code-display" id="room-code">-----</div>
-      <div class="ticket-tear"></div>
-      <p class="status" id="host-status"><span class="dot"></span> A aguardar o segundo bilhete...</p>
+      <div class="hr-divider"></div>
+      <p class="status" id="host-status"><span class="dot"></span> A aguardar a outra pessoa...</p>
 
       <div id="qr-wrap" style="display:flex; justify-content:center;">
         <img id="qr-code" alt="Código QR da sessão" width="128" height="128" style="border-radius:10px; background:#fff; padding:8px; border:1px solid var(--border);" />
@@ -381,14 +370,26 @@
       <p class="hint" style="text-align:center;">Aponta a câmara ao QR, ou usa um dos links abaixo.</p>
 
       <div class="row">
-        <button id="btn-copy-link">🔗 Copiar link</button>
-        <button id="btn-share-link" class="secondary">📤 Partilhar</button>
+        <button id="btn-copy-link"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>Copiar link</button>
+        <button id="btn-share-link" class="secondary"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>Partilhar</button>
       </div>
       <button id="btn-copy-code" class="ghost" style="padding:8px;">Copiar só o código</button>
 
       <div class="row" id="call-volume-row" style="align-items:center; gap:8px; display:none;">
-        <label for="vol-call-host" style="font-size:12px; color:var(--muted); flex:0 0 auto;">🎤 Volume da chamada</label>
+        <label for="vol-call-host" style="font-size:12px; color:var(--muted); flex:0 0 auto;">Volume da chamada</label>
         <input type="range" id="vol-call-host" min="0" max="100" value="100" style="flex:1;" />
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Reações</h2>
+      <div class="reactions-row" id="reactions-row">
+        <button type="button" class="react-btn" data-emoji="❤️">❤️</button>
+        <button type="button" class="react-btn" data-emoji="😂">😂</button>
+        <button type="button" class="react-btn" data-emoji="😮">😮</button>
+        <button type="button" class="react-btn" data-emoji="🔥">🔥</button>
+        <button type="button" class="react-btn" data-emoji="👏">👏</button>
+        <button type="button" class="react-btn" data-emoji="😢">😢</button>
       </div>
     </div>
 
@@ -396,31 +397,31 @@
       <h2>Opções da sessão</h2>
       <div class="icon-grid" id="action-grid">
         <button type="button" class="grid-item" data-action="playlist">
-          <span class="grid-icon g-playlist">🎵</span><span>Playlist</span>
+          <span class="grid-icon"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg></span><span>Playlist</span>
         </button>
         <button type="button" class="grid-item" data-action="audio">
-          <span class="grid-icon g-audio" id="grid-icon-audio">🎤</span><span>Áudio</span>
+          <span class="grid-icon" id="grid-icon-audio"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg></span><span>Áudio</span>
         </button>
         <button type="button" class="grid-item" data-action="mode-file">
-          <span class="grid-icon g-live">🎬</span><span>Ao vivo</span>
+          <span class="grid-icon"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg></span><span>Ao vivo</span>
         </button>
         <button type="button" class="grid-item" data-action="mode-youtube">
-          <span class="grid-icon g-yt">▶️</span><span>YouTube</span>
+          <span class="grid-icon"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></span><span>YouTube</span>
         </button>
         <button type="button" class="grid-item" data-action="mode-transfer">
-          <span class="grid-icon g-send">📤</span><span>Enviar</span>
+          <span class="grid-icon"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg></span><span>Enviar</span>
         </button>
         <button type="button" class="grid-item" data-action="chat">
-          <span class="grid-icon g-chat" id="grid-icon-chat">💬<span id="chat-badge-grid" class="badge"></span></span><span>Mensagens</span>
+          <span class="grid-icon" id="grid-icon-chat"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg><span id="chat-badge-grid" class="badge"></span></span><span>Mensagens</span>
         </button>
         <button type="button" class="grid-item" data-action="members">
-          <span class="grid-icon g-members">👥</span><span>Conectados</span>
+          <span class="grid-icon"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></span><span>Conectados</span>
         </button>
         <button type="button" class="grid-item" data-action="install">
-          <span class="grid-icon g-install">📲</span><span>Instalar</span>
+          <span class="grid-icon"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></span><span>Instalar</span>
         </button>
         <button type="button" class="grid-item" data-action="leave">
-          <span class="grid-icon g-leave">🚪</span><span>Encerrar</span>
+          <span class="grid-icon" id="grid-icon-leave"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg></span><span>Sair</span>
         </button>
       </div>
     </div>
@@ -428,14 +429,25 @@
     <div class="card" id="content-panel-card" style="display:none;">
       <div class="segmented" style="display:none;">
         <button id="mode-file-btn" class="mode-btn mode-btn-active">📱 Ao vivo</button>
-        <button id="mode-transfer-btn" class="mode-btn">📤 Enviar</button>
-        <button id="mode-youtube-btn" class="mode-btn">▶️ YouTube</button>
+        <button id="mode-transfer-btn" class="mode-btn">Enviar</button>
+        <button id="mode-youtube-btn" class="mode-btn">YouTube</button>
       </div>
 
       <div id="mode-file-panel">
         <p class="hint">Transmite ao vivo — começa a ver de imediato, ideal para vídeos grandes. Adiciona vários de uma vez para criar uma playlist.</p>
         <input type="file" id="file-input" accept="video/*,audio/*" multiple />
         <video id="host-video" controls playsinline></video>
+        <div class="video-controls-row">
+          <button type="button" class="icon-btn" id="host-back10" title="Recuar 10s">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
+          </button>
+          <button type="button" class="icon-btn" id="host-fullscreen" title="Ecrã inteiro">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
+          </button>
+          <button type="button" class="icon-btn" id="host-forward10" title="Avançar 10s">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+          </button>
+        </div>
         <audio id="host-audio" style="display:none;"></audio>
 
         <div id="file-player-bar" class="player-bar">
@@ -494,9 +506,22 @@
   <!-- ECRÃ DO VIEWER -->
   <section id="screen-viewer" class="screen">
     <div class="card">
+      <div class="presence-row">
+        <div class="avatar" id="my-avatar-v">A</div>
+        <div class="presence-info">
+          <div class="presence-name" id="my-name-v">Tu</div>
+          <div class="presence-sub" id="other-name-v">Anfitrião</div>
+        </div>
+        <div class="latency" id="latency-badge-v">—</div>
+      </div>
       <h2>A assistir na sala <span id="viewer-code"></span></h2>
       <p class="status connecting" id="viewer-status"><span class="dot"></span> A ligar...</p>
       <video id="viewer-video" playsinline autoplay></video>
+      <div class="video-controls-row" id="viewer-video-controls">
+        <button type="button" class="icon-btn" id="viewer-fullscreen" title="Ecrã inteiro">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
+        </button>
+      </div>
       <div id="yt-player-viewer" style="display:none;"></div>
 
       <div id="transfer-receive-progress" class="progress-ui" style="display:none;">
@@ -508,16 +533,28 @@
 
       <div id="viewer-now-playing" class="now-playing"></div>
       <div class="row" style="align-items:center; gap:8px;">
-        <label for="vol-content" style="font-size:12px; color:var(--muted); flex:0 0 auto;">🎬 Conteúdo</label>
+        <label for="vol-content" style="font-size:12px; color:var(--muted); flex:0 0 auto;">Conteúdo</label>
         <input type="range" id="vol-content" min="0" max="100" value="100" style="flex:1;" />
       </div>
       <div class="row" style="align-items:center; gap:8px;">
-        <label for="vol-call" style="font-size:12px; color:var(--muted); flex:0 0 auto;">🎤 Chamada</label>
+        <label for="vol-call" style="font-size:12px; color:var(--muted); flex:0 0 auto;">Chamada</label>
         <input type="range" id="vol-call" min="0" max="100" value="100" style="flex:1;" />
       </div>
-      <button id="btn-unmute" class="secondary" style="display:none;">🔊 Tocar / Ativar som</button>
+      <button id="btn-unmute" class="secondary" style="display:none;"><svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>Tocar / Ativar som</button>
       <button id="yt-sync-btn-viewer" class="secondary" style="display:none;">🔄 Sincronizar agora</button>
-      <button id="btn-leave-viewer" class="ghost">🚪 Encerrar bilhete</button>
+      <button id="btn-leave-viewer" class="ghost"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>Sair</button>
+    </div>
+
+    <div class="card">
+      <h2>Reações</h2>
+      <div class="reactions-row" id="reactions-row-viewer">
+        <button type="button" class="react-btn" data-emoji="❤️">❤️</button>
+        <button type="button" class="react-btn" data-emoji="😂">😂</button>
+        <button type="button" class="react-btn" data-emoji="😮">😮</button>
+        <button type="button" class="react-btn" data-emoji="🔥">🔥</button>
+        <button type="button" class="react-btn" data-emoji="👏">👏</button>
+        <button type="button" class="react-btn" data-emoji="😢">😢</button>
+      </div>
     </div>
   </section>
 
@@ -531,7 +568,7 @@
 <audio id="remote-audio" autoplay playsinline></audio>
 <!-- Áudio remoto da música partilhada do telemóvel (separado da chamada de voz) -->
 <audio id="movie-audio" autoplay playsinline></audio>
-<button id="btn-audio-unmute" class="secondary">🔊 Ativar áudio da chamada</button>
+<button id="btn-audio-unmute" class="secondary"><svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>Ativar áudio da chamada</button>
 
 <!-- Botões flutuantes -->
 <div id="action-bar" class="action-bar" style="display:none !important;">
@@ -545,6 +582,7 @@
     <button id="chat-close" aria-label="Fechar mensagens">✕</button>
   </div>
   <div id="chat-messages"></div>
+  <div class="typing-indicator" id="typing-indicator" style="display:none;">a escrever...</div>
   <div class="chat-input-row">
     <input type="text" id="chat-input" placeholder="Escreve uma mensagem..." maxlength="500" />
     <button id="chat-send" aria-label="Enviar mensagem">➤</button>
@@ -558,9 +596,6 @@
   let wsReconnectDelay = 1000;
 
   const SESSION_KEY = 'assistir_juntos_session_v1';
-  let userName = localStorage.getItem('assistir_juntos_name') || '';
-  document.getElementById('user-name').value = userName;
-  document.getElementById('access-name').value = userName;
 
   const FALLBACK_ICE_SERVERS = [
     { urls: 'stun:stun.l.google.com:19302' },
@@ -584,7 +619,6 @@
 
   const screens = {
     home: document.getElementById('screen-home'),
-    access: document.getElementById('screen-access'),
     host: document.getElementById('screen-host'),
     viewer: document.getElementById('screen-viewer')
   };
@@ -623,6 +657,9 @@
   // ---------- ESTADO GERAL ----------
   let role = null;
   let roomCode = null;
+  let myName = 'Tu';
+  let lastPingSent = 0;
+  let typingTimeout = null;
   let pc = null;
   let polite = false;
   let makingOffer = false;
@@ -685,30 +722,45 @@
   }
 
   // ---------- ECRÃ INICIAL ----------
-  const userNameInput = document.getElementById('user-name');
-  const accessName = document.getElementById('access-name');
-  const accessCode = document.getElementById('access-code');
-  function rememberName(value){ userName = value.trim(); if(userName) localStorage.setItem('assistir_juntos_name', userName); }
-  userNameInput.addEventListener('input',()=>{ accessName.value=userNameInput.value; });
-  accessName.addEventListener('input',()=>{ userNameInput.value=accessName.value; });
-  accessCode.addEventListener('input',()=>{ accessCode.value=accessCode.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,5); });
+  const inputCode = document.getElementById('input-code');
+  inputCode.addEventListener('input', () => {
+    inputCode.value = inputCode.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5);
+  });
 
   document.getElementById('btn-create').addEventListener('click', () => {
-    rememberName(userNameInput.value);
-    if (!userName) { document.getElementById('home-error').textContent='Indica o teu nome para continuar.'; userNameInput.focus(); return; }
-    ws.send(JSON.stringify({ type: 'create-room', name:userName }));
+    myName = (document.getElementById('host-name').value || '').trim().slice(0, 24) || 'Anfitrião';
+    try { localStorage.setItem('assistir_juntos_name', myName); } catch (e) {}
+    ws.send(JSON.stringify({ type: 'create-room', name: myName }));
   });
 
-  document.getElementById('btn-open-access').addEventListener('click', () => {
-    accessCode.value=''; document.getElementById('access-room-box').style.display='none'; document.getElementById('access-qr').style.display='none'; document.getElementById('access-error').textContent=''; showScreen('access');
+  document.getElementById('btn-paste-code').addEventListener('click', async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      inputCode.value = text.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5);
+    } catch (e) {
+      document.getElementById('home-error').textContent = 'Não consegui aceder à área de transferência — cola manualmente.';
+    }
   });
-  document.getElementById('btn-access-back').addEventListener('click',()=>showScreen('home'));
-  document.getElementById('btn-access-join').addEventListener('click',()=>{
-    rememberName(accessName.value); const code=accessCode.value.trim().toUpperCase();
-    if(!userName){document.getElementById('access-error').textContent='Indica o teu nome para continuar.';accessName.focus();return;}
-    if(code.length!==5){document.getElementById('access-error').textContent='O código deve ter 5 caracteres.';accessCode.focus();return;}
-    document.getElementById('access-error').textContent=''; ws.send(JSON.stringify({type:'join-room',code,name:userName}));
+
+  document.getElementById('btn-join').addEventListener('click', () => {
+    const code = inputCode.value.trim().toUpperCase();
+    if (code.length < 5) {
+      document.getElementById('home-error').textContent = 'O código tem 5 letras/números.';
+      return;
+    }
+    document.getElementById('home-error').textContent = '';
+    myName = (document.getElementById('viewer-name').value || '').trim().slice(0, 24) || 'Convidado';
+    try { localStorage.setItem('assistir_juntos_name', myName); } catch (e) {}
+    ws.send(JSON.stringify({ type: 'join-room', code, name: myName }));
   });
+
+  try {
+    const savedName = localStorage.getItem('assistir_juntos_name');
+    if (savedName) {
+      document.getElementById('host-name').value = savedName;
+      document.getElementById('viewer-name').value = savedName;
+    }
+  } catch (e) {}
 
   // ---------- SAIR DA SALA ----------
   function leaveRoom() {
@@ -795,7 +847,7 @@
     }
     container.innerHTML = filePlaylist.map((item, i) => `
       <div class="playlist-item ${i === fileCurrentIndex ? 'playing' : ''}">
-        <span class="playlist-icon kind-${item.kind}">${item.kind === 'audio' ? '🎵' : '🎬'}</span>
+        <span class="playlist-icon kind-${item.kind}">${item.kind === 'audio' ? '<svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>' : '<svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>'}</span>
         <div class="playlist-name-wrap">
           <span class="playlist-name">${escapeHtml(item.name)}</span>
           <span class="playlist-kind-label">${item.kind === 'audio' ? 'Música' : 'Vídeo'}</span>
@@ -901,8 +953,8 @@
   });
 
   // Barra de reprodução — música do telemóvel
-  hostAudioEl.addEventListener('play', () => { document.getElementById('file-play-pause').textContent = '⏸'; });
-  hostAudioEl.addEventListener('pause', () => { document.getElementById('file-play-pause').textContent = '▶'; });
+  hostAudioEl.addEventListener('play', () => { document.getElementById('file-play-pause').innerHTML = '<svg class="icon" viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="4" width="5" height="16"></rect><rect x="14" y="4" width="5" height="16"></rect></svg>'; });
+  hostAudioEl.addEventListener('pause', () => { document.getElementById('file-play-pause').innerHTML = '<svg class="icon" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>'; });
   hostAudioEl.addEventListener('timeupdate', () => {
     const seek = document.getElementById('file-seek');
     if (!isNaN(hostAudioEl.duration) && isFinite(hostAudioEl.duration)) seek.max = hostAudioEl.duration;
@@ -926,13 +978,13 @@
     const ok = await copyText(shareLink());
     const btn = document.getElementById('btn-copy-link');
     btn.textContent = ok ? '✅ Link copiado!' : '🔗 Copiar link';
-    setTimeout(() => { btn.textContent = '🔗 Copiar link'; }, 1800);
+    setTimeout(() => { btn.innerHTML = '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>Copiar link'; }, 1800);
   });
 
   document.getElementById('btn-copy-code').addEventListener('click', async () => {
     const ok = await copyText(roomCode);
     const btn = document.getElementById('btn-copy-code');
-    btn.textContent = ok ? '✅ Copiado!' : 'Copiar código';
+    btn.textContent = ok ? 'Copiado!' : 'Copiar código';
     setTimeout(() => { btn.textContent = 'Copiar código'; }, 1800);
   });
 
@@ -944,8 +996,8 @@
     }
     await copyText(url);
     const btn = document.getElementById('btn-share-link');
-    btn.textContent = '✅ Link copiado!';
-    setTimeout(() => { btn.textContent = '📤 Partilhar'; }, 1800);
+    btn.textContent = 'Link copiado!';
+    setTimeout(() => { btn.innerHTML = '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>Partilhar'; }, 1800);
   });
 
   document.getElementById('vol-call-host').addEventListener('input', (e) => {
@@ -1347,7 +1399,7 @@
     }
     container.innerHTML = ytPlaylist.map((item, i) => `
       <div class="playlist-item ${i === ytCurrentIndex ? 'playing' : ''}">
-        <span class="playlist-icon kind-yt">▶️</span>
+        <span class="playlist-icon kind-yt"><svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></span>
         <div class="playlist-name-wrap">
           <span class="playlist-name">${escapeHtml(item.title || item.videoId)}</span>
           <span class="playlist-kind-label">YouTube</span>
@@ -1439,11 +1491,11 @@
     } else if (msg.action === 'file-kind') {
       remoteFileKind = msg.kind;
       movieAudioAttached = false;
-      updateViewerNowPlaying(msg.kind === 'audio' ? ('🎵 ' + (msg.title || 'Música')) : '');
+      updateViewerNowPlaying(msg.kind === 'audio' ? ('<svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg> ' + (msg.title || 'Música')) : '');
     } else if (msg.action === 'yt-load') {
       applyRemoteMode('youtube');
       document.getElementById('yt-sync-btn-viewer').style.display = role === 'viewer' ? 'inline-block' : 'none';
-      updateViewerNowPlaying('▶️ ' + (msg.title || 'Vídeo do YouTube'));
+      updateViewerNowPlaying('<svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> ' + (msg.title || 'Vídeo do YouTube'));
       await ensureYtPlayer(msg.videoId);
     } else if (msg.action === 'yt-play' || msg.action === 'yt-pause' || msg.action === 'yt-sync') {
       if (!ytPlayer) return;
@@ -1540,7 +1592,7 @@
 
   async function sendFileViaDataChannel(file) {
     if (!fileChannel || fileChannel.readyState !== 'open') {
-      document.getElementById('transfer-send-label').textContent = 'A aguardar que a outra pessoa valide o bilhete...';
+      document.getElementById('transfer-send-label').textContent = 'A aguardar que a outra pessoa entre na sessão...';
       document.getElementById('transfer-send-progress').style.display = 'block';
       await new Promise((resolve) => {
         const check = setInterval(() => {
@@ -1577,7 +1629,7 @@
       label.textContent = `A enviar "${file.name}"... ${pct}%`;
     }
     fileChannel.send(JSON.stringify({ type: 'file-end' }));
-    label.textContent = '✅ Envio concluído — a outra pessoa já está a ver.';
+    label.textContent = 'Envio concluído — a outra pessoa já está a ver.';
     setTimeout(() => { progress.style.display = 'none'; }, 2500);
   }
 
@@ -1701,6 +1753,90 @@
   document.getElementById('chat-send').addEventListener('click', sendChat);
   chatInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') sendChat(); });
 
+  // ---------- PRESENÇA (nomes/avatares) ----------
+  function initials(name) {
+    return (name || '?').trim().slice(0, 1).toUpperCase();
+  }
+  function applyPresence(msg) {
+    const otherName = role === 'host' ? msg.viewerName : msg.hostName;
+    const mine = role === 'host' ? msg.hostName : msg.viewerName;
+    if (mine) myName = mine;
+    const otherText = msg.hasViewer || role === 'viewer' ? (otherName || (role === 'host' ? 'Convidado' : 'Anfitrião')) : 'A aguardar...';
+    ['my-avatar', 'my-avatar-v'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = initials(myName); });
+    ['my-name', 'my-name-v'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = myName + ' (tu)'; });
+    ['other-name', 'other-name-v'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = otherText; });
+  }
+
+  // ---------- REAÇÕES ----------
+  function showReaction(emoji) {
+    const layer = document.getElementById('reaction-layer');
+    const el = document.createElement('div');
+    el.className = 'reaction-pop';
+    el.textContent = emoji;
+    el.style.left = (10 + Math.random() * 70) + '%';
+    layer.appendChild(el);
+    setTimeout(() => el.remove(), 2300);
+  }
+  document.querySelectorAll('.reactions-row').forEach(row => {
+    row.addEventListener('click', (e) => {
+      const btn = e.target.closest('.react-btn');
+      if (!btn) return;
+      const emoji = btn.dataset.emoji;
+      showReaction(emoji);
+      ws.send(JSON.stringify({ type: 'reaction', emoji }));
+    });
+  });
+
+  // ---------- LATÊNCIA ----------
+  setInterval(() => {
+    if (roomCode && role && ws.readyState === WebSocket.OPEN) {
+      lastPingSent = performance.now();
+      ws.send(JSON.stringify({ type: 'app-ping', t: lastPingSent }));
+    }
+  }, 5000);
+  function updateLatency(ms) {
+    const rounded = Math.round(ms);
+    const cls = rounded < 150 ? 'good' : rounded > 400 ? 'bad' : '';
+    ['latency-badge', 'latency-badge-v'].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.textContent = rounded + ' ms';
+      el.className = 'latency ' + cls;
+    });
+  }
+
+  // ---------- INDICADOR "A ESCREVER" ----------
+  let typingSentAt = 0;
+  chatInput.addEventListener('input', () => {
+    const now = Date.now();
+    if (now - typingSentAt > 1500) {
+      typingSentAt = now;
+      ws.send(JSON.stringify({ type: 'typing' }));
+    }
+  });
+  function showTypingIndicator() {
+    const el = document.getElementById('typing-indicator');
+    el.style.display = 'block';
+    clearTimeout(typingTimeout);
+    typingTimeout = setTimeout(() => { el.style.display = 'none'; }, 2500);
+  }
+
+  // ---------- CONTROLOS EXTRA DE VÍDEO ----------
+  const hostBack10 = document.getElementById('host-back10');
+  const hostForward10 = document.getElementById('host-forward10');
+  const hostFullscreenBtn = document.getElementById('host-fullscreen');
+  if (hostBack10) hostBack10.addEventListener('click', () => { hostVideo.currentTime = Math.max(0, hostVideo.currentTime - 10); });
+  if (hostForward10) hostForward10.addEventListener('click', () => { hostVideo.currentTime += 10; });
+  if (hostFullscreenBtn) hostFullscreenBtn.addEventListener('click', () => {
+    if (hostVideo.requestFullscreen) hostVideo.requestFullscreen();
+    else if (hostVideo.webkitRequestFullscreen) hostVideo.webkitRequestFullscreen();
+  });
+  const viewerFullscreenBtn = document.getElementById('viewer-fullscreen');
+  if (viewerFullscreenBtn) viewerFullscreenBtn.addEventListener('click', () => {
+    if (viewerVideo.requestFullscreen) viewerVideo.requestFullscreen();
+    else if (viewerVideo.webkitRequestFullscreen) viewerVideo.webkitRequestFullscreen();
+  });
+
   // ---------- MENSAGENS DO SERVIDOR ----------
   function wireSocket(socket) {
     socket.onmessage = async (event) => {
@@ -1717,6 +1853,7 @@
           showScreen('host');
           showTopbarChip(msg.code);
           loadChatHistory();
+          applyPresence(msg);
           if (msg.rejoined) {
             resetPeerConnection();
             reselectBanner.classList.add('show');
@@ -1733,7 +1870,12 @@
           showScreen('viewer');
           showTopbarChip(msg.code);
           loadChatHistory();
+          applyPresence(msg);
           if (msg.rejoined) resetPeerConnection();
+          break;
+
+        case 'presence':
+          applyPresence(msg);
           break;
 
         case 'left-room':
@@ -1791,6 +1933,18 @@
           await handleControlMessage(msg);
           break;
 
+        case 'app-pong':
+          updateLatency(performance.now() - msg.t);
+          break;
+
+        case 'reaction':
+          showReaction(msg.emoji);
+          break;
+
+        case 'typing':
+          showTypingIndicator();
+          break;
+
         case 'peer-disconnected-temp':
           if (role === 'host') setStatus(hostStatus, 'connecting', 'A pessoa perdeu ligação — a aguardar que volte...');
           if (role === 'viewer') setStatus(viewerStatus, 'connecting', 'O anfitrião perdeu ligação — a aguardar que volte...');
@@ -1818,7 +1972,7 @@
     wireSocket(ws);
     ws.addEventListener('open', () => {
       wsReconnectDelay = 1000;
-      if (roomCode && role) ws.send(JSON.stringify({ type: 'rejoin-room', code: roomCode, role }));
+      if (roomCode && role) ws.send(JSON.stringify({ type: 'rejoin-room', code: roomCode, role, name: myName }));
     });
   }
 
@@ -1844,20 +1998,17 @@
       } catch (e) {}
     }
 
-    if (urlRoom && urlRole === 'viewer') {
-      accessCode.value = urlRoom.toUpperCase();
-      document.getElementById('access-room-code').textContent = urlRoom.toUpperCase();
-      document.getElementById('access-room-box').style.display = 'flex';
-      document.getElementById('access-error').textContent = '';
-      showScreen('access');
-    } else if (urlRoom && urlRole === 'host') {
-      roomCode = urlRoom.toUpperCase(); role = 'host';
-      const tryRejoin = () => ws.send(JSON.stringify({ type: 'rejoin-room', code: roomCode, role }));
-      if (ws.readyState === WebSocket.OPEN) tryRejoin(); else ws.addEventListener('open', tryRejoin, { once: true });
+    if (urlRoom && urlRole) {
+      roomCode = urlRoom.toUpperCase();
+      role = urlRole;
+      const tryRejoin = () => ws.send(JSON.stringify({ type: 'rejoin-room', code: roomCode, role, name: myName }));
+      if (ws.readyState === WebSocket.OPEN) tryRejoin();
+      else ws.addEventListener('open', tryRejoin, { once: true });
     }
   });
 })();
 </script>
 
+<div id="reaction-layer"></div>
 </body>
 </html>
