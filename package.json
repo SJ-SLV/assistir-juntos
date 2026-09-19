@@ -1,6 +1,6 @@
 {
   "name": "2-on-streaming",
-  "version": "4.3.0",
+  "version": "4.4.0",
   "description": "2-ON Streaming — interface em dois níveis para criar ou iniciar uma sessão privada.",
   "main": "server.js",
   "engines": {

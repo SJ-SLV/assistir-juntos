@@ -1,4 +1,4 @@
-# 2-ON Streaming 4.3
+# 2-ON Streaming 4.4
 
 Interface em dois níveis:
 
@@ -14,3 +14,15 @@ A lógica WebRTC/WebSocket existente foi preservada.
 npm install
 npm start
 ```
+
+
+## Versão 4.4
+- Todos os atalhos do segundo painel foram ligados às funcionalidades existentes.
+- Armazenamento abre informação real do espaço estimado pelo navegador.
+- Enviar vídeos abre o modo de transferência.
+- Criar Playlist abre o modo de ficheiros e a playlist.
+- Ao vivo e Partilhar vídeo abrem o modo de transmissão.
+- YouTube abre o modo YouTube.
+- Informações, Membros Conectados e menu têm painéis funcionais.
+- Terminar sessão limpa a sessão local e regressa ao primeiro painel.
+- O botão voltar permite regressar ao primeiro painel.
