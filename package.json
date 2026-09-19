@@ -1,7 +1,7 @@
 {
   "name": "2-on-streaming",
-  "version": "4.2.0",
-  "description": "2 on Streaming — dashboard sincronizado para vídeo, música e YouTube.",
+  "version": "4.3.0",
+  "description": "2-ON Streaming — interface em dois níveis para criar ou iniciar uma sessão privada.",
   "main": "server.js",
   "engines": {
     "node": ">=18"
