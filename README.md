@@ -1,10 +1,12 @@
-# 2 on Streaming 4.0
+# 2 on Streaming 4.1
 
 Aplicação web para duas pessoas assistirem ao mesmo conteúdo em sincronia.
 
 ## Melhorias
 
 - Interface redesenhada com aparência de produto real, sem excesso de efeitos.
+- Painel 4.1 reorganizado para eliminar código/sessão/voz duplicados e reduzir ruído visual.
+- Controlo de ficheiros com seletor de ficheiros personalizado e mais limpo no telemóvel.
 - Identidade visual própria do 2 on Streaming.
 - Layout responsivo para telemóvel, tablet e desktop.
 - Sessões com código, link de convite e partilha.
