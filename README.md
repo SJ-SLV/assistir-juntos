@@ -11,6 +11,7 @@ Esta é uma versão consolidada: a base robusta e testada ao longo do projeto (W
 - **Indicador de latência.** Mede o tempo de ida e volta ao servidor a cada 5s (verde = boa, vermelho = fraca).
 - **Indicador "a escrever...".** Aparece no chat quando a outra pessoa está a escrever.
 - **Recuar/Avançar 10s e ecrã inteiro** nos controlos de vídeo.
+- **Grelha de opções em 2 colunas**, com um fundo colorido próprio por categoria (roxo para playlist, azul para áudio/conectados, vermelho para YouTube/sair, laranja para enviar, verde-água para mensagens) — inspirada num mockup fornecido, mantendo a identidade escura já construída.
 - **Servidor mais robusto:** limite de mensagens por segundo (evita flood), limpeza automática de salas abandonadas há mais de 6h, nomes/mensagens filtrados de caracteres perigosos, endpoint `/health` para monitorização.
 
 ## Arquitetura
