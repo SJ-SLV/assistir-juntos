@@ -277,117 +277,90 @@
   .site-footer p { margin: 2px 0; font-size: 11px; color: var(--muted); font-family: var(--font-display); }
   .site-footer strong { color: var(--ink); font-weight: 700; }
 
-/* ===== 2-ON visual system: dashboard based on the supplied reference ===== */
-:root{--ref-navy:#08153f;--ref-blue:#355cf4;--ref-purple:#6c55ff;--ref-ink:#10152b;--ref-light:#f2f5ff}
-body{background:#f2f5ff;color:var(--ref-ink)}
-header{position:relative;padding:0;text-align:center;background:linear-gradient(145deg,#07133a 0%,#111f59 45%,#302474 100%);color:#fff;min-height:190px;overflow:hidden}
-header::after{content:"";position:absolute;left:-8%;right:-8%;bottom:-72px;height:125px;background:#f2f5ff;border-radius:50% 50% 0 0/55% 55% 0 0;transform:rotate(-1.5deg);box-shadow:0 -10px 28px rgba(85,93,190,.15)}
-.mobile-topbar{height:66px;display:flex;align-items:center;justify-content:space-between;padding:10px 20px;position:relative;z-index:2}.mobile-brand{font-weight:800;font-size:20px;letter-spacing:-.6px}.mobile-brand span{font-weight:500}.profile-button,.menu-button{width:40px;height:40px;border:0;border-radius:12px;background:rgba(255,255,255,.08);color:#fff;box-shadow:none;padding:0;font-size:20px}.profile-button{font-size:24px}.menu-button{font-size:25px}.topbar-chip{position:absolute;right:58px;top:74px;display:none!important}.tagline{position:relative;z-index:2;margin:22px auto 0!important;color:rgba(255,255,255,.76)!important;font-size:12px!important;max-width:290px}
-main{padding:0 18px 48px;gap:14px;position:relative;margin-top:-20px;z-index:3}.screen{max-width:520px;gap:14px}.home-dashboard{display:none!important}.home-dashboard.active{display:flex!important}
-.home-search{display:flex;align-items:center;height:50px;background:rgba(9,19,58,.96);border:1px solid rgba(122,148,255,.65);border-radius:28px;padding:4px 7px 4px 17px;box-shadow:0 12px 32px rgba(25,36,103,.25)}.home-search input{background:transparent!important;border:0!important;outline:0!important;color:#fff!important;text-align:left!important;text-transform:none!important;letter-spacing:0!important;font:500 14px var(--font-body)!important;padding:0!important}.home-search input::placeholder{color:rgba(255,255,255,.52)}.search-submit{width:40px;height:40px;border-radius:50%;padding:0;background:linear-gradient(135deg,#5576ff,#7655ff);font-size:23px;box-shadow:none}
-.welcome-card{position:relative;overflow:hidden;border:1px solid rgba(116,126,255,.65);border-radius:27px;background:linear-gradient(145deg,#5360ff 0%,#403bd3 48%,#0c1645 100%);padding:28px 24px 22px;color:#fff;box-shadow:0 16px 34px rgba(54,58,173,.28);min-height:215px}.welcome-card::after{content:"";position:absolute;inset:auto -30% -72% 35%;height:170px;background:radial-gradient(circle,rgba(111,129,255,.5),transparent 65%)}.welcome-icon{width:72px;height:72px;border-radius:22px;background:rgba(255,255,255,.95);color:#4c65ef;display:flex;align-items:center;justify-content:center;font-size:34px;box-shadow:0 12px 24px rgba(0,0,0,.16);margin-bottom:18px}.welcome-copy{display:flex;flex-direction:column;gap:5px;max-width:290px}.welcome-copy strong{font-size:24px;line-height:1.12;letter-spacing:-.7px}.welcome-copy span{font-size:12px;color:rgba(255,255,255,.72)}.welcome-line{height:5px;background:rgba(2,7,33,.7);border-radius:99px;width:58%;margin-top:22px;overflow:hidden}.welcome-line span{display:block;height:100%;width:58%;background:#4167ff;border-radius:99px}.welcome-action{position:absolute;right:18px;bottom:18px;background:transparent!important;box-shadow:none!important;padding:8px;color:#fff;font-size:12px}.welcome-action b{font-size:24px;vertical-align:-2px;margin-left:5px}
-.home-grid{background:rgba(249,251,255,.94);display:grid;grid-template-columns:repeat(3,1fr);gap:22px 12px;padding:22px 4px 12px;border-radius:34px 34px 0 0;box-shadow:0 -8px 28px rgba(38,47,95,.06)}.home-tile{background:transparent!important;color:#10152b!important;border:0!important;box-shadow:none!important;padding:0 2px!important;display:flex;flex-direction:column;align-items:center;gap:9px;font-size:11px;font-weight:600;line-height:1.2;text-align:center}.tile-icon{width:72px;height:72px;border-radius:22px;background:#fff;display:flex;align-items:center;justify-content:center;font-size:29px;font-weight:800;box-shadow:0 7px 20px rgba(27,39,84,.09);border:1px solid rgba(30,42,88,.05)}.tile-icon.orange{color:#ff9b1c}.tile-icon.blue{color:#1688e9}.tile-icon.pink{color:#ed4cc7}.tile-icon.black{color:#10152b}.tile-icon.red{color:#ff1f2f}.tile-icon.violet{color:#6651df}.tile-icon.cobalt{color:#2164c6}.tile-icon.people{color:#10152b;font-size:18px}.home-paste{align-self:center;background:transparent!important;color:#596177!important;border:0!important;box-shadow:none!important;font-size:11px;padding:4px 8px}.home-dashboard .error-msg{color:#d14b56}
-#screen-host,#screen-viewer{padding-top:8px}#screen-host .card,#screen-viewer .card{background:#fff;border-color:rgba(16,21,43,.08);box-shadow:0 8px 24px rgba(35,45,88,.07)}#screen-host .grid-icon{background:#f4f6fc;border-color:#e6e9f2;border-left-color:#5b63ef}
-@media(max-width:520px){header{min-height:178px}.mobile-topbar{padding:9px 16px}.mobile-brand{font-size:18px}main{padding-left:14px;padding-right:14px}.welcome-card{min-height:210px;padding:25px 21px}.welcome-copy strong{font-size:22px}.home-grid{gap:20px 7px;padding-left:0;padding-right:0}.tile-icon{width:68px;height:68px;border-radius:21px}.home-tile{font-size:10.5px}}@media(min-width:760px){header{min-height:220px}.mobile-topbar{max-width:700px;margin:auto}.home-dashboard{max-width:560px}.home-grid{gap:24px 18px}.tile-icon{width:82px;height:82px}}
-
-/* 2-ON — primeiro painel / entrada da aplicação */
-#welcome-screen{position:relative;min-height:calc(100vh - 128px);max-width:460px;justify-content:space-between;overflow:hidden;padding:4px 0 8px}
-#welcome-screen::before{content:"";position:absolute;inset:-25% -20% auto;height:58%;background:radial-gradient(circle at 50% 20%,rgba(94,96,255,.30),transparent 62%);pointer-events:none}
-.welcome-top{position:relative;z-index:1;text-align:center;padding:12px 8px 4px}
-.welcome-symbol{width:74px;height:74px;margin:0 auto 18px;border-radius:23px;background:linear-gradient(145deg,#5b63ff,#3037bd);box-shadow:0 16px 40px rgba(60,65,210,.28);display:flex;align-items:center;justify-content:center;color:#fff;font-size:33px;font-weight:800;letter-spacing:-3px;border:1px solid rgba(255,255,255,.25)}
-.welcome-title{margin:0;color:#fff;font-family:var(--font-display);font-size:30px;line-height:1.06;letter-spacing:-1.4px;font-weight:700}
-.welcome-title em{font-style:normal;color:#7d83ff}
-.welcome-copy{max-width:330px;margin:12px auto 0;color:rgba(255,255,255,.70);font-size:13px;line-height:1.55}
-.welcome-panel{position:relative;z-index:1;margin-top:20px;background:linear-gradient(180deg,rgba(22,28,72,.96),rgba(12,16,43,.98));border:1px solid rgba(123,132,255,.42);border-radius:28px;padding:22px;box-shadow:0 24px 55px rgba(9,12,45,.28),inset 0 1px 0 rgba(255,255,255,.08)}
-.welcome-panel-label{display:flex;align-items:center;justify-content:space-between;color:#9fa5ff;font-size:10px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;margin-bottom:16px}
-.welcome-panel-label span:last-child{display:flex;align-items:center;gap:5px;color:#b9becd;letter-spacing:0;text-transform:none;font-weight:500}.welcome-dot{width:6px;height:6px;border-radius:50%;background:#45d483;box-shadow:0 0 0 4px rgba(69,212,131,.10)}
-.entry-choice{display:flex;flex-direction:column;gap:10px}
-.entry-btn{width:100%;display:flex;align-items:center;gap:13px;text-align:left;padding:15px 16px;border-radius:15px;background:#f8f9ff;color:#12162c;border:1px solid rgba(255,255,255,.55);box-shadow:none}
-.entry-btn:hover{filter:brightness(1.02)}.entry-btn .entry-icon{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex:none;background:#e7e9ff;color:#4f57df;font-size:19px}.entry-btn .entry-copy{display:flex;flex-direction:column;gap:3px;flex:1}.entry-btn strong{font-size:14px}.entry-btn small{font-size:11px;color:#72788a;font-weight:500}.entry-btn .entry-arrow{font-size:22px;color:#5c63de}.entry-btn.secondary-entry{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.14);color:#fff}.entry-btn.secondary-entry .entry-icon{background:rgba(104,111,255,.18);color:#a9adff}.entry-btn.secondary-entry small{color:#a2a7b8}.entry-btn.secondary-entry .entry-arrow{color:#a9adff}
-.welcome-note{position:relative;z-index:1;margin:18px auto 0;max-width:340px;text-align:center;color:#7b8191;font-size:10.5px;line-height:1.5}.welcome-note strong{color:#9ca2b1;font-weight:600}
-.welcome-foot{position:relative;z-index:1;text-align:center;color:#6e7483;font-size:10px;padding-top:18px;font-family:var(--font-display)}
-@media(max-width:520px){#welcome-screen{min-height:calc(100vh - 108px)}.welcome-symbol{width:64px;height:64px;border-radius:20px;font-size:28px;margin-bottom:15px}.welcome-title{font-size:27px}.welcome-panel{padding:18px;border-radius:23px}.entry-btn{padding:14px}.welcome-copy{font-size:12.5px}}
-
-/* 2-ON functional overlays and navigation */
-.home-nav{display:grid;grid-template-columns:40px 1fr 40px;align-items:center;margin:0 2px -2px;color:#6c748b;font-size:12px;font-weight:700}.home-nav button{width:36px;height:36px;padding:0;border-radius:12px;background:#fff;color:#35416f;box-shadow:0 5px 16px rgba(31,44,90,.08);font-size:24px;line-height:1}.home-nav span:nth-child(2){text-align:center}.app-modal{position:fixed;inset:0;z-index:80;display:none}.app-modal.show{display:block}.app-modal-backdrop{position:absolute;inset:0;background:rgba(7,13,37,.48);backdrop-filter:blur(4px)}.app-modal-sheet{position:absolute;left:50%;bottom:0;transform:translateX(-50%);width:min(520px,100%);max-height:78vh;overflow:auto;background:#fff;border-radius:26px 26px 0 0;box-shadow:0 -20px 60px rgba(11,20,60,.25);padding:18px 18px 24px}.app-modal-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:2px 2px 14px;border-bottom:1px solid #edf0f6}.app-modal-head h2{margin:3px 0 0;font-size:18px;color:#151a31}.modal-kicker{font-size:9px;letter-spacing:1.3px;color:#6a68ed;font-weight:800}.app-modal-head button{width:36px;height:36px;border-radius:50%;padding:0;background:#f1f3f8;color:#49516a;box-shadow:none;font-size:23px}.app-modal-body{padding-top:16px;color:#555e74;font-size:13px;line-height:1.55}.modal-card{background:#f6f8fd;border:1px solid #e8ebf3;border-radius:16px;padding:13px;margin-bottom:10px}.modal-card strong{display:block;color:#18203a;margin-bottom:4px}.modal-stat{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid #e8ebf3}.modal-stat:last-child{border-bottom:0}.modal-actions{display:flex;gap:8px;margin-top:14px}.modal-actions button{flex:1}.modal-actions .secondary{background:#eef1f8;color:#27304d;border-color:#dfe4ef}.storage-meter{height:8px;border-radius:99px;background:#e9edf5;overflow:hidden;margin:10px 0}.storage-meter span{display:block;height:100%;width:0;background:linear-gradient(90deg,#5268ff,#7b57f4)}
-@media(max-width:520px){.app-modal-sheet{padding-bottom:calc(22px + env(safe-area-inset-bottom))}}
+/* 2 on Streaming — entrada e acesso: fluxo em três ecrãs */
+.name-field{display:flex;flex-direction:column;gap:7px}.name-field label{font-size:12px;font-weight:700;color:var(--ink)}
+.name-field input{background:#fff;border:1px solid #d9dce5;color:#17191f;border-radius:12px;padding:14px 15px;font-size:15px;width:100%;font-family:var(--font-body);outline:none;box-sizing:border-box}
+.name-field input:focus{border-color:#5b63d8;box-shadow:0 0 0 3px rgba(91,99,216,.10)}
+.home-hero{padding:24px 20px 20px;text-align:left}.home-logo{width:58px;height:58px;border-radius:16px;overflow:hidden;background:#101a4c;margin-bottom:16px;border:1px solid #dfe2eb}.home-logo img{width:100%;height:100%;object-fit:cover}.home-title{font-family:var(--font-display);font-size:26px;line-height:1.08;margin:0;color:#17191f}.home-subtitle{margin:8px 0 0!important;font-size:13px!important;color:#737887!important}.choice-list{display:flex;flex-direction:column;border:1px solid #dfe1e8;border-radius:14px;overflow:hidden;background:#fff}.choice-btn{appearance:none;border:0;border-radius:0!important;box-shadow:none!important;background:#fff!important;color:#191b21!important;display:flex;align-items:center;gap:13px;text-align:left;padding:15px 14px!important;min-height:72px}.choice-btn+.choice-btn{border-top:1px solid #e3e4e9}.choice-icon{width:42px;height:42px;display:grid;place-items:center;border-radius:11px;background:#f5f6fb;border:1px solid #e1e3eb;font-size:21px;flex:none}.choice-copy{display:flex;flex-direction:column;gap:3px;min-width:0}.choice-copy strong{font-size:14px}.choice-copy small{font-size:11px;color:#777c88;font-weight:400}.choice-arrow{margin-left:auto;font-size:23px;color:#74786d}.access-card{text-align:left}.access-room{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:#f6f7fb;border:1px solid #e1e3ea;border-radius:12px}.access-room small{display:block;color:#777c88;font-size:10px}.access-room strong{font-family:var(--font-display);font-size:20px;letter-spacing:4px}.access-qr{width:104px;height:104px;object-fit:contain;background:#fff;border:1px solid #ddd;border-radius:12px;padding:7px;display:block;margin:4px auto 2px}.back-link{background:transparent!important;color:#747887!important;box-shadow:none!important;padding:8px!important;font-size:12px!important}
+@media(max-width:520px){.home-title{font-size:23px}.home-hero{padding:20px 17px}.choice-btn{min-height:68px;padding:13px!important}}
 </style>
 
 </head>
 <body>
 
 <header>
-  <div class="mobile-topbar">
-    <button class="profile-button" type="button" aria-label="Perfil">●</button>
-    <div class="mobile-brand">2-ON <span>Streaming</span></div>
-    <button class="menu-button" type="button" aria-label="Menu">☰</button>
+  <div class="topbar">
+    <div class="topbar-brand">
+      <div class="brand-mark">
+        <img src="icon.svg" alt="2 on Streaming" />
+      </div>
+      <span class="topbar-title">2 on Streaming</span>
+    </div>
+    <div class="topbar-chip" id="topbar-room-chip">
+      <span class="dot-live"></span><span id="topbar-room-code">-----</span>
+    </div>
   </div>
-  <div class="topbar-chip" id="topbar-room-chip">
-    <span class="dot-live"></span><span id="topbar-room-code">-----</span>
-  </div>
+  <div class="accent-bar"></div>
   <p class="tagline">Vê o mesmo vídeo, ao mesmo tempo, em telefones diferentes</p>
 </header>
 
 <main>
 
-  <!-- PRIMEIRO PAINEL / ENTRADA -->
-  <section id="welcome-screen" class="screen active">
-    <div>
-      <div class="welcome-top">
-        <div class="welcome-symbol" aria-hidden="true">2·ON</div>
-        <h1 class="welcome-title">2-ON <em>Streaming</em></h1>
-        <p class="welcome-copy">Vê o mesmo vídeo, ao mesmo tempo, em telefones diferentes. Cria uma sala privada e partilha o momento.</p>
-      </div>
-
-      <div class="welcome-panel">
-        <div class="welcome-panel-label"><span>Começar</span><span><i class="welcome-dot"></i> Sessão privada</span></div>
-        <div class="entry-choice">
-          <button type="button" id="welcome-create" class="entry-btn">
-            <span class="entry-icon">＋</span>
-            <span class="entry-copy"><strong>Criar Sala</strong><small>Abre uma sala e convida outra pessoa.</small></span>
-            <span class="entry-arrow">›</span>
-          </button>
-          <button type="button" id="welcome-join" class="entry-btn secondary-entry">
-            <span class="entry-icon">↗</span>
-            <span class="entry-copy"><strong>Iniciar Sessão</strong><small>Entra com o código recebido.</small></span>
-            <span class="entry-arrow">›</span>
-          </button>
-        </div>
-      </div>
-      <p class="welcome-note"><strong>Sem conta.</strong> O código da sala é temporário e a ligação é feita diretamente entre os dispositivos.</p>
+  <!-- ECRÃ 1 — INÍCIO -->
+  <section id="screen-home" class="screen active">
+    <div class="card home-hero">
+      <div class="home-logo"><img src="icon.svg" alt="2 on Streaming"></div>
+      <h1 class="home-title">2 on Streaming</h1>
+      <p class="home-subtitle">Assiste em sincronia. Mesmo à distância.</p>
     </div>
-    <div class="welcome-foot">2-ON Streaming · feito para dois</div>
+
+    <div class="card">
+      <div class="name-field">
+        <label for="user-name">Como queres ser chamado?</label>
+        <input id="user-name" type="text" maxlength="40" placeholder="O teu nome" autocomplete="name">
+      </div>
+    </div>
+
+    <div class="choice-list">
+      <button type="button" class="choice-btn" id="btn-create">
+        <span class="choice-icon">🎬</span>
+        <span class="choice-copy"><strong>Criar uma sala</strong><small>Cria uma sessão e convida outra pessoa</small></span>
+        <span class="choice-arrow">›</span>
+      </button>
+      <button type="button" class="choice-btn" id="btn-open-access">
+        <span class="choice-icon">🔗</span>
+        <span class="choice-copy"><strong>Entrar numa sala</strong><small>Usa um código, link ou QR Code</small></span>
+        <span class="choice-arrow">›</span>
+      </button>
+    </div>
+    <p class="error-msg" id="home-error"></p>
   </section>
 
-  <!-- ECRÃ DE OPÇÕES / SEGUNDO PAINEL -->
-  <section id="screen-home" class="screen home-dashboard">
-    <div class="home-nav"><button id="home-back" type="button" aria-label="Voltar">‹</button><span>Início</span><span></span></div>
-    <div class="home-search">
-      <input type="text" id="input-code" maxlength="5" placeholder="Pesquisar ou inserir código da sala" inputmode="text" autocomplete="off" autocapitalize="characters" aria-label="Código da sala" />
-      <button id="btn-join" class="search-submit" aria-label="Entrar na sala">⌕</button>
+  <!-- ECRÃ 3 — ACESSO À SALA -->
+  <section id="screen-access" class="screen">
+    <div class="card home-hero">
+      <div class="home-logo"><img src="icon.svg" alt="2 on Streaming"></div>
+      <h1 class="home-title">Entrar numa sala</h1>
+      <p class="home-subtitle">Usa o código recebido ou abre o link/QR Code enviado pelo anfitrião.</p>
     </div>
-
-    <div class="welcome-card">
-      <div class="welcome-icon">⛓</div>
-      <div class="welcome-copy"><strong>Partilha os melhores momentos.</strong><span>Assiste em sincronia com quem está longe.</span></div>
-      <div class="welcome-line"><span></span></div>
-      <button id="btn-create" class="welcome-action">Começar agora <b>›</b></button>
+    <div class="card access-card">
+      <div class="access-room" id="access-room-box" style="display:none;">
+        <span><small>Sala</small><strong id="access-room-code">-----</strong></span>
+        <span>🔒</span>
+      </div>
+      <div class="name-field">
+        <label for="access-name">O teu nome</label>
+        <input id="access-name" type="text" maxlength="40" placeholder="Como queres ser chamado?" autocomplete="name">
+      </div>
+      <div class="name-field">
+        <label for="access-code">Código da sala</label>
+        <input id="access-code" type="text" maxlength="5" placeholder="EX: ML688" inputmode="text" autocomplete="off" autocapitalize="characters">
+      </div>
+      <img id="access-qr" class="access-qr" alt="QR Code da sala" style="display:none;">
+      <button type="button" id="btn-access-join">Entrar na sala</button>
+      <p class="error-msg" id="access-error"></p>
+      <button type="button" id="btn-access-back" class="back-link">‹ Voltar</button>
     </div>
-
-    <div class="home-grid">
-      <button class="home-tile" data-home-action="storage"><span class="tile-icon orange">▰</span><span>Armazenamento</span></button>
-      <button class="home-tile" data-home-action="upload"><span class="tile-icon blue">◆</span><span>Enviar vídeos</span></button>
-      <button class="home-tile" data-home-action="playlist"><span class="tile-icon pink">≋</span><span>Criar Playlist</span></button>
-      <button class="home-tile" data-home-action="live"><span class="tile-icon black">▶</span><span>Ao vivo</span></button>
-      <button class="home-tile" data-home-action="youtube"><span class="tile-icon red">▶</span><span>YouTube</span></button>
-      <button class="home-tile" data-home-action="share"><span class="tile-icon violet">▣</span><span>Partilhar vídeo</span></button>
-      <button class="home-tile" data-home-action="info"><span class="tile-icon cobalt">i</span><span>Informações da APP</span></button>
-      <button class="home-tile" data-home-action="members"><span class="tile-icon people">●●</span><span>Membros Conectados</span></button>
-      <button class="home-tile" data-home-action="leave"><span class="tile-icon violet">↻</span><span>Terminar sessão</span></button>
-    </div>
-
-    <button id="btn-paste-code" class="home-paste" type="button">Colar código da sala</button>
-    <p class="error-msg" id="home-error"></p>
   </section>
 
   <!-- ECRÃ DO ANFITRIÃO -->
@@ -566,14 +539,6 @@ main{padding:0 18px 48px;gap:14px;position:relative;margin-top:-20px;z-index:3}.
   <button id="chat-toggle" class="action-btn action-btn-accent" aria-label="Abrir mensagens">💬<span id="chat-badge" class="badge"></span></button>
 </div>
 
-<div id="app-modal" class="app-modal" aria-hidden="true">
-  <div class="app-modal-backdrop" data-modal-close></div>
-  <section class="app-modal-sheet" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-    <div class="app-modal-head"><div><span class="modal-kicker">2-ON</span><h2 id="modal-title">Informação</h2></div><button type="button" id="modal-close" aria-label="Fechar">×</button></div>
-    <div id="modal-body" class="app-modal-body"></div>
-  </section>
-</div>
-
 <div id="chat-panel">
   <div class="chat-header">
     <span>Mensagens</span>
@@ -593,6 +558,9 @@ main{padding:0 18px 48px;gap:14px;position:relative;margin-top:-20px;z-index:3}.
   let wsReconnectDelay = 1000;
 
   const SESSION_KEY = 'assistir_juntos_session_v1';
+  let userName = localStorage.getItem('assistir_juntos_name') || '';
+  document.getElementById('user-name').value = userName;
+  document.getElementById('access-name').value = userName;
 
   const FALLBACK_ICE_SERVERS = [
     { urls: 'stun:stun.l.google.com:19302' },
@@ -615,15 +583,15 @@ main{padding:0 18px 48px;gap:14px;position:relative;margin-top:-20px;z-index:3}.
   }
 
   const screens = {
-    welcome: document.getElementById('welcome-screen'),
     home: document.getElementById('screen-home'),
+    access: document.getElementById('screen-access'),
     host: document.getElementById('screen-host'),
     viewer: document.getElementById('screen-viewer')
   };
   function showScreen(name) {
     Object.values(screens).forEach(s => s.classList.remove('active'));
     screens[name].classList.add('active');
-    if ((name === 'home' || name === 'welcome') && typeof hideTopbarChip === 'function') hideTopbarChip();
+    if (name === 'home') hideTopbarChip();
   }
 
   function showTopbarChip(code) {
@@ -716,99 +684,30 @@ main{padding:0 18px 48px;gap:14px;position:relative;margin-top:-20px;z-index:3}.
     catch (e) { return false; }
   }
 
-  // ---------- MODAIS DO PAINEL PRINCIPAL ----------
-  const appModal = document.getElementById('app-modal');
-  const modalTitle = document.getElementById('modal-title');
-  const modalBody = document.getElementById('modal-body');
-  function openAppModal(title, html) {
-    modalTitle.textContent = title;
-    modalBody.innerHTML = html;
-    appModal.classList.add('show');
-    appModal.setAttribute('aria-hidden', 'false');
-  }
-  function closeAppModal() {
-    appModal.classList.remove('show');
-    appModal.setAttribute('aria-hidden', 'true');
-  }
-  document.getElementById('modal-close').addEventListener('click', closeAppModal);
-  appModal.addEventListener('click', (e) => {
-    if (e.target.matches('[data-modal-close]')) closeAppModal();
-    const go = e.target.closest('[data-modal-go]');
-    if (!go) return;
-    closeAppModal();
-    if (go.dataset.modalGo === 'create') { showScreen('home'); setTimeout(() => document.getElementById('btn-create')?.focus(), 80); }
-    if (go.dataset.modalGo === 'join') { showScreen('home'); setTimeout(() => document.getElementById('input-code')?.focus(), 80); }
-  });
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAppModal(); });
-
-  function renderInfoModal() {
-    return '<div class="modal-card"><strong>Assistir em sincronia</strong>O 2-ON cria uma sala privada para duas pessoas assistirem ao mesmo conteúdo em dispositivos diferentes.</div><div class="modal-card"><strong>Modos disponíveis</strong>Vídeo ao vivo, envio completo de ficheiro, playlists, YouTube, áudio, mensagens e partilha do acesso por link ou QR.</div><div class="modal-card"><strong>Privacidade</strong>O código da sala é temporário e a sessão é ligada diretamente entre os dispositivos conforme a infraestrutura WebRTC/WebSocket da aplicação.</div>';
-  }
-
-  async function renderStorageModal() {
-    let used = 0, quota = 0;
-    try { const est = await navigator.storage?.estimate?.() || {}; used = Number(est.usage || 0); quota = Number(est.quota || 0); } catch (e) {}
-    const pct = quota ? Math.min(100, (used / quota) * 100) : 0;
-    const fmt = (n) => n < 1024*1024 ? Math.round(n/1024) + ' KB' : (n/(1024*1024)).toFixed(1) + ' MB';
-    return '<div class="modal-card"><strong>Espaço utilizado pelo site</strong><div class="storage-meter"><span style="width:'+pct.toFixed(1)+'%"></span></div><div class="modal-stat"><span>Utilizado</span><b>'+fmt(used)+'</b></div><div class="modal-stat"><span>Limite estimado</span><b>'+ (quota ? fmt(quota) : 'não informado') +'</b></div></div><div class="modal-card"><strong>Biblioteca da sessão</strong>Os ficheiros escolhidos para transmissão usam recursos temporários do dispositivo. Ao terminar a sessão, os dados temporários podem ser libertados pelo navegador.</div>';
-  }
-
-  document.querySelector('.profile-button').addEventListener('click', () => openAppModal('Informações da APP', renderInfoModal()));
-  document.querySelector('.menu-button').addEventListener('click', () => {
-    openAppModal('Menu', '<div class="modal-card"><strong>Acesso rápido</strong>Escolhe uma ação para continuar sem sair do painel.</div><div class="modal-actions"><button type="button" data-modal-go="create">Criar Sala</button><button type="button" class="secondary" data-modal-go="join">Iniciar Sessão</button></div>');
-  });
-
-  // ---------- PRIMEIRO PAINEL ----------
-  document.getElementById('welcome-create').addEventListener('click', () => {
-    showScreen('home');
-    setTimeout(() => document.getElementById('btn-create')?.focus(), 80);
-  });
-  document.getElementById('welcome-join').addEventListener('click', () => {
-    showScreen('home');
-    setTimeout(() => document.getElementById('input-code')?.focus(), 80);
-  });
-
   // ---------- ECRÃ INICIAL ----------
-  const inputCode = document.getElementById('input-code');
-  inputCode.addEventListener('input', () => {
-    inputCode.value = inputCode.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5);
-  });
+  const userNameInput = document.getElementById('user-name');
+  const accessName = document.getElementById('access-name');
+  const accessCode = document.getElementById('access-code');
+  function rememberName(value){ userName = value.trim(); if(userName) localStorage.setItem('assistir_juntos_name', userName); }
+  userNameInput.addEventListener('input',()=>{ accessName.value=userNameInput.value; });
+  accessName.addEventListener('input',()=>{ userNameInput.value=accessName.value; });
+  accessCode.addEventListener('input',()=>{ accessCode.value=accessCode.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,5); });
 
   document.getElementById('btn-create').addEventListener('click', () => {
-    ws.send(JSON.stringify({ type: 'create-room' }));
+    rememberName(userNameInput.value);
+    if (!userName) { document.getElementById('home-error').textContent='Indica o teu nome para continuar.'; userNameInput.focus(); return; }
+    ws.send(JSON.stringify({ type: 'create-room', name:userName }));
   });
 
-  document.getElementById('btn-paste-code').addEventListener('click', async () => {
-    try {
-      const text = await navigator.clipboard.readText();
-      inputCode.value = text.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5);
-    } catch (e) {
-      document.getElementById('home-error').textContent = 'Não consegui aceder à área de transferência — cola manualmente.';
-    }
+  document.getElementById('btn-open-access').addEventListener('click', () => {
+    accessCode.value=''; document.getElementById('access-room-box').style.display='none'; document.getElementById('access-qr').style.display='none'; document.getElementById('access-error').textContent=''; showScreen('access');
   });
-
-  document.querySelectorAll('[data-home-action]').forEach((tile) => {
-    tile.addEventListener('click', () => {
-      const action = tile.dataset.homeAction;
-      if (action === 'storage') { renderStorageModal().then(html => openAppModal('Armazenamento', html)); return; }
-      if (action === 'info') { openAppModal('Informações da APP', renderInfoModal()); return; }
-      if (action === 'members') { openAppModal('Membros conectados', '<div class="modal-card"><strong>Ainda não há uma sala ativa.</strong>Os participantes aparecem aqui depois de criares ou entrares numa sala.</div><div class="modal-actions"><button type="button" data-modal-go="create">Criar Sala</button><button type="button" class="secondary" data-modal-go="join">Iniciar Sessão</button></div>'); return; }
-      if (action === 'leave') { clearLocalSession(); roomCode = null; role = null; updateUrl(); document.getElementById('home-error').textContent = ''; showScreen('welcome'); return; }
-      window.__homeAfterCreate = action;
-      ws.send(JSON.stringify({ type: 'create-room' }));
-    });
-  });
-
-  document.getElementById('home-back').addEventListener('click', () => showScreen('welcome'));
-
-  document.getElementById('btn-join').addEventListener('click', () => {
-    const code = inputCode.value.trim().toUpperCase();
-    if (code.length < 5) {
-      document.getElementById('home-error').textContent = 'O código tem 5 letras/números.';
-      return;
-    }
-    document.getElementById('home-error').textContent = '';
-    ws.send(JSON.stringify({ type: 'join-room', code }));
+  document.getElementById('btn-access-back').addEventListener('click',()=>showScreen('home'));
+  document.getElementById('btn-access-join').addEventListener('click',()=>{
+    rememberName(accessName.value); const code=accessCode.value.trim().toUpperCase();
+    if(!userName){document.getElementById('access-error').textContent='Indica o teu nome para continuar.';accessName.focus();return;}
+    if(code.length!==5){document.getElementById('access-error').textContent='O código deve ter 5 caracteres.';accessCode.focus();return;}
+    document.getElementById('access-error').textContent=''; ws.send(JSON.stringify({type:'join-room',code,name:userName}));
   });
 
   // ---------- SAIR DA SALA ----------
@@ -1818,12 +1717,6 @@ main{padding:0 18px 48px;gap:14px;position:relative;margin-top:-20px;z-index:3}.
           showScreen('host');
           showTopbarChip(msg.code);
           loadChatHistory();
-          const homeAction = window.__homeAfterCreate;
-          window.__homeAfterCreate = null;
-          if (homeAction === 'youtube') { revealContentPanel(); document.getElementById('mode-youtube-btn').click(); }
-          else if (homeAction === 'upload') { revealContentPanel(); document.getElementById('mode-transfer-btn').click(); }
-          else if (homeAction === 'playlist') { revealContentPanel(); document.getElementById('mode-file-btn').click(); setTimeout(() => document.getElementById('file-playlist')?.scrollIntoView({behavior:'smooth', block:'center'}), 150); }
-          else if (homeAction === 'live' || homeAction === 'share') { revealContentPanel(); document.getElementById('mode-file-btn').click(); }
           if (msg.rejoined) {
             resetPeerConnection();
             reselectBanner.classList.add('show');
@@ -1850,7 +1743,7 @@ main{padding:0 18px 48px;gap:14px;position:relative;margin-top:-20px;z-index:3}.
           break;
 
         case 'error':
-          if (msg.expired) { roomCode = null; role = null; updateUrl(); clearLocalSession(); showScreen('welcome'); }
+          if (msg.expired) { roomCode = null; role = null; updateUrl(); clearLocalSession(); showScreen('home'); }
           document.getElementById('home-error').textContent = msg.message;
           break;
 
@@ -1951,12 +1844,16 @@ main{padding:0 18px 48px;gap:14px;position:relative;margin-top:-20px;z-index:3}.
       } catch (e) {}
     }
 
-    if (urlRoom && urlRole) {
-      roomCode = urlRoom.toUpperCase();
-      role = urlRole;
+    if (urlRoom && urlRole === 'viewer') {
+      accessCode.value = urlRoom.toUpperCase();
+      document.getElementById('access-room-code').textContent = urlRoom.toUpperCase();
+      document.getElementById('access-room-box').style.display = 'flex';
+      document.getElementById('access-error').textContent = '';
+      showScreen('access');
+    } else if (urlRoom && urlRole === 'host') {
+      roomCode = urlRoom.toUpperCase(); role = 'host';
       const tryRejoin = () => ws.send(JSON.stringify({ type: 'rejoin-room', code: roomCode, role }));
-      if (ws.readyState === WebSocket.OPEN) tryRejoin();
-      else ws.addEventListener('open', tryRejoin, { once: true });
+      if (ws.readyState === WebSocket.OPEN) tryRejoin(); else ws.addEventListener('open', tryRejoin, { once: true });
     }
   });
 })();

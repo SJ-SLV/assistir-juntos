@@ -1,17 +1,11 @@
 {
-  "name": "2-ON Streaming",
-  "short_name": "2-ON",
-  "start_url": "./",
-  "display": "standalone",
-  "background_color": "#f3f5ff",
-  "theme_color": "#18225b",
-  "description": "Vê o mesmo vídeo ao mesmo tempo em telefones diferentes.",
-  "icons": [
-    {
-      "src": "icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
-    }
-  ]
+  "name":"Assistir Juntos 2.1",
+  "short_name":"Assistir Juntos",
+  "description":"Vídeos, música e YouTube em sincronia com outra pessoa.",
+  "start_url":"/",
+  "scope":"/",
+  "display":"standalone",
+  "background_color":"#07080b",
+  "theme_color":"#e50914",
+  "icons":[{"src":"public/icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]
 }
