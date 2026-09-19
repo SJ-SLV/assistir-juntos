@@ -1,12 +1,12 @@
-# 2-ON Streaming 4.4
+# 2 on Streaming — entrada em 3 painéis
 
-Interface em dois níveis:
+Versão com fluxo de entrada reorganizado:
 
-1. **Entrada 2-ON** — primeiro painel com Criar Sala e Iniciar Sessão.
-2. **Painel principal** — menu visual com as funções da sessão.
-3. Ao criar/entrar na sala, a aplicação abre o painel correspondente do anfitrião ou convidado.
+1. **Início:** a pessoa informa o nome e escolhe **Criar uma sala** ou **Entrar numa sala**.
+2. **Sala:** anfitrião cria a sessão e recebe código, link e QR Code.
+3. **Acesso:** quem recebe código, link ou QR Code chega primeiro ao painel de acesso, confirma o nome e entra na sessão.
 
-A lógica WebRTC/WebSocket existente foi preservada.
+O restante do sistema (WebRTC, sincronização, YouTube, playlist, mensagens, voz, transferência e PWA) é preservado.
 
 ## Executar
 
@@ -15,14 +15,8 @@ npm install
 npm start
 ```
 
+Abrir `http://localhost:3000`.
 
-## Versão 4.4
-- Todos os atalhos do segundo painel foram ligados às funcionalidades existentes.
-- Armazenamento abre informação real do espaço estimado pelo navegador.
-- Enviar vídeos abre o modo de transferência.
-- Criar Playlist abre o modo de ficheiros e a playlist.
-- Ao vivo e Partilhar vídeo abrem o modo de transmissão.
-- YouTube abre o modo YouTube.
-- Informações, Membros Conectados e menu têm painéis funcionais.
-- Terminar sessão limpa a sessão local e regressa ao primeiro painel.
-- O botão voltar permite regressar ao primeiro painel.
+## Observação
+
+O nome é guardado localmente no navegador para evitar digitação repetida. O servidor continua responsável pela criação/entrada das salas; campos adicionais de nome podem ser ignorados por versões antigas do servidor sem impedir o fluxo.
