@@ -1,17 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
-  <defs>
-    <linearGradient id="g" x1="60" y1="60" x2="480" y2="480" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#ffad70"/>
-      <stop offset="100%" stop-color="#ffd09e"/>
-    </linearGradient>
-    <linearGradient id="gbg" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#090f1c"/>
-      <stop offset="100%" stop-color="#111c2d"/>
-    </linearGradient>
-  </defs>
-  <rect width="512" height="512" rx="100" fill="url(#gbg)"/>
-  <circle cx="216" cy="256" r="120" fill="none" stroke="url(#g)" stroke-width="18" opacity=".85"/>
-  <circle cx="296" cy="256" r="120" fill="none" stroke="url(#g)" stroke-width="18" opacity=".65"/>
-  <path d="M216 196c22 0 40 18 40 40v40c0 22-18 40-40 40s-40-18-40-40v-40c0-22 18-40 40-40zM296 196c22 0 40 18 40 40v40c0 22-18 40-40 40s-40-18-40-40v-40c0-22 18-40 40-40z" fill="url(#g)" opacity=".7"/>
-  <circle cx="256" cy="256" r="40" fill="url(#g)"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+<rect width="128" height="128" rx="28" fill="#17251f"/>
+<circle cx="49" cy="64" r="25" fill="none" stroke="#f3efe4" stroke-width="8"/>
+<circle cx="79" cy="64" r="25" fill="none" stroke="#9ac7aa" stroke-width="8"/>
+<path d="M58 48l20 16-20 16z" fill="#f3efe4"/>
 </svg>
