@@ -6,8 +6,8 @@
 <title>2 on Streaming</title>
 <link rel="manifest" href="manifest.json" />
 <meta name="theme-color" content="#1f4d3d" />
-<link rel="icon" href="icon.png" type="image/png" />
-<link rel="apple-touch-icon" href="icon.png" />
+<link rel="icon" href="icon.svg" type="image/png" />
+<link rel="apple-touch-icon" href="icon.svg" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -289,6 +289,24 @@ main{padding:0 18px 48px;gap:14px;position:relative;margin-top:-20px;z-index:3}.
 .home-grid{background:rgba(249,251,255,.94);display:grid;grid-template-columns:repeat(3,1fr);gap:22px 12px;padding:22px 4px 12px;border-radius:34px 34px 0 0;box-shadow:0 -8px 28px rgba(38,47,95,.06)}.home-tile{background:transparent!important;color:#10152b!important;border:0!important;box-shadow:none!important;padding:0 2px!important;display:flex;flex-direction:column;align-items:center;gap:9px;font-size:11px;font-weight:600;line-height:1.2;text-align:center}.tile-icon{width:72px;height:72px;border-radius:22px;background:#fff;display:flex;align-items:center;justify-content:center;font-size:29px;font-weight:800;box-shadow:0 7px 20px rgba(27,39,84,.09);border:1px solid rgba(30,42,88,.05)}.tile-icon.orange{color:#ff9b1c}.tile-icon.blue{color:#1688e9}.tile-icon.pink{color:#ed4cc7}.tile-icon.black{color:#10152b}.tile-icon.red{color:#ff1f2f}.tile-icon.violet{color:#6651df}.tile-icon.cobalt{color:#2164c6}.tile-icon.people{color:#10152b;font-size:18px}.home-paste{align-self:center;background:transparent!important;color:#596177!important;border:0!important;box-shadow:none!important;font-size:11px;padding:4px 8px}.home-dashboard .error-msg{color:#d14b56}
 #screen-host,#screen-viewer{padding-top:8px}#screen-host .card,#screen-viewer .card{background:#fff;border-color:rgba(16,21,43,.08);box-shadow:0 8px 24px rgba(35,45,88,.07)}#screen-host .grid-icon{background:#f4f6fc;border-color:#e6e9f2;border-left-color:#5b63ef}
 @media(max-width:520px){header{min-height:178px}.mobile-topbar{padding:9px 16px}.mobile-brand{font-size:18px}main{padding-left:14px;padding-right:14px}.welcome-card{min-height:210px;padding:25px 21px}.welcome-copy strong{font-size:22px}.home-grid{gap:20px 7px;padding-left:0;padding-right:0}.tile-icon{width:68px;height:68px;border-radius:21px}.home-tile{font-size:10.5px}}@media(min-width:760px){header{min-height:220px}.mobile-topbar{max-width:700px;margin:auto}.home-dashboard{max-width:560px}.home-grid{gap:24px 18px}.tile-icon{width:82px;height:82px}}
+
+/* 2-ON — primeiro painel / entrada da aplicação */
+#welcome-screen{position:relative;min-height:calc(100vh - 128px);max-width:460px;justify-content:space-between;overflow:hidden;padding:4px 0 8px}
+#welcome-screen::before{content:"";position:absolute;inset:-25% -20% auto;height:58%;background:radial-gradient(circle at 50% 20%,rgba(94,96,255,.30),transparent 62%);pointer-events:none}
+.welcome-top{position:relative;z-index:1;text-align:center;padding:12px 8px 4px}
+.welcome-symbol{width:74px;height:74px;margin:0 auto 18px;border-radius:23px;background:linear-gradient(145deg,#5b63ff,#3037bd);box-shadow:0 16px 40px rgba(60,65,210,.28);display:flex;align-items:center;justify-content:center;color:#fff;font-size:33px;font-weight:800;letter-spacing:-3px;border:1px solid rgba(255,255,255,.25)}
+.welcome-title{margin:0;color:#fff;font-family:var(--font-display);font-size:30px;line-height:1.06;letter-spacing:-1.4px;font-weight:700}
+.welcome-title em{font-style:normal;color:#7d83ff}
+.welcome-copy{max-width:330px;margin:12px auto 0;color:rgba(255,255,255,.70);font-size:13px;line-height:1.55}
+.welcome-panel{position:relative;z-index:1;margin-top:20px;background:linear-gradient(180deg,rgba(22,28,72,.96),rgba(12,16,43,.98));border:1px solid rgba(123,132,255,.42);border-radius:28px;padding:22px;box-shadow:0 24px 55px rgba(9,12,45,.28),inset 0 1px 0 rgba(255,255,255,.08)}
+.welcome-panel-label{display:flex;align-items:center;justify-content:space-between;color:#9fa5ff;font-size:10px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;margin-bottom:16px}
+.welcome-panel-label span:last-child{display:flex;align-items:center;gap:5px;color:#b9becd;letter-spacing:0;text-transform:none;font-weight:500}.welcome-dot{width:6px;height:6px;border-radius:50%;background:#45d483;box-shadow:0 0 0 4px rgba(69,212,131,.10)}
+.entry-choice{display:flex;flex-direction:column;gap:10px}
+.entry-btn{width:100%;display:flex;align-items:center;gap:13px;text-align:left;padding:15px 16px;border-radius:15px;background:#f8f9ff;color:#12162c;border:1px solid rgba(255,255,255,.55);box-shadow:none}
+.entry-btn:hover{filter:brightness(1.02)}.entry-btn .entry-icon{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex:none;background:#e7e9ff;color:#4f57df;font-size:19px}.entry-btn .entry-copy{display:flex;flex-direction:column;gap:3px;flex:1}.entry-btn strong{font-size:14px}.entry-btn small{font-size:11px;color:#72788a;font-weight:500}.entry-btn .entry-arrow{font-size:22px;color:#5c63de}.entry-btn.secondary-entry{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.14);color:#fff}.entry-btn.secondary-entry .entry-icon{background:rgba(104,111,255,.18);color:#a9adff}.entry-btn.secondary-entry small{color:#a2a7b8}.entry-btn.secondary-entry .entry-arrow{color:#a9adff}
+.welcome-note{position:relative;z-index:1;margin:18px auto 0;max-width:340px;text-align:center;color:#7b8191;font-size:10.5px;line-height:1.5}.welcome-note strong{color:#9ca2b1;font-weight:600}
+.welcome-foot{position:relative;z-index:1;text-align:center;color:#6e7483;font-size:10px;padding-top:18px;font-family:var(--font-display)}
+@media(max-width:520px){#welcome-screen{min-height:calc(100vh - 108px)}.welcome-symbol{width:64px;height:64px;border-radius:20px;font-size:28px;margin-bottom:15px}.welcome-title{font-size:27px}.welcome-panel{padding:18px;border-radius:23px}.entry-btn{padding:14px}.welcome-copy{font-size:12.5px}}
 </style>
 
 </head>
@@ -308,7 +326,36 @@ main{padding:0 18px 48px;gap:14px;position:relative;margin-top:-20px;z-index:3}.
 
 <main>
 
-  <!-- ECRÃ INICIAL -->
+  <!-- PRIMEIRO PAINEL / ENTRADA -->
+  <section id="welcome-screen" class="screen active">
+    <div>
+      <div class="welcome-top">
+        <div class="welcome-symbol" aria-hidden="true">2·ON</div>
+        <h1 class="welcome-title">2-ON <em>Streaming</em></h1>
+        <p class="welcome-copy">Vê o mesmo vídeo, ao mesmo tempo, em telefones diferentes. Cria uma sala privada e partilha o momento.</p>
+      </div>
+
+      <div class="welcome-panel">
+        <div class="welcome-panel-label"><span>Começar</span><span><i class="welcome-dot"></i> Sessão privada</span></div>
+        <div class="entry-choice">
+          <button type="button" id="welcome-create" class="entry-btn">
+            <span class="entry-icon">＋</span>
+            <span class="entry-copy"><strong>Criar Sala</strong><small>Abre uma sala e convida outra pessoa.</small></span>
+            <span class="entry-arrow">›</span>
+          </button>
+          <button type="button" id="welcome-join" class="entry-btn secondary-entry">
+            <span class="entry-icon">↗</span>
+            <span class="entry-copy"><strong>Iniciar Sessão</strong><small>Entra com o código recebido.</small></span>
+            <span class="entry-arrow">›</span>
+          </button>
+        </div>
+      </div>
+      <p class="welcome-note"><strong>Sem conta.</strong> O código da sala é temporário e a ligação é feita diretamente entre os dispositivos.</p>
+    </div>
+    <div class="welcome-foot">2-ON Streaming · feito para dois</div>
+  </section>
+
+  <!-- ECRÃ DE OPÇÕES / SEGUNDO PAINEL -->
   <section id="screen-home" class="screen active home-dashboard">
     <div class="home-search">
       <input type="text" id="input-code" maxlength="5" placeholder="Pesquisar ou inserir código da sala" inputmode="text" autocomplete="off" autocapitalize="characters" aria-label="Código da sala" />
@@ -555,6 +602,7 @@ main{padding:0 18px 48px;gap:14px;position:relative;margin-top:-20px;z-index:3}.
   }
 
   const screens = {
+    welcome: document.getElementById('welcome-screen'),
     home: document.getElementById('screen-home'),
     host: document.getElementById('screen-host'),
     viewer: document.getElementById('screen-viewer')
@@ -562,7 +610,7 @@ main{padding:0 18px 48px;gap:14px;position:relative;margin-top:-20px;z-index:3}.
   function showScreen(name) {
     Object.values(screens).forEach(s => s.classList.remove('active'));
     screens[name].classList.add('active');
-    if (name === 'home') hideTopbarChip();
+    if ((name === 'home' || name === 'welcome') && typeof hideTopbarChip === 'function') hideTopbarChip();
   }
 
   function showTopbarChip(code) {
@@ -654,6 +702,16 @@ main{padding:0 18px 48px;gap:14px;position:relative;margin-top:-20px;z-index:3}.
     try { await navigator.clipboard.writeText(text); return true; }
     catch (e) { return false; }
   }
+
+  // ---------- PRIMEIRO PAINEL ----------
+  document.getElementById('welcome-create').addEventListener('click', () => {
+    showScreen('home');
+    setTimeout(() => document.getElementById('btn-create')?.focus(), 80);
+  });
+  document.getElementById('welcome-join').addEventListener('click', () => {
+    showScreen('home');
+    setTimeout(() => document.getElementById('input-code')?.focus(), 80);
+  });
 
   // ---------- ECRÃ INICIAL ----------
   const inputCode = document.getElementById('input-code');

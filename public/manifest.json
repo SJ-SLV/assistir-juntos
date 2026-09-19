@@ -1,10 +1,17 @@
 {
-  "name": "2 on Streaming",
-  "short_name": "2 on Streaming",
+  "name": "2-ON Streaming",
+  "short_name": "2-ON",
   "start_url": "./",
   "display": "standalone",
-  "background_color": "#f2f5ff",
-  "theme_color": "#0b1645",
-  "description": "Assiste em sincronia com outra pessoa, em qualquer dispositivo.",
-  "icons": []
+  "background_color": "#f3f5ff",
+  "theme_color": "#18225b",
+  "description": "Vê o mesmo vídeo ao mesmo tempo em telefones diferentes.",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
 }
