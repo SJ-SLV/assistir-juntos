@@ -1,20 +1,10 @@
 {
   "name": "2 on Streaming",
-  "short_name": "2 on",
-  "description": "2 on Streaming — assiste em sincronia com outra pessoa, em qualquer dispositivo.",
-  "start_url": "/",
-  "scope": "/",
+  "short_name": "2 on Streaming",
+  "start_url": "./",
   "display": "standalone",
-  "background_color": "#090a0d",
-  "theme_color": "#0b0c0f",
-  "orientation": "portrait-primary",
-  "icons": [
-    {
-      "src": "icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
-    }
-  ],
-  "version": "4.0.0"
+  "background_color": "#f2f5ff",
+  "theme_color": "#0b1645",
+  "description": "Assiste em sincronia com outra pessoa, em qualquer dispositivo.",
+  "icons": []
 }
