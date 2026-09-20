@@ -1,16 +1,15 @@
 {
   "name": "2-on-streaming",
-  "version": "3.0.0",
-  "description": "2 on Streaming — vídeo, música e YouTube em sincronia entre dois telefones, com chat, chamada de voz e transferência de ficheiros.",
-  "main": "server.js",
-  "engines": {
-    "node": ">=18"
-  },
+  "version": "5.0.0",
+  "private": true,
   "scripts": {
     "start": "node server.js"
   },
+  "engines": {
+    "node": ">=18"
+  },
   "dependencies": {
-    "express": "^4.19.2",
-    "ws": "^8.17.0"
+    "express": "^4.21.2",
+    "ws": "^8.18.0"
   }
 }
