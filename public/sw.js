@@ -1,4 +1,4 @@
-const CACHE = '2on-v5';
+const CACHE = '2on-v5.1';
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
 self.addEventListener('fetch', e => {
