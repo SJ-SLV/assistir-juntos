@@ -1,13 +1,18 @@
 {
-  "name": "2 on Streaming",
-  "short_name": "2 on Streaming",
-  "description": "Vídeo, música e YouTube em sincronia com outra pessoa, cada um no seu telefone.",
-  "start_url": "./",
-  "scope": "./",
+  "name": "2-ON Streaming",
+  "short_name": "2-ON",
+  "description": "Duas pessoas, dois telefones, o mesmo vídeo ao mesmo tempo.",
+  "start_url": "/",
   "display": "standalone",
-  "background_color": "#16181d",
-  "theme_color": "#4c6fff",
+  "background_color": "#0b1020",
+  "theme_color": "#6d5dfc",
+  "lang": "pt",
   "icons": [
-    { "src": "icon.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
   ]
 }

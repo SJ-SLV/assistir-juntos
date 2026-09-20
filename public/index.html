@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-<title>2 on Streaming</title>
+<title>2-ON Streaming — Assistir juntos</title>
 <link rel="manifest" href="manifest.json" />
 <meta name="theme-color" content="#4c6fff" />
-<link rel="icon" href="icon.png" type="image/png" />
-<link rel="apple-touch-icon" href="icon.png" />
+<link rel="icon" href="icon.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="icon.svg" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -339,6 +339,333 @@
   .site-footer { text-align: center; padding: 4px 20px 24px; }
   .site-footer p { margin: 2px 0; font-size: 11.5px; color: var(--muted); }
   .site-footer strong { color: var(--ink); font-weight: 600; }
+
+  /* =========================================================
+     2-ON — acabamento visual profissional
+     Mantém a lógica existente e refina apenas a apresentação.
+     ========================================================= */
+  :root {
+    --bg: #0b1020;
+    --surface: #111827;
+    --surface-2: #182235;
+    --surface-3: #202b40;
+    --ink: #f5f7fb;
+    --muted: #929db0;
+    --accent: #6d5dfc;
+    --accent-2: #4f7cff;
+    --accent-ink: #ffffff;
+    --ok: #36b37e;
+    --warn: #e0a23b;
+    --err: #e35d6a;
+    --border: rgba(255,255,255,.075);
+    --border-strong: rgba(255,255,255,.13);
+    --radius-lg: 16px;
+    --radius-md: 11px;
+    --radius-sm: 8px;
+  }
+
+  body {
+    background:
+      radial-gradient(circle at 50% -12%, rgba(109,93,252,.13), transparent 34%),
+      var(--bg);
+  }
+
+  header {
+    width: 100%;
+    max-width: 492px;
+    margin: 0 auto;
+    padding: 14px 16px 8px;
+    text-align: left;
+  }
+
+  .topbar {
+    min-height: 52px;
+    background: rgba(17,24,39,.88);
+    border-color: var(--border);
+    border-radius: 13px;
+    padding: 8px 10px;
+    box-shadow: 0 8px 30px rgba(0,0,0,.12);
+  }
+
+  .brand-mark {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    background: #151b2b;
+    border-color: var(--border-strong);
+  }
+
+  .topbar-title {
+    font-size: 14px;
+    letter-spacing: -.15px;
+  }
+
+  .topbar-chip { display: none; }
+  .topbar-chip.show { display: flex; }
+
+  .accent-bar {
+    display: none;
+  }
+
+  header p.tagline {
+    margin: 8px 3px 0;
+    font-size: 11.5px;
+    color: #78859a;
+  }
+
+  main {
+    width: 100%;
+    max-width: 492px;
+    padding: 8px 16px 42px;
+    gap: 14px;
+  }
+
+  .screen {
+    max-width: 460px;
+    gap: 12px;
+  }
+
+  .card {
+    background: rgba(17,24,39,.94);
+    border-color: var(--border);
+    border-radius: 14px;
+    padding: 18px;
+    box-shadow: 0 10px 28px rgba(0,0,0,.10);
+  }
+
+  .card-primary {
+    border-color: rgba(109,93,252,.42);
+    box-shadow: 0 14px 34px rgba(20,16,55,.20);
+  }
+
+  h2 { font-size: 14px; }
+  p.hint { font-size: 12.5px; }
+
+  button {
+    min-height: 44px;
+    border-radius: 10px;
+    background: var(--accent);
+    font-size: 13.5px;
+    font-weight: 650;
+    box-shadow: none;
+  }
+
+  button:hover:not(:disabled) { filter: brightness(1.06); }
+  button.secondary {
+    background: #1a2437;
+    border-color: var(--border-strong);
+  }
+  button.ghost {
+    background: transparent;
+    border-color: var(--border-strong);
+  }
+
+  input[type="text"] {
+    background: #0d1423;
+    border-color: var(--border-strong);
+    border-radius: 10px;
+  }
+
+  input[type="text"]:focus {
+    outline: 2px solid rgba(109,93,252,.48);
+    border-color: rgba(109,93,252,.65);
+  }
+
+  /* Entrada */
+  #screen-welcome {
+    padding-top: 24px;
+    gap: 10px;
+  }
+
+  .welcome-symbol {
+    width: 72px;
+    height: 72px;
+    border-radius: 18px;
+    margin-bottom: 8px;
+    background: linear-gradient(145deg, #7567ff, #4e7cff);
+    box-shadow: 0 18px 38px rgba(78,124,255,.22);
+    font-size: 25px;
+  }
+
+  .welcome-title {
+    font-size: 27px;
+    letter-spacing: -.8px;
+  }
+
+  .welcome-title em { color: #8292ff; }
+
+  .welcome-copy {
+    max-width: 335px;
+    font-size: 12.5px;
+    line-height: 1.6;
+  }
+
+  .welcome-panel {
+    margin-top: 12px;
+    padding: 16px;
+    border-radius: 15px;
+    background: rgba(17,24,39,.9);
+  }
+
+  .welcome-panel-label {
+    margin-bottom: 12px;
+    font-size: 10px;
+  }
+
+  .entry-choice { gap: 8px; }
+
+  .entry-btn {
+    min-height: 64px;
+    padding: 11px 12px;
+    border-radius: 11px;
+  }
+
+  .entry-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 9px;
+  }
+
+  .entry-copy strong { font-size: 13.5px; }
+  .entry-copy small { font-size: 11px; color: #aab3c3; }
+
+  .entry-btn.secondary-entry {
+    background: #182235;
+    border-color: var(--border-strong);
+  }
+
+  .welcome-note {
+    max-width: 330px;
+    font-size: 10.5px;
+  }
+
+  /* O segundo painel fica mais limpo: a faixa informativa deixa de duplicar
+     as ações da sessão. */
+  #screen-home .feature-strip { display: none; }
+
+  #screen-home .card {
+    gap: 13px;
+  }
+
+  #screen-home .card-primary {
+    padding-top: 20px;
+    padding-bottom: 20px;
+  }
+
+  #screen-home .divider {
+    font-size: 10px;
+    letter-spacing: .8px;
+    text-transform: uppercase;
+    opacity: .75;
+  }
+
+  /* Sessão */
+  .hero-card {
+    padding: 17px;
+  }
+
+  .hero-tagline {
+    text-align: left;
+    padding-left: 46px;
+    margin-top: -5px;
+    font-size: 11.5px;
+  }
+
+  .code-display {
+    font-size: 30px;
+    letter-spacing: 7px;
+    padding: 2px 0;
+  }
+
+  .hr-divider { margin: 0 -17px; }
+
+  #qr-wrap img {
+    width: 112px !important;
+    height: 112px !important;
+    border-radius: 9px !important;
+  }
+
+  /* Menu principal: 3 colunas, como uma aplicação móvel real. */
+  .icon-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .grid-item {
+    min-width: 0;
+    min-height: 86px;
+    padding: 11px 7px;
+    border-radius: 11px;
+    flex-direction: column;
+    justify-content: center;
+    gap: 7px;
+    background: #0e1626;
+    border-color: var(--border);
+    font-size: 11px;
+  }
+
+  .grid-item span:last-child {
+    width: 100%;
+    text-align: center;
+    white-space: nowrap;
+    font-size: 10.8px;
+  }
+
+  .grid-item::after { display: none; }
+
+  .grid-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+  }
+
+  .reactions-row {
+    gap: 6px;
+  }
+
+  .react-btn {
+    min-height: 42px;
+    padding: 7px 0;
+    border-radius: 9px;
+    font-size: 17px;
+  }
+
+  .content-panel-card {
+    scroll-margin-top: 10px;
+  }
+
+  .playlist-item,
+  .player-bar,
+  .now-playing {
+    background: #0e1626;
+  }
+
+  #chat-panel {
+    background: #111827;
+    border-color: var(--border-strong);
+  }
+
+  .site-footer {
+    max-width: 492px;
+    margin: 0 auto;
+    width: 100%;
+    padding-bottom: 20px;
+  }
+
+  @media (max-width: 360px) {
+    main { padding-left: 12px; padding-right: 12px; }
+    header { padding-left: 12px; padding-right: 12px; }
+    .icon-grid { gap: 6px; }
+    .grid-item { min-height: 80px; }
+    .grid-item span:last-child { font-size: 10px; }
+    .code-display { letter-spacing: 5px; }
+  }
+
+  @media (min-width: 700px) {
+    body { padding-top: 8px; }
+    #screen-welcome { padding-top: 34px; }
+  }
+
 </style>
 
 </head>
@@ -348,7 +675,7 @@
   <div class="topbar">
     <div class="topbar-brand">
       <div class="brand-mark">
-        <img src="icon.png" alt="2 on Streaming" />
+        <img src="icon.svg" alt="2-ON Streaming" />
       </div>
       <span class="topbar-title">2 on Streaming</span>
     </div>
@@ -697,7 +1024,7 @@
   function showScreen(name) {
     Object.values(screens).forEach(s => s.classList.remove('active'));
     screens[name].classList.add('active');
-    if (name === 'home') hideTopbarChip();
+    if (name === 'home' || name === 'welcome') hideTopbarChip();
   }
 
   function showTopbarChip(code) {
@@ -707,6 +1034,7 @@
   function hideTopbarChip() {
     document.getElementById('topbar-room-chip').classList.remove('show');
   }
+  hideTopbarChip();
 
   function setStatus(el, cls, text) {
     el.className = 'status ' + cls;
@@ -809,6 +1137,12 @@
   });
 
   document.getElementById('btn-create').addEventListener('click', () => {
+    const error = document.getElementById('home-error');
+    if (ws.readyState !== WebSocket.OPEN) {
+      error.textContent = 'A ligação ao servidor ainda não está pronta. Tenta novamente em instantes.';
+      return;
+    }
+    error.textContent = '';
     myName = (document.getElementById('host-name').value || '').trim().slice(0, 24) || 'Anfitrião';
     try { localStorage.setItem('assistir_juntos_name', myName); } catch (e) {}
     ws.send(JSON.stringify({ type: 'create-room', name: myName }));
@@ -830,9 +1164,23 @@
       return;
     }
     document.getElementById('home-error').textContent = '';
+    if (ws.readyState !== WebSocket.OPEN) {
+      document.getElementById('home-error').textContent = 'A ligação ao servidor ainda não está pronta. Tenta novamente em instantes.';
+      return;
+    }
     myName = (document.getElementById('viewer-name').value || '').trim().slice(0, 24) || 'Convidado';
     try { localStorage.setItem('assistir_juntos_name', myName); } catch (e) {}
     ws.send(JSON.stringify({ type: 'join-room', code, name: myName }));
+  });
+
+  document.getElementById('host-name').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') document.getElementById('btn-create').click();
+  });
+  document.getElementById('viewer-name').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') document.getElementById('btn-join').click();
+  });
+  inputCode.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') document.getElementById('btn-join').click();
   });
 
   try {
@@ -845,7 +1193,11 @@
 
   // ---------- SAIR DA SALA ----------
   function leaveRoom() {
-    ws.send(JSON.stringify({ type: 'leave-room' }));
+    if (ws.readyState === WebSocket.OPEN && roomCode) {
+      ws.send(JSON.stringify({ type: 'leave-room' }));
+    } else {
+      resetAllStateToHome();
+    }
   }
   document.getElementById('btn-leave-viewer').addEventListener('click', leaveRoom);
 
@@ -863,7 +1215,7 @@
     if (ytPlayer && ytPlayer.destroy) { try { ytPlayer.destroy(); } catch (e) {} }
     ytPlayer = null;
     cleanupTransferFile();
-    showScreen('home');
+    showScreen('welcome');
   }
 
   // ---------- LADO ANFITRIÃO ----------
@@ -1072,7 +1424,7 @@
   document.getElementById('btn-share-link').addEventListener('click', async () => {
     const url = shareLink();
     if (navigator.share) {
-      try { await navigator.share({ title: '2 on Streaming', text: 'Usa este bilhete para assistirmos juntos:', url }); return; }
+      try { await navigator.share({ title: '2 on Streaming', text: 'Usa este link para assistirmos juntos:', url }); return; }
       catch (e) { /* utilizador cancelou ou não suportado — cai para copiar */ }
     }
     await copyText(url);
@@ -1966,7 +2318,7 @@
           break;
 
         case 'error':
-          if (msg.expired) { roomCode = null; role = null; updateUrl(); clearLocalSession(); showScreen('home'); }
+          if (msg.expired) { roomCode = null; role = null; updateUrl(); clearLocalSession(); showScreen('welcome'); }
           document.getElementById('home-error').textContent = msg.message;
           break;
 
@@ -2032,7 +2384,7 @@
           break;
 
         case 'peer-left':
-          if (role === 'host') setStatus(hostStatus, 'err', 'A outra pessoa encerrou o bilhete.');
+          if (role === 'host') setStatus(hostStatus, 'err', 'A outra pessoa encerrou a sessão.');
           if (role === 'viewer') setStatus(viewerStatus, 'err', 'O anfitrião encerrou a sessão.');
           resetPeerConnection();
           break;
