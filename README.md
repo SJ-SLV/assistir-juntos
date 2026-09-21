@@ -21,3 +21,14 @@ npm start
 ```
 
 Abrir `http://localhost:3000`.
+
+
+## 5.5 — Permissão de controlo e partilha pelo convidado
+
+- O convidado informa o nome antes de entrar na sessão.
+- O convidado pode pedir autorização ao anfitrião.
+- O anfitrião recebe um pedido visível com Permitir / Agora não.
+- A autorização é controlada pelo servidor: comandos de reprodução enviados pelo convidado só são encaminhados quando a autorização está ativa.
+- O anfitrião pode retirar o acesso posteriormente.
+- Depois da autorização, o convidado pode controlar reprodução e enviar vídeo/música do próprio telefone pelo canal P2P de dados, além de abrir conteúdo do YouTube para a sessão.
+- O painel foi reorganizado para separar volume/áudio (sempre locais) de reprodução/partilha (dependentes de autorização).

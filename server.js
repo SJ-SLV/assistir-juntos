@@ -76,6 +76,7 @@ function scheduleRemoval(room, role) {
     if (!rooms.has(room.code)) return;
     room[role] = null;
     room[role + 'Name'] = null;
+    if (role === 'viewer') room.controlGranted = false;
     touch(room);
     notifyPresence(room);
     const other = role === 'host' ? room.viewer : room.host;
@@ -152,7 +153,8 @@ wss.on('connection', (ws) => {
         viewerName: null,
         timers: { host: null, viewer: null },
         createdAt: Date.now(),
-        lastActivity: Date.now()
+        lastActivity: Date.now(),
+        controlGranted: false
       };
       rooms.set(roomCode, room);
       ws.room = roomCode;
@@ -170,6 +172,7 @@ wss.on('connection', (ws) => {
       }
       clearTimeout(room.timers.viewer);
       room.viewer = ws;
+      room.controlGranted = false;
       room.viewerName = cleanName(msg.name, 'Convidado');
       ws.room = roomCode;
       ws.role = 'viewer';
@@ -193,6 +196,7 @@ wss.on('connection', (ws) => {
       }
       clearTimeout(room.timers[role]);
       room[role] = ws;
+      if (role === 'viewer') room.controlGranted = false;
       ws.room = roomCode;
       ws.role = role;
       if (msg.name) room[role + 'Name'] = cleanName(msg.name, role === 'host' ? 'Anfitrião' : 'Convidado');
@@ -213,6 +217,7 @@ wss.on('connection', (ws) => {
         clearTimeout(room.timers[ws.role]);
         room[ws.role] = null;
         room[ws.role + 'Name'] = null;
+        if (ws.role === 'viewer') room.controlGranted = false;
         const other = ws.role === 'host' ? room.viewer : room.host;
         send(other, { type: 'peer-left', reason: 'left' });
         notifyPresence(room);
@@ -224,7 +229,42 @@ wss.on('connection', (ws) => {
       return;
     }
 
-    if (['offer', 'answer', 'ice-candidate', 'chat', 'reaction', 'control', 'control-request', 'control-granted', 'control-denied', 'typing'].includes(msg.type)) {
+    if (msg.type === 'control-request') {
+      if (ws.role === 'viewer' && room.host) {
+        send(room.host, { type: 'control-request', name: room.viewerName || cleanName(msg.name, 'Convidado') });
+      }
+      return;
+    }
+
+    if (msg.type === 'control-granted') {
+      if (ws.role === 'host' && room.viewer) {
+        room.controlGranted = true;
+        send(room.viewer, { type: 'control-granted' });
+      }
+      return;
+    }
+
+    if (msg.type === 'control-denied') {
+      if (ws.role === 'host' && room.viewer) {
+        room.controlGranted = false;
+        send(room.viewer, { type: 'control-denied' });
+      }
+      return;
+    }
+
+    if (msg.type === 'control-revoked') {
+      if (ws.role === 'host' && room.viewer) {
+        room.controlGranted = false;
+        send(room.viewer, { type: 'control-revoked' });
+      }
+      return;
+    }
+
+    if (msg.type === 'control' && ws.role === 'viewer' && !room.controlGranted) {
+      return;
+    }
+
+    if (['offer', 'answer', 'ice-candidate', 'chat', 'reaction', 'control', 'typing'].includes(msg.type)) {
       if (msg.type === 'chat') msg.name = cleanName(msg.name, 'Pessoa');
       forwardToPeer(room, ws, msg);
       return;
