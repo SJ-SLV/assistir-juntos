@@ -224,7 +224,7 @@ wss.on('connection', (ws) => {
       return;
     }
 
-    if (['offer', 'answer', 'ice-candidate', 'chat', 'reaction', 'control', 'typing'].includes(msg.type)) {
+    if (['offer', 'answer', 'ice-candidate', 'chat', 'reaction', 'control', 'control-request', 'control-granted', 'control-denied', 'typing'].includes(msg.type)) {
       if (msg.type === 'chat') msg.name = cleanName(msg.name, 'Pessoa');
       forwardToPeer(room, ws, msg);
       return;

@@ -1,22 +1,23 @@
-# 2-ON Streaming 5.3
+# 2-ON Streaming 5.4
 
-Versão profissional com painel de sessão separado por papel.
+Versão com pedido de controlo operacional entre convidado e anfitrião.
 
-## 5.3 — Painel do convidado
-- “Controlos da sessão” aparece exclusivamente no lado do convidado.
-- O convidado tem Mensagens, Microfone, Áudio e Pedido de controlo no mesmo painel.
-- Ao pedir controlo, o estado muda para “Pedido enviado” e o anfitrião recebe o pedido para aceitar ou recusar.
-- O anfitrião não recebe o painel de pedido de controlo como ferramenta própria; recebe apenas a notificação de autorização.
-- Layout responsivo: 4 ações em ecrãs maiores e 2x2 em telemóveis estreitos.
+## Fluxo do pedido de controlo
+
+1. O convidado toca em **Pedir controlo**.
+2. O servidor encaminha o pedido diretamente ao anfitrião.
+3. No painel do anfitrião aparece **Pedido de controlo**, com o nome do convidado e os botões **Permitir** e **Agora não**.
+4. O botão **Controlos** do anfitrião recebe um badge `1` enquanto existe um pedido pendente.
+5. Ao permitir, o convidado recebe **Controlo ativo**.
+6. Ao recusar, o convidado recebe a informação de que o pedido não foi autorizado.
+
+A sinalização usa WebSocket; vídeo/áudio continuam a usar a arquitetura WebRTC existente.
 
 ## Executar
+
 ```bash
 npm install
 npm start
 ```
-Depois abrir `http://localhost:3000`.
 
-
-## Correção 5.3 — painel do convidado
-
-O painel “Controlos da sessão” foi colocado dentro do ecrã real do convidado (`screen-viewer`). Ele fica visível assim que o convidado entra na sala. O botão “Pedir controlo” envia o pedido ao anfitrião; depois de aceite, o painel muda para “Controlo ativo”.
+Abrir `http://localhost:3000`.

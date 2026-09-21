@@ -1,11 +1,8 @@
 {
   "name": "2-on-streaming",
-  "version": "5.1.0",
+  "version": "5.4.0",
   "private": true,
-  "scripts": { "start": "node server.js" },
-  "engines": { "node": ">=18" },
-  "dependencies": {
-    "express": "^4.21.2",
-    "ws": "^8.18.0"
-  }
+  "scripts": {"start": "node server.js"},
+  "engines": {"node": ">=18"},
+  "dependencies": {"express": "^4.21.2", "ws": "^8.18.0"}
 }
