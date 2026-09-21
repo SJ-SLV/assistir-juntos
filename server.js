@@ -76,7 +76,8 @@ function scheduleRemoval(room, role) {
     if (!rooms.has(room.code)) return;
     room[role] = null;
     room[role + 'Name'] = null;
-    if (role === 'viewer') room.controlGranted = false;
+    room.controlGranted = false;
+    room.controlRequestPending = false;
     touch(room);
     notifyPresence(room);
     const other = role === 'host' ? room.viewer : room.host;
@@ -144,6 +145,8 @@ wss.on('connection', (ws) => {
     }
 
     if (msg.type === 'create-room') {
+      if (ws.room && !rooms.has(ws.room)) { ws.room = null; ws.role = null; }
+      if (ws.room) return send(ws, { type: 'error', message: 'Já estás numa sessão. Encerra-a antes de criar outra.' });
       const roomCode = generateCode();
       const room = {
         code: roomCode,
@@ -154,7 +157,8 @@ wss.on('connection', (ws) => {
         timers: { host: null, viewer: null },
         createdAt: Date.now(),
         lastActivity: Date.now(),
-        controlGranted: false
+        controlGranted: false,
+        controlRequestPending: false
       };
       rooms.set(roomCode, room);
       ws.room = roomCode;
@@ -164,6 +168,8 @@ wss.on('connection', (ws) => {
     }
 
     if (msg.type === 'join-room') {
+      if (ws.room && !rooms.has(ws.room)) { ws.room = null; ws.role = null; }
+      if (ws.room) return send(ws, { type: 'error', message: 'Já estás numa sessão. Encerra-a antes de entrar noutra.' });
       const roomCode = String(msg.code || '').toUpperCase().trim();
       const room = rooms.get(roomCode);
       if (!room) return send(ws, { type: 'error', message: 'Sala não encontrada. Confirma o código.' });
@@ -173,6 +179,7 @@ wss.on('connection', (ws) => {
       clearTimeout(room.timers.viewer);
       room.viewer = ws;
       room.controlGranted = false;
+      room.controlRequestPending = false;
       room.viewerName = cleanName(msg.name, 'Convidado');
       ws.room = roomCode;
       ws.role = 'viewer';
@@ -196,7 +203,8 @@ wss.on('connection', (ws) => {
       }
       clearTimeout(room.timers[role]);
       room[role] = ws;
-      if (role === 'viewer') room.controlGranted = false;
+      room.controlGranted = false;
+      room.controlRequestPending = false;
       ws.room = roomCode;
       ws.role = role;
       if (msg.name) room[role + 'Name'] = cleanName(msg.name, role === 'host' ? 'Anfitrião' : 'Convidado');
@@ -217,7 +225,8 @@ wss.on('connection', (ws) => {
         clearTimeout(room.timers[ws.role]);
         room[ws.role] = null;
         room[ws.role + 'Name'] = null;
-        if (ws.role === 'viewer') room.controlGranted = false;
+        room.controlGranted = false;
+        room.controlRequestPending = false;
         const other = ws.role === 'host' ? room.viewer : room.host;
         send(other, { type: 'peer-left', reason: 'left' });
         notifyPresence(room);
@@ -230,15 +239,17 @@ wss.on('connection', (ws) => {
     }
 
     if (msg.type === 'control-request') {
-      if (ws.role === 'viewer' && room.host) {
+      if (ws.role === 'viewer' && room.host && !room.controlGranted && !room.controlRequestPending) {
+        room.controlRequestPending = true;
         send(room.host, { type: 'control-request', name: room.viewerName || cleanName(msg.name, 'Convidado') });
       }
       return;
     }
 
     if (msg.type === 'control-granted') {
-      if (ws.role === 'host' && room.viewer) {
+      if (ws.role === 'host' && room.viewer && room.controlRequestPending) {
         room.controlGranted = true;
+        room.controlRequestPending = false;
         send(room.viewer, { type: 'control-granted' });
       }
       return;
@@ -247,6 +258,7 @@ wss.on('connection', (ws) => {
     if (msg.type === 'control-denied') {
       if (ws.role === 'host' && room.viewer) {
         room.controlGranted = false;
+        room.controlRequestPending = false;
         send(room.viewer, { type: 'control-denied' });
       }
       return;
@@ -255,6 +267,7 @@ wss.on('connection', (ws) => {
     if (msg.type === 'control-revoked') {
       if (ws.role === 'host' && room.viewer) {
         room.controlGranted = false;
+        room.controlRequestPending = false;
         send(room.viewer, { type: 'control-revoked' });
       }
       return;
@@ -285,6 +298,8 @@ setInterval(() => {
   const now = Date.now();
   for (const [code, room] of rooms) {
     if ((!room.host && !room.viewer) || now - room.lastActivity > ROOM_TTL_MS) {
+      if (room.host) { room.host.room = null; room.host.role = null; }
+      if (room.viewer) { room.viewer.room = null; room.viewer.role = null; }
       rooms.delete(code);
     }
   }
