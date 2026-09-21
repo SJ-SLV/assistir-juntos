@@ -6,8 +6,8 @@
 <title>2 on Streaming</title>
 <link rel="manifest" href="manifest.json" />
 <meta name="theme-color" content="#4c6fff" />
-<link rel="icon" href="icon.png" type="image/png" />
-<link rel="apple-touch-icon" href="icon.png" />
+<link rel="icon" href="icon.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="icon.svg" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -836,6 +836,8 @@
   const wsProtocol = location.protocol === 'https:' ? 'wss://' : 'ws://';
   let ws = new WebSocket(wsProtocol + location.host);
   let wsReconnectDelay = 1000;
+  let wsReconnectTimer = null;
+  let wsConnecting = false;
 
   const SESSION_KEY = 'assistir_juntos_session_v1';
 
@@ -867,6 +869,7 @@
   };
   function showScreen(name) {
     Object.values(screens).forEach(s => s.classList.remove('active'));
+    if (!screens[name]) return;
     screens[name].classList.add('active');
     if (name === 'home') hideTopbarChip();
   }
@@ -989,7 +992,9 @@
     document.getElementById('home-error').textContent = '';
     myName = enteredName;
     try { localStorage.setItem('assistir_juntos_name', myName); } catch (e) {}
-    ws.send(JSON.stringify({ type: 'create-room', name: myName }));
+    if (!socketSend({ type: 'create-room', name: myName })) {
+      document.getElementById('home-error').textContent = 'A ligação ao servidor ainda não está pronta. Tenta novamente em instantes.';
+    }
   });
 
   document.getElementById('btn-paste-code').addEventListener('click', async () => {
@@ -1016,7 +1021,9 @@
     document.getElementById('home-error').textContent = '';
     myName = enteredName;
     try { localStorage.setItem('assistir_juntos_name', myName); } catch (e) {}
-    ws.send(JSON.stringify({ type: 'join-room', code, name: myName }));
+    if (!socketSend({ type: 'join-room', code, name: myName })) {
+      document.getElementById('home-error').textContent = 'A ligação ao servidor ainda não está pronta. Tenta novamente em instantes.';
+    }
   });
 
   document.getElementById('host-name').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('btn-create').click(); });
@@ -1033,7 +1040,8 @@
 
   // ---------- SAIR DA SALA ----------
   function leaveRoom() {
-    ws.send(JSON.stringify({ type: 'leave-room' }));
+    if (!roomCode) return;
+    if (!socketSend({ type: 'leave-room' })) resetAllStateToHome();
   }
   document.getElementById('btn-leave-viewer').addEventListener('click', leaveRoom);
 
@@ -1051,7 +1059,14 @@
     if (ytPlayer && ytPlayer.destroy) { try { ytPlayer.destroy(); } catch (e) {} }
     ytPlayer = null;
     cleanupTransferFile();
-    showScreen('home');
+    viewerControlRequested = false;
+    viewerControlGranted = false;
+    hostControlRequestPending = false;
+    hostControlGranted = false;
+    updateViewerControlLabel();
+    updateViewerPermissionUI();
+    setHostControlRequestState(false);
+    showScreen('welcome');
   }
 
   // ---------- LADO ANFITRIÃO ----------
@@ -1068,7 +1083,12 @@
   function addMovieTracksIfNeeded() {
     if (moviePublished || !pc) return;
     const el = activeHostMediaEl();
-    const localStream = el.captureStream ? el.captureStream() : el.mozCaptureStream();
+    const capture = el.captureStream || el.mozCaptureStream;
+    if (!capture) {
+      setStatus(hostStatus, 'err', 'Este navegador não suporta transmissão direta deste conteúdo.');
+      return;
+    }
+    const localStream = capture.call(el);
     localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
     moviePublished = true;
     pendingPeer = false;
@@ -1078,7 +1098,12 @@
     if (pendingPeer) { addMovieTracksIfNeeded(); return; }
     if (moviePublished && pc) {
       const el = activeHostMediaEl();
-      const newStream = el.captureStream ? el.captureStream() : el.mozCaptureStream();
+      const capture = el.captureStream || el.mozCaptureStream;
+      if (!capture) {
+        setStatus(hostStatus, 'err', 'Este navegador não suporta transmissão direta deste conteúdo.');
+        return;
+      }
+      const newStream = capture.call(el);
       const senders = pc.getSenders();
       newStream.getTracks().forEach(track => {
         const sender = senders.find(s => s.track && s.track.kind === track.kind && s.track !== track);
@@ -1090,7 +1115,7 @@
 
   function broadcastFileState() {
     const item = filePlaylist[fileCurrentIndex];
-    ws.send(JSON.stringify({ type: 'control', action: 'file-kind', kind: fileKind, title: item ? item.name : '' }));
+    socketSend({ type: 'control', action: 'file-kind', kind: fileKind, title: item ? item.name : '' });
   }
 
   function stopMovieTracks() {
@@ -1351,7 +1376,7 @@
     setActiveModeButton('mode-file-btn');
     if (ytPlayer) ytPlayer.pauseVideo();
     pauseTransferPlayback();
-    ws.send(JSON.stringify({ type: 'control', action: 'mode', mode: 'file' }));
+    socketSend({ type: 'control', action: 'mode', mode: 'file' });
   });
 
   document.getElementById('mode-transfer-btn').addEventListener('click', () => {
@@ -1361,7 +1386,7 @@
     hostAudioEl.pause();
     stopMovieTracks();
     if (ytPlayer) ytPlayer.pauseVideo();
-    ws.send(JSON.stringify({ type: 'control', action: 'mode', mode: 'transfer' }));
+    socketSend({ type: 'control', action: 'mode', mode: 'transfer' });
   });
 
   document.getElementById('mode-youtube-btn').addEventListener('click', () => {
@@ -1371,7 +1396,7 @@
     hostAudioEl.pause();
     stopMovieTracks();
     pauseTransferPlayback();
-    ws.send(JSON.stringify({ type: 'control', action: 'mode', mode: 'youtube' }));
+    socketSend({ type: 'control', action: 'mode', mode: 'youtube' });
   });
 
   function pauseTransferPlayback() {
@@ -1397,8 +1422,8 @@
   const btnUnmute = document.getElementById('btn-unmute');
   const remoteAudio = document.getElementById('remote-audio');
   const btnAudioUnmute = document.getElementById('btn-audio-unmute');
-  viewerVideo.addEventListener('play',()=>{ if (role==='viewer' && viewerControlGranted && !transferApplyingRemote) ws.send(JSON.stringify({type:'control',action: currentMode==='file' ? 'media-play' : 'transfer-play',time:viewerVideo.currentTime})); setViewerPlaybackButton(); });
-  viewerVideo.addEventListener('pause',()=>{ if (role==='viewer' && viewerControlGranted && !transferApplyingRemote) ws.send(JSON.stringify({type:'control',action: currentMode==='file' ? 'media-pause' : 'transfer-pause',time:viewerVideo.currentTime})); setViewerPlaybackButton(); });
+  viewerVideo.addEventListener('play',()=>{ if (role==='viewer' && viewerControlGranted && !transferApplyingRemote) socketSend({type:'control',action: currentMode==='file' ? 'media-play' : 'transfer-play',time:viewerVideo.currentTime}); setViewerPlaybackButton(); });
+  viewerVideo.addEventListener('pause',()=>{ if (role==='viewer' && viewerControlGranted && !transferApplyingRemote) socketSend({type:'control',action: currentMode==='file' ? 'media-pause' : 'transfer-pause',time:viewerVideo.currentTime}); setViewerPlaybackButton(); });
 
 
   function updateViewerNowPlaying(text) {
@@ -1457,14 +1482,14 @@
     polite = (role === 'viewer');
 
     pc.onicecandidate = (e) => {
-      if (e.candidate) ws.send(JSON.stringify({ type: 'ice-candidate', candidate: e.candidate }));
+      if (e.candidate) socketSend({ type: 'ice-candidate', candidate: e.candidate });
     };
 
     pc.onnegotiationneeded = async () => {
       try {
         makingOffer = true;
         await pc.setLocalDescription();
-        ws.send(JSON.stringify({ type: 'offer', offer: pc.localDescription }));
+        socketSend({ type: 'offer', offer: pc.localDescription });
       } catch (err) {
         console.error('Erro ao negociar ligação:', err);
       } finally {
@@ -1531,7 +1556,7 @@
     await pc.setRemoteDescription(description);
     if (isOffer) {
       await pc.setLocalDescription();
-      ws.send(JSON.stringify({ type: 'answer', answer: pc.localDescription }));
+      socketSend({ type: 'answer', answer: pc.localDescription });
     }
   }
 
@@ -1583,18 +1608,27 @@
   });
 
   // ---------- YOUTUBE (vídeo ou música, em sincronia, com playlist) ----------
+  let youtubeApiPromise = null;
   function loadYouTubeAPI() {
-    return new Promise((resolve) => {
-      if (window.YT && window.YT.Player) { resolve(); return; }
-      const existingCallback = window.onYouTubeIframeAPIReady;
-      window.onYouTubeIframeAPIReady = () => { if (existingCallback) existingCallback(); resolve(); };
-      if (!document.getElementById('yt-iframe-api')) {
+    if (window.YT && window.YT.Player) return Promise.resolve();
+    if (youtubeApiPromise) return youtubeApiPromise;
+    youtubeApiPromise = new Promise((resolve, reject) => {
+      const previous = window.onYouTubeIframeAPIReady;
+      window.onYouTubeIframeAPIReady = () => {
+        try { if (typeof previous === 'function') previous(); } catch (e) {}
+        if (window.YT && window.YT.Player) resolve();
+        else reject(new Error('A API do YouTube não ficou disponível.'));
+      };
+      const existing = document.getElementById('yt-iframe-api');
+      if (!existing) {
         const tag = document.createElement('script');
         tag.id = 'yt-iframe-api';
         tag.src = 'https://www.youtube.com/iframe_api';
+        tag.onerror = () => reject(new Error('Não foi possível carregar o YouTube.'));
         document.head.appendChild(tag);
       }
     });
+    return youtubeApiPromise;
   }
 
   function extractYouTubeId(input) {
@@ -1620,9 +1654,9 @@
     if (ytApplyingRemote || !ytPlayer || !canControlPlayback()) return;
     const currentTime = ytPlayer.getCurrentTime();
     if (e.data === YT.PlayerState.PLAYING) {
-      ws.send(JSON.stringify({ type: 'control', action: 'yt-play', time: currentTime }));
+      socketSend({ type: 'control', action: 'yt-play', time: currentTime });
     } else if (e.data === YT.PlayerState.PAUSED) {
-      ws.send(JSON.stringify({ type: 'control', action: 'yt-pause', time: currentTime }));
+      socketSend({ type: 'control', action: 'yt-pause', time: currentTime });
     } else if (e.data === YT.PlayerState.ENDED && role === 'host') {
       playNextYoutube();
     }
@@ -1650,7 +1684,7 @@
     if (!ytPlayer || !canControlPlayback()) return;
     const time = ytPlayer.getCurrentTime();
     const playing = ytPlayer.getPlayerState() === YT.PlayerState.PLAYING;
-    ws.send(JSON.stringify({ type: 'control', action: 'yt-sync', time, playing }));
+    socketSend({ type: 'control', action: 'yt-sync', time, playing });
   }
   document.getElementById('yt-sync-btn').addEventListener('click', sendYtSync);
   document.getElementById('yt-sync-btn-viewer').addEventListener('click', sendYtSync);
@@ -1659,7 +1693,7 @@
   setInterval(() => {
     if (ytPlayer && typeof ytPlayer.getPlayerState === 'function' && canControlPlayback() &&
         ytPlayer.getPlayerState() === YT.PlayerState.PLAYING && !ytApplyingRemote) {
-      ws.send(JSON.stringify({ type: 'control', action: 'yt-heartbeat', time: ytPlayer.getCurrentTime() }));
+      socketSend({ type: 'control', action: 'yt-heartbeat', time: ytPlayer.getCurrentTime() });
     }
   }, 4000);
 
@@ -1706,7 +1740,7 @@
     document.getElementById('yt-player-bar').classList.add('show');
     document.getElementById('yt-sync-btn').style.display = 'inline-block';
     renderYtPlaylist();
-    ws.send(JSON.stringify({ type: 'control', action: 'yt-load', videoId: item.videoId, title: item.title }));
+    socketSend({ type: 'control', action: 'yt-load', videoId: item.videoId, title: item.title });
   }
 
   function playNextYoutube() {
@@ -1770,16 +1804,33 @@
     document.getElementById('yt-player-viewer').style.display='block';
     document.getElementById('viewer-now-playing').textContent='▶ '+title;
     document.getElementById('viewer-now-playing').style.display='block';
-    ws.send(JSON.stringify({type:'control',action:'yt-load',videoId,title}));
+    socketSend({type:'control',action:'yt-load',videoId,title});
   });
 
   async function handleControlMessage(msg) {
     if (msg.action === 'mode') {
-      applyRemoteMode(msg.mode);
+      if (role === 'viewer') {
+        applyRemoteMode(msg.mode);
+      } else if (role === 'host' && msg.mode === 'transfer') {
+        currentMode = 'transfer';
+        setActiveModeButton('mode-transfer-btn');
+        document.getElementById('content-panel-card').style.display = 'flex';
+        document.getElementById('mode-transfer-panel').style.display = 'block';
+      } else if (role === 'host' && msg.mode === 'youtube') {
+        currentMode = 'youtube';
+        setActiveModeButton('mode-youtube-btn');
+        document.getElementById('content-panel-card').style.display = 'flex';
+        document.getElementById('mode-youtube-panel').style.display = 'block';
+      } else if (role === 'host' && msg.mode === 'file') {
+        currentMode = 'file';
+        setActiveModeButton('mode-file-btn');
+        document.getElementById('content-panel-card').style.display = 'flex';
+        document.getElementById('mode-file-panel').style.display = 'block';
+      }
     } else if (msg.action === 'file-kind') {
       remoteFileKind = msg.kind;
       movieAudioAttached = false;
-      updateViewerNowPlaying(msg.kind === 'audio' ? ('<svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg> ' + (msg.title || 'Música')) : '');
+      updateViewerNowPlaying(msg.kind === 'audio' ? ('Música · ' + (msg.title || 'Música')) : (msg.title ? 'Vídeo · ' + msg.title : ''));
     } else if (msg.action === 'yt-load') {
       if (role === 'viewer') applyRemoteMode('youtube');
       if (role === 'host') {
@@ -1790,7 +1841,7 @@
         document.getElementById('yt-track-title').textContent = msg.title || msg.videoId;
       }
       document.getElementById('yt-sync-btn-viewer').style.display = role === 'viewer' ? 'inline-block' : 'none';
-      updateViewerNowPlaying('<svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> ' + (msg.title || 'Vídeo do YouTube'));
+      updateViewerNowPlaying('YouTube · ' + (msg.title || 'Vídeo do YouTube'));
       await ensureYtPlayer(msg.videoId);
     } else if (msg.action === 'yt-play' || msg.action === 'yt-pause' || msg.action === 'yt-sync') {
       if (!ytPlayer) return;
@@ -1814,6 +1865,12 @@
       if (msg.action === 'media-seek') el.currentTime = Math.max(0, Number(msg.time) || 0);
       else if (msg.action === 'media-play') el.play().catch(() => {});
       else el.pause();
+    } else if (msg.action === 'media-sync') {
+      if (role !== 'viewer' || currentMode !== 'file') return;
+      const time = Math.max(0, Number(msg.time) || 0);
+      viewerVideo.currentTime = time;
+      if (msg.playing) viewerVideo.play().catch(() => { btnUnmute.style.display = 'block'; });
+      else viewerVideo.pause();
     } else if (msg.action === 'transfer-play' || msg.action === 'transfer-pause') {
       const el = getActiveTransferElement();
       if (!el || !el.src) return;
@@ -1849,8 +1906,8 @@
     wireTransferSyncElement(activeEl);
     activeEl.play().catch(()=>{});
     applyRemoteMode('transfer');
-    ws.send(JSON.stringify({type:'control',action:'mode',mode:'transfer'}));
-    ws.send(JSON.stringify({type:'control',action:'file-kind',kind:transferKind,title:file.name}));
+    socketSend({type:'control',action:'mode',mode:'transfer'});
+    socketSend({type:'control',action:'file-kind',kind:transferKind,title:file.name});
     await ensurePeerConnection();
     sendFileViaDataChannel(file);
   });
@@ -1872,10 +1929,10 @@
     if (el.dataset.syncWired) return;
     el.dataset.syncWired = '1';
     el.addEventListener('play', () => {
-      if (!transferApplyingRemote) ws.send(JSON.stringify({ type: 'control', action: 'transfer-play', time: el.currentTime }));
+      if (!transferApplyingRemote) socketSend({ type: 'control', action: 'transfer-play', time: el.currentTime });
     });
     el.addEventListener('pause', () => {
-      if (!transferApplyingRemote) ws.send(JSON.stringify({ type: 'control', action: 'transfer-pause', time: el.currentTime }));
+      if (!transferApplyingRemote) socketSend({ type: 'control', action: 'transfer-pause', time: el.currentTime });
     });
   }
 
@@ -1883,7 +1940,7 @@
   setInterval(() => {
     const el = getActiveTransferElement();
     if (el && !el.paused && el.src && !transferApplyingRemote) {
-      ws.send(JSON.stringify({ type: 'control', action: 'transfer-heartbeat', time: el.currentTime }));
+      socketSend({ type: 'control', action: 'transfer-heartbeat', time: el.currentTime });
     }
   }, 4000);
 
@@ -1932,11 +1989,18 @@
       const waitUI=getTransferSendUI();
       waitUI.label.textContent = 'A aguardar a ligação da outra pessoa...';
       waitUI.progress.style.display = 'block';
-      await new Promise((resolve) => {
+      await new Promise((resolve, reject) => {
+        const started = Date.now();
         const check = setInterval(() => {
-          if (fileChannel && fileChannel.readyState === 'open') { clearInterval(check); resolve(); }
-        }, 500);
+          if (fileChannel && fileChannel.readyState === 'open') { clearInterval(check); resolve(); return; }
+          if (Date.now() - started >= 20000) { clearInterval(check); reject(new Error('A ligação de transferência não ficou disponível a tempo.')); }
+        }, 250);
+      }).catch((err) => {
+        const ui = getTransferSendUI();
+        ui.label.textContent = err.message;
+        return null;
       });
+      if (!fileChannel || fileChannel.readyState !== 'open') return;
     }
 
     const {progress, fill, label} = getTransferSendUI();
@@ -1971,7 +2035,9 @@
 
   function handleFileChannelMessage(e) {
     if (typeof e.data === 'string') {
-      const msg = JSON.parse(e.data);
+      let msg;
+      try { msg = JSON.parse(e.data); } catch (err) { return; }
+      if (!msg || typeof msg.type !== 'string') return;
       if (msg.type === 'file-start') {
         incomingMeta = msg;
         incomingChunks = [];
@@ -2020,6 +2086,8 @@
     wireTransferSyncElement(activeEl);
     document.getElementById('transfer-receive-label').textContent = `✅ Pronto: ${incomingMeta.name}`;
     if (role === 'host') {
+      currentMode = 'transfer';
+      setActiveModeButton('mode-transfer-btn');
       document.getElementById('content-panel-card').style.display='flex';
       document.getElementById('mode-transfer-panel').style.display='block';
     }
@@ -2090,7 +2158,7 @@
   function sendChat() {
     const text = chatInput.value.trim();
     if (!text) return;
-    ws.send(JSON.stringify({ type: 'chat', text }));
+    socketSend({ type: 'chat', text });
     addMessage(text, 'me');
     chatInput.value = '';
   }
@@ -2168,16 +2236,20 @@
     btn.textContent = playing ? '⏸ Pausar' : '▶ Reproduzir';
   }
 
+  function socketSend(payload) {
+    if (!ws || ws.readyState !== WebSocket.OPEN) return false;
+    try { ws.send(JSON.stringify(payload)); return true; } catch (e) { return false; }
+  }
+
   function requestViewerControl() {
     if (viewerControlGranted) {
       toggleControlPanel('viewer-control-panel');
       return;
     }
     if (viewerControlRequested) { toggleControlPanel('viewer-control-panel'); return; }
-    if (ws.readyState !== WebSocket.OPEN) return;
+    if (!socketSend({type:'control-request', name: myName})) return;
     viewerControlRequested = true;
     updateViewerControlLabel();
-    ws.send(JSON.stringify({type:'control-request', name: myName}));
     const sub=document.getElementById('viewer-stage-subtitle'); if(sub) sub.textContent='Pedido enviado ao anfitrião';
     const panel=document.getElementById('viewer-control-panel'); if(panel) panel.style.display='grid';
     updateViewerPermissionUI();
@@ -2192,7 +2264,7 @@
   document.getElementById('quick-control-viewer')?.addEventListener('click',requestViewerControl);
   document.getElementById('host-control-revoke')?.addEventListener('click',()=>{
     if (role !== 'host' || ws.readyState !== WebSocket.OPEN) return;
-    ws.send(JSON.stringify({type:'control-revoked'}));
+    socketSend({type:'control-revoked'});
     hostControlGranted = false;
     updateViewerPermissionUI();
     const req=document.getElementById('host-control-request'); if(req) req.classList.remove('show');
@@ -2213,36 +2285,57 @@
   });
   document.getElementById('viewer-back10')?.addEventListener('click',()=>{
     if (!viewerControlGranted) return;
-    if (ytPlayer && typeof ytPlayer.getCurrentTime==='function') { const t=Math.max(0,ytPlayer.getCurrentTime()-10); ytPlayer.seekTo(t,true); ws.send(JSON.stringify({type:'control',action:'yt-sync',time:t,playing:true})); }
-    else { const v=document.getElementById('transfer-viewer-video'); const a=document.getElementById('transfer-viewer-audio'); const el=currentMode==='transfer'?((v&&v.src)?v:((a&&a.src)?a:viewerVideo)):viewerVideo; el.currentTime=Math.max(0,el.currentTime-10); ws.send(JSON.stringify({type:'control',action: currentMode==='file' ? 'media-seek' : 'transfer-heartbeat',time:el.currentTime})); }
+    if (currentMode === 'youtube' && ytPlayer && typeof ytPlayer.getCurrentTime==='function') {
+      const t=Math.max(0,ytPlayer.getCurrentTime()-10);
+      ytPlayer.seekTo(t,true);
+      socketSend({type:'control',action:'yt-sync',time:t,playing:ytPlayer.getPlayerState()===YT.PlayerState.PLAYING});
+      return;
+    }
+    const v=document.getElementById('transfer-viewer-video'); const a=document.getElementById('transfer-viewer-audio');
+    const el=currentMode==='transfer'?((v&&v.src)?v:((a&&a.src)?a:viewerVideo)):viewerVideo;
+    el.currentTime=Math.max(0,el.currentTime-10);
+    socketSend({type:'control',action: currentMode==='file' ? 'media-seek' : 'transfer-heartbeat',time:el.currentTime});
   });
   document.getElementById('viewer-forward10')?.addEventListener('click',()=>{
     if (!viewerControlGranted) return;
-    if (ytPlayer && typeof ytPlayer.getCurrentTime==='function') { const t=ytPlayer.getCurrentTime()+10; ytPlayer.seekTo(t,true); ws.send(JSON.stringify({type:'control',action:'yt-sync',time:t,playing:true})); }
-    else { const v=document.getElementById('transfer-viewer-video'); const a=document.getElementById('transfer-viewer-audio'); const el=currentMode==='transfer'?((v&&v.src)?v:((a&&a.src)?a:viewerVideo)):viewerVideo; el.currentTime=Math.min(isFinite(el.duration)?el.duration:el.currentTime+10,el.currentTime+10); ws.send(JSON.stringify({type:'control',action: currentMode==='file' ? 'media-seek' : 'transfer-heartbeat',time:el.currentTime})); }
+    if (currentMode === 'youtube' && ytPlayer && typeof ytPlayer.getCurrentTime==='function') {
+      const t=ytPlayer.getCurrentTime()+10;
+      ytPlayer.seekTo(t,true);
+      socketSend({type:'control',action:'yt-sync',time:t,playing:ytPlayer.getPlayerState()===YT.PlayerState.PLAYING});
+      return;
+    }
+    const v=document.getElementById('transfer-viewer-video'); const a=document.getElementById('transfer-viewer-audio');
+    const el=currentMode==='transfer'?((v&&v.src)?v:((a&&a.src)?a:viewerVideo)):viewerVideo;
+    el.currentTime=Math.min(isFinite(el.duration)?el.duration:el.currentTime+10,el.currentTime+10);
+    socketSend({type:'control',action: currentMode==='file' ? 'media-seek' : 'transfer-heartbeat',time:el.currentTime});
   });
   document.getElementById('host-call-volume-quick')?.addEventListener('input',e=>{ const v=Number(e.target.value); remoteAudio.volume=v/100; document.getElementById('vol-call-host').value=v; document.getElementById('host-call-volume-output').textContent=v+'%'; });
   document.getElementById('viewer-content-volume-quick')?.addEventListener('input',e=>{ const v=Number(e.target.value); viewerVideo.volume=v/100; document.getElementById('movie-audio').volume=v/100; document.getElementById('vol-content').value=v; document.getElementById('viewer-content-volume-output').textContent=v+'%'; });
   document.getElementById('viewer-call-volume-quick')?.addEventListener('input',e=>{ const v=Number(e.target.value); remoteAudio.volume=v/100; document.getElementById('vol-call').value=v; document.getElementById('viewer-call-volume-output').textContent=v+'%'; });
   document.getElementById('viewer-unmute-quick')?.addEventListener('click',()=>{ btnUnmute.click(); btnAudioUnmute.click(); });
   document.getElementById('viewer-sync-quick')?.addEventListener('click',()=>{ if (viewerControlGranted) document.getElementById('yt-sync-btn-viewer').click(); });
-  document.getElementById('host-sync-quick')?.addEventListener('click',()=>{ if(currentMode==='youtube') sendYtSync(); else if(role==='host'){ const el=getActiveTransferElement(); if(el && el.src) ws.send(JSON.stringify({type:'control',action:'transfer-heartbeat',time:el.currentTime})); else if(hostVideo.src) ws.send(JSON.stringify({type:'control',action:'media-sync',kind:fileKind,time:hostVideo.currentTime,playing:!hostVideo.paused,index:fileCurrentIndex,title:filePlaylist[fileCurrentIndex]?.name||''})); } });
+  document.getElementById('host-sync-quick')?.addEventListener('click',()=>{
+    if(currentMode==='youtube') sendYtSync();
+    else if(role==='host'){
+      const el=currentMode==='transfer' ? getActiveTransferElement() : activeHostMediaEl();
+      if(el && el.src) socketSend({type:'control',action:currentMode==='transfer'?'transfer-heartbeat':'media-sync',kind:fileKind,time:el.currentTime,playing:!el.paused,index:fileCurrentIndex,title:filePlaylist[fileCurrentIndex]?.name||''});
+    }
+  });
   document.getElementById('host-install-quick')?.addEventListener('click',handleInstallRequest);
   document.getElementById('host-control-allow')?.addEventListener('click',()=>{
-    if (ws.readyState===WebSocket.OPEN) ws.send(JSON.stringify({type:'control-granted'}));
+    if (!socketSend({type:'control-granted'})) return;
     hostControlGranted = true;
     updateViewerPermissionUI();
     setHostControlRequestState(false);
     document.getElementById('host-control-request')?.classList.remove('show');
   });
   document.getElementById('host-control-deny')?.addEventListener('click',()=>{
-    if (ws.readyState===WebSocket.OPEN) ws.send(JSON.stringify({type:'control-denied'}));
+    if (!socketSend({type:'control-denied'})) return;
     hostControlGranted = false;
     updateViewerPermissionUI();
     setHostControlRequestState(false);
     document.getElementById('host-control-request')?.classList.remove('show');
   });
-  document.getElementById('viewer-video')?.insertAdjacentHTML('afterend','');
   const _oldUpdateMicButton = updateMicButton;
   updateMicButton = function(){ _oldUpdateMicButton(); setQuickMicState(); };
 
@@ -2262,7 +2355,7 @@
       if (!btn) return;
       const emoji = btn.dataset.emoji;
       showReaction(emoji);
-      ws.send(JSON.stringify({ type: 'reaction', emoji }));
+      socketSend({ type: 'reaction', emoji });
     });
   });
 
@@ -2270,7 +2363,7 @@
   setInterval(() => {
     if (roomCode && role && ws.readyState === WebSocket.OPEN) {
       lastPingSent = performance.now();
-      ws.send(JSON.stringify({ type: 'app-ping', t: lastPingSent }));
+      socketSend({ type: 'app-ping', t: lastPingSent });
     }
   }, 5000);
   function updateLatency(ms) {
@@ -2290,7 +2383,7 @@
     const now = Date.now();
     if (now - typingSentAt > 1500) {
       typingSentAt = now;
-      ws.send(JSON.stringify({ type: 'typing' }));
+      socketSend({ type: 'typing' });
     }
   });
   function showTypingIndicator() {
@@ -2337,7 +2430,9 @@
   // ---------- MENSAGENS DO SERVIDOR ----------
   function wireSocket(socket) {
     socket.onmessage = async (event) => {
-      const msg = JSON.parse(event.data);
+      let msg;
+      try { msg = JSON.parse(event.data); } catch (err) { return; }
+      if (!msg || typeof msg.type !== 'string') return;
 
       switch (msg.type) {
         case 'room-created':
@@ -2519,21 +2614,29 @@
     };
 
     socket.onclose = () => {
-      setTimeout(reconnectSocket, wsReconnectDelay);
+      if (socket !== ws) return;
+      if (wsReconnectTimer || wsConnecting) return;
+      wsReconnectTimer = setTimeout(() => { wsReconnectTimer = null; reconnectSocket(); }, wsReconnectDelay);
       wsReconnectDelay = Math.min(wsReconnectDelay * 2, 10000);
     };
   }
 
   function reconnectSocket() {
-    ws = new WebSocket(wsProtocol + location.host);
-    wireSocket(ws);
-    ws.addEventListener('open', () => {
+    if (wsConnecting || (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING))) return;
+    wsConnecting = true;
+    const next = new WebSocket(wsProtocol + location.host);
+    ws = next;
+    wireSocket(next);
+    next.addEventListener('open', () => {
+      wsConnecting = false;
       wsReconnectDelay = 1000;
-      if (roomCode && role) ws.send(JSON.stringify({ type: 'rejoin-room', code: roomCode, role, name: myName }));
-    });
+      if (roomCode && role) socketSend({ type: 'rejoin-room', code: roomCode, role, name: myName });
+    }, { once: true });
+    next.addEventListener('error', () => { wsConnecting = false; }, { once: true });
   }
 
   wireSocket(ws);
+  ws.addEventListener('open', () => { wsConnecting = false; wsReconnectDelay = 1000; }, { once: true });
 
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(() => {});
@@ -2558,7 +2661,7 @@
     if (urlRoom && urlRole) {
       roomCode = urlRoom.toUpperCase();
       role = urlRole;
-      const tryRejoin = () => ws.send(JSON.stringify({ type: 'rejoin-room', code: roomCode, role, name: myName }));
+      const tryRejoin = () => socketSend({ type: 'rejoin-room', code: roomCode, role, name: myName });
       if (ws.readyState === WebSocket.OPEN) tryRejoin();
       else ws.addEventListener('open', tryRejoin, { once: true });
     }
