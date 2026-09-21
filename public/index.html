@@ -339,6 +339,26 @@
   .site-footer { text-align: center; padding: 4px 20px 24px; }
   .site-footer p { margin: 2px 0; font-size: 11.5px; color: var(--muted); }
   .site-footer strong { color: var(--ink); font-weight: 600; }
+
+/* 5.5 — normalização, autorização e ferramentas do convidado */
+.field-label { display:block; margin:0 0 -4px; color:var(--muted); font-size:11px; font-weight:650; }
+.permission-status { display:grid; gap:3px; padding:11px 12px; border:1px solid var(--border); background:rgba(255,255,255,.025); border-radius:11px; }
+.permission-status strong { font-size:12px; color:var(--ink); }
+.permission-status span { font-size:10.5px; line-height:1.4; color:var(--muted); }
+.viewer-control-title { font-size:11px; font-weight:800; color:var(--ink); margin-bottom:7px; }
+.viewer-playback-actions { display:grid; grid-template-columns:1fr 1.35fr 1fr; gap:7px; }
+.viewer-playback-actions button { min-height:42px; border-radius:10px; font-size:11px; }
+.viewer-granted-tools { padding:11px 0 2px; border-top:1px solid var(--border); }
+.viewer-granted-tools + .room-volume { margin-top:9px; }
+.control-revoke-btn { margin-top:8px; width:100%; }
+#viewer-file-input { width:100%; }
+#viewer-content-tools .row { align-items:stretch; }
+@media (max-width:430px){
+  .viewer-playback-actions button { padding:8px 5px; font-size:10px; }
+}
+
+.control-request.pulse-highlight { animation: requestPulse .9s ease 2; }
+@keyframes requestPulse { 0%,100%{ transform:translateY(0); box-shadow:none; } 50%{ transform:translateY(-1px); box-shadow:0 0 0 3px rgba(109,93,252,.10); } }
 </style>
 
 
@@ -419,7 +439,7 @@
   <div class="topbar">
     <div class="topbar-brand">
       <div class="brand-mark">
-        <img src="icon.png" alt="2 on Streaming" />
+        <img src="icon.svg" alt="2 on Streaming" />
       </div>
       <span class="topbar-title">2 on Streaming</span>
     </div>
@@ -469,14 +489,16 @@
     <div class="card card-primary">
       <h2>Criar sessão</h2>
       <p class="hint">Escolhe um vídeo do teu telefone e cria uma sessão para a outra pessoa assistir contigo.</p>
-      <input type="text" id="host-name" maxlength="24" placeholder="O teu nome" style="text-transform:none; letter-spacing:normal; font-size:15px; font-weight:500;" />
+      <label class="field-label" for="host-name">Nome que aparecerá na sessão</label>
+      <input type="text" id="host-name" maxlength="24" placeholder="Ex.: Tomás" style="text-transform:none; letter-spacing:normal; font-size:15px; font-weight:500;" />
       <button id="btn-create">Criar sessão</button>
     </div>
     <div class="divider">— ou —</div>
     <div class="card">
       <h2>Entrar numa sessão</h2>
       <p class="hint">Cola o código de 5 letras que a outra pessoa te enviou (ou abre o link diretamente, se te mandaram um).</p>
-      <input type="text" id="viewer-name" maxlength="24" placeholder="O teu nome" style="text-transform:none; letter-spacing:normal; font-size:15px; font-weight:500;" />
+      <label class="field-label" for="viewer-name">O teu nome antes de entrar</label>
+      <input type="text" id="viewer-name" maxlength="24" placeholder="Ex.: Tomás" style="text-transform:none; letter-spacing:normal; font-size:15px; font-weight:500;" />
       <div class="row">
         <input type="text" id="input-code" maxlength="5" placeholder="CÓDIGO" inputmode="text" autocomplete="off" autocapitalize="characters" />
         <button id="btn-paste-code" class="secondary" style="flex:0 0 auto; padding: 14px 16px;">Colar</button>
@@ -535,12 +557,13 @@
         <button type="button" id="quick-chat-host" class="primary"><span class="quick-icon"><svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7A8.4 8.4 0 0 1 4 11.5 8.5 8.5 0 0 1 12.5 3h.5a8.5 8.5 0 0 1 8 8.5z"></path></svg><span id="quick-chat-badge-host" class="badge"></span></span>Mensagens</button>
         <button type="button" id="quick-mic-host"><span class="quick-icon" id="quick-mic-icon-host"><svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="2" width="6" height="13" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0M12 18v4M8 22h8"></path></svg></span>Microfone</button>
         <button type="button" id="quick-audio-host"><span class="quick-icon"><svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.5 8.5a5 5 0 0 1 0 7"></path></svg></span>Áudio</button>
-        <button type="button" id="quick-control-host" class="role-host-only"><span class="quick-icon"><svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="6" x2="20" y2="6"></line><circle cx="9" cy="6" r="2"></circle><line x1="4" y1="12" x2="20" y2="12"></line><circle cx="15" cy="12" r="2"></circle><line x1="4" y1="18" x2="20" y2="18"></line><circle cx="11" cy="18" r="2"></circle></svg><span id="quick-control-badge-host" class="badge"></span></span>Controlos</button>
+        <button type="button" id="quick-control-host"><span class="quick-icon"><svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="6" x2="20" y2="6"></line><circle cx="9" cy="6" r="2"></circle><line x1="4" y1="12" x2="20" y2="12"></line><circle cx="15" cy="12" r="2"></circle><line x1="4" y1="18" x2="20" y2="18"></line><circle cx="11" cy="18" r="2"></circle></svg><span id="quick-control-badge-host" class="badge"></span></span>Controlos</button>
       </div>
       <div id="host-control-panel" class="room-mini-controls" style="display:none;">
         <div class="room-volume"><label>Chamada</label><input id="host-call-volume-quick" type="range" min="0" max="100" value="100"><output id="host-call-volume-output">100%</output></div>
         <div class="room-actions"><button type="button" class="secondary" id="host-sync-quick">Sincronizar</button><button type="button" class="secondary" id="host-install-quick">Instalar app</button></div>
-        <p class="room-control-note">Os controlos de reprodução podem ser usados pelos dois participantes. O anfitrião continua a gerir os ficheiros e a playlist.</p>
+        <button type="button" class="ghost control-revoke-btn" id="host-control-revoke" style="display:none;">Retirar acesso ao convidado</button>
+        <p class="room-control-note">O convidado só pode controlar a reprodução e partilhar conteúdo depois de receber a tua autorização.</p>
       </div>
       <div id="host-control-request" class="control-request">
         <div class="control-request-text"><strong id="host-control-request-name">A outra pessoa</strong> pediu acesso aos controlos.<span>Podes aceitar e continuar a sessão normalmente.</span></div>
@@ -724,13 +747,42 @@
         <button type="button" id="quick-chat-viewer" class="primary"><span class="quick-icon"><svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7A8.4 8.4 0 0 1 4 11.5 8.5 8.5 0 0 1 12.5 3h.5a8.5 8.5 0 0 1 8 8.5z"></path></svg><span id="quick-chat-badge-viewer" class="badge"></span></span>Mensagens</button>
         <button type="button" id="quick-mic-viewer"><span class="quick-icon" id="quick-mic-icon-viewer"><svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="2" width="6" height="13" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0M12 18v4M8 22h8"></path></svg></span>Microfone</button>
         <button type="button" id="quick-audio-viewer"><span class="quick-icon"><svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.5 8.5a5 5 0 0 1 0 7"></path></svg></span>Áudio</button>
-        <button type="button" id="quick-control-viewer" class="primary"><span class="quick-icon"><svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="6" x2="20" y2="6"></line><circle cx="9" cy="6" r="2"></circle><line x1="4" y1="12" x2="20" y2="12"></line><circle cx="15" cy="12" r="2"></circle><line x1="4" y1="18" x2="20" y2="18"></line><circle cx="11" cy="18" r="2"></circle></svg></span><span id="viewer-control-label">Pedir controlo</span></button>
+        <button type="button" id="quick-control-viewer" class="primary"><span class="quick-icon"><svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="6" x2="20" y2="6"></line><circle cx="9" cy="6" r="2"></circle><line x1="4" y1="12" x2="20" y2="12"></line><circle cx="15" cy="12" r="2"></circle><line x1="4" y1="18" x2="20" y2="18"></line><circle cx="11" cy="18" r="2"></circle></svg></span><span id="viewer-control-label">Pedir autorização</span></button>
       </div>
       <div id="viewer-control-panel" class="room-mini-controls" style="display:none;">
+        <div id="viewer-permission-status" class="permission-status">
+          <strong>Acesso aos controlos</strong>
+          <span id="viewer-permission-text">Pede autorização ao anfitrião para controlar a reprodução e partilhar conteúdo.</span>
+        </div>
+
+        <div id="viewer-playback-tools" class="viewer-granted-tools" style="display:none;">
+          <div class="viewer-control-title">Reprodução</div>
+          <div class="viewer-playback-actions">
+            <button type="button" class="secondary" id="viewer-back10">−10 s</button>
+            <button type="button" id="viewer-play-pause">▶ Reproduzir</button>
+            <button type="button" class="secondary" id="viewer-forward10">+10 s</button>
+          </div>
+        </div>
+
+        <div id="viewer-content-tools" class="viewer-granted-tools" style="display:none;">
+          <div class="viewer-control-title">Partilhar conteúdo</div>
+          <p class="room-control-note">Escolhe um vídeo ou música do teu telefone. O ficheiro será enviado diretamente para o outro telefone através da ligação da sessão.</p>
+          <input type="file" id="viewer-file-input" accept="video/*,audio/*" />
+          <div id="viewer-transfer-send-progress" class="progress-ui" style="display:none;">
+            <div class="progress-track"><div class="progress-fill" id="viewer-transfer-send-fill"></div></div>
+            <p class="hint" id="viewer-transfer-send-label">A enviar...</p>
+          </div>
+          <div class="viewer-control-title" style="margin-top:10px;">YouTube</div>
+          <div class="row">
+            <input type="text" id="viewer-yt-url" placeholder="Link ou ID do YouTube" style="text-transform:none; letter-spacing:normal; font-size:13px;" />
+            <button type="button" class="secondary" id="viewer-yt-load" style="flex:0 0 auto;">Abrir</button>
+          </div>
+        </div>
+
         <div class="room-volume"><label>Conteúdo</label><input id="viewer-content-volume-quick" type="range" min="0" max="100" value="100"><output id="viewer-content-volume-output">100%</output></div>
         <div class="room-volume"><label>Chamada</label><input id="viewer-call-volume-quick" type="range" min="0" max="100" value="100"><output id="viewer-call-volume-output">100%</output></div>
         <div class="room-actions"><button type="button" class="secondary" id="viewer-unmute-quick">Ativar áudio</button><button type="button" class="secondary" id="viewer-sync-quick">Sincronizar</button></div>
-        <p class="room-control-note">Aqui podes separar o volume do vídeo do volume da chamada e ativar o áudio quando o browser bloquear a reprodução automática.</p>
+        <p class="room-control-note">O volume e o áudio são sempre teus. Reprodução e partilha de conteúdo exigem autorização do anfitrião.</p>
       </div>
     </div>
 
@@ -928,7 +980,14 @@
   });
 
   document.getElementById('btn-create').addEventListener('click', () => {
-    myName = (document.getElementById('host-name').value || '').trim().slice(0, 24) || 'Anfitrião';
+    const enteredName = (document.getElementById('host-name').value || '').trim().slice(0, 24);
+    if (!enteredName) {
+      document.getElementById('home-error').textContent = 'Escreve o teu nome antes de criar a sessão.';
+      document.getElementById('host-name').focus();
+      return;
+    }
+    document.getElementById('home-error').textContent = '';
+    myName = enteredName;
     try { localStorage.setItem('assistir_juntos_name', myName); } catch (e) {}
     ws.send(JSON.stringify({ type: 'create-room', name: myName }));
   });
@@ -948,11 +1007,21 @@
       document.getElementById('home-error').textContent = 'O código tem 5 letras/números.';
       return;
     }
+    const enteredName = (document.getElementById('viewer-name').value || '').trim().slice(0, 24);
+    if (!enteredName) {
+      document.getElementById('home-error').textContent = 'Escreve o teu nome antes de entrar na sessão.';
+      document.getElementById('viewer-name').focus();
+      return;
+    }
     document.getElementById('home-error').textContent = '';
-    myName = (document.getElementById('viewer-name').value || '').trim().slice(0, 24) || 'Convidado';
+    myName = enteredName;
     try { localStorage.setItem('assistir_juntos_name', myName); } catch (e) {}
     ws.send(JSON.stringify({ type: 'join-room', code, name: myName }));
   });
+
+  document.getElementById('host-name').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('btn-create').click(); });
+  document.getElementById('viewer-name').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('btn-join').click(); });
+  document.getElementById('input-code').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('btn-join').click(); });
 
   try {
     const savedName = localStorage.getItem('assistir_juntos_name');
@@ -1191,7 +1260,7 @@
   document.getElementById('btn-share-link').addEventListener('click', async () => {
     const url = shareLink();
     if (navigator.share) {
-      try { await navigator.share({ title: '2 on Streaming', text: 'Usa este bilhete para assistirmos juntos:', url }); return; }
+      try { await navigator.share({ title: '2 on Streaming', text: 'Usa este link para assistirmos juntos:', url }); return; }
       catch (e) { /* utilizador cancelou ou não suportado — cai para copiar */ }
     }
     await copyText(url);
@@ -1312,6 +1381,7 @@
 
   function applyRemoteMode(mode) {
     if (role !== 'viewer') return;
+    currentMode = mode;
     viewerVideo.style.display = mode === 'file' ? '' : 'none';
     document.getElementById('yt-player-viewer').style.display = mode === 'youtube' ? 'block' : 'none';
     if (mode !== 'transfer') {
@@ -1327,6 +1397,9 @@
   const btnUnmute = document.getElementById('btn-unmute');
   const remoteAudio = document.getElementById('remote-audio');
   const btnAudioUnmute = document.getElementById('btn-audio-unmute');
+  viewerVideo.addEventListener('play',()=>{ if (role==='viewer' && viewerControlGranted && !transferApplyingRemote) ws.send(JSON.stringify({type:'control',action: currentMode==='file' ? 'media-play' : 'transfer-play',time:viewerVideo.currentTime})); setViewerPlaybackButton(); });
+  viewerVideo.addEventListener('pause',()=>{ if (role==='viewer' && viewerControlGranted && !transferApplyingRemote) ws.send(JSON.stringify({type:'control',action: currentMode==='file' ? 'media-pause' : 'transfer-pause',time:viewerVideo.currentTime})); setViewerPlaybackButton(); });
+
 
   function updateViewerNowPlaying(text) {
     const el = document.getElementById('viewer-now-playing');
@@ -1544,7 +1617,7 @@
   }
 
   function onYtStateChange(e) {
-    if (ytApplyingRemote || !ytPlayer) return;
+    if (ytApplyingRemote || !ytPlayer || !canControlPlayback()) return;
     const currentTime = ytPlayer.getCurrentTime();
     if (e.data === YT.PlayerState.PLAYING) {
       ws.send(JSON.stringify({ type: 'control', action: 'yt-play', time: currentTime }));
@@ -1574,7 +1647,7 @@
   }
 
   function sendYtSync() {
-    if (!ytPlayer) return;
+    if (!ytPlayer || !canControlPlayback()) return;
     const time = ytPlayer.getCurrentTime();
     const playing = ytPlayer.getPlayerState() === YT.PlayerState.PLAYING;
     ws.send(JSON.stringify({ type: 'control', action: 'yt-sync', time, playing }));
@@ -1584,7 +1657,7 @@
 
   // Corrige desvios de sincronização automaticamente, sem interromper a reprodução
   setInterval(() => {
-    if (ytPlayer && typeof ytPlayer.getPlayerState === 'function' &&
+    if (ytPlayer && typeof ytPlayer.getPlayerState === 'function' && canControlPlayback() &&
         ytPlayer.getPlayerState() === YT.PlayerState.PLAYING && !ytApplyingRemote) {
       ws.send(JSON.stringify({ type: 'control', action: 'yt-heartbeat', time: ytPlayer.getCurrentTime() }));
     }
@@ -1625,7 +1698,7 @@
   });
 
   async function playYoutubeAt(index) {
-    if (index < 0 || index >= ytPlaylist.length) return;
+    if (!canControlPlayback() || index < 0 || index >= ytPlaylist.length) return;
     ytCurrentIndex = index;
     const item = ytPlaylist[index];
     await ensureYtPlayer(item.videoId);
@@ -1685,6 +1758,21 @@
     }
   });
 
+  document.getElementById('viewer-yt-load')?.addEventListener('click', async () => {
+    if (!viewerControlGranted) return;
+    const raw=document.getElementById('viewer-yt-url').value;
+    const videoId=extractYouTubeId(raw);
+    if (!videoId) { alert('Link do YouTube inválido.'); return; }
+    document.getElementById('viewer-yt-url').value='';
+    const title=await fetchYoutubeTitle(videoId);
+    await ensureYtPlayer(videoId);
+    applyRemoteMode('youtube');
+    document.getElementById('yt-player-viewer').style.display='block';
+    document.getElementById('viewer-now-playing').textContent='▶ '+title;
+    document.getElementById('viewer-now-playing').style.display='block';
+    ws.send(JSON.stringify({type:'control',action:'yt-load',videoId,title}));
+  });
+
   async function handleControlMessage(msg) {
     if (msg.action === 'mode') {
       applyRemoteMode(msg.mode);
@@ -1693,7 +1781,14 @@
       movieAudioAttached = false;
       updateViewerNowPlaying(msg.kind === 'audio' ? ('<svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg> ' + (msg.title || 'Música')) : '');
     } else if (msg.action === 'yt-load') {
-      applyRemoteMode('youtube');
+      if (role === 'viewer') applyRemoteMode('youtube');
+      if (role === 'host') {
+        currentMode = 'youtube';
+        setActiveModeButton('mode-youtube-btn');
+        document.getElementById('content-panel-card').style.display='flex';
+        document.getElementById('mode-youtube-panel').style.display='block';
+        document.getElementById('yt-track-title').textContent = msg.title || msg.videoId;
+      }
       document.getElementById('yt-sync-btn-viewer').style.display = role === 'viewer' ? 'inline-block' : 'none';
       updateViewerNowPlaying('<svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> ' + (msg.title || 'Vídeo do YouTube'));
       await ensureYtPlayer(msg.videoId);
@@ -1712,6 +1807,13 @@
         ytPlayer.seekTo(msg.time, true);
         setTimeout(() => { ytApplyingRemote = false; }, 400);
       }
+    } else if (msg.action === 'media-play' || msg.action === 'media-pause' || msg.action === 'media-seek') {
+      if (role !== 'host') return;
+      const el = activeHostMediaEl();
+      if (!el) return;
+      if (msg.action === 'media-seek') el.currentTime = Math.max(0, Number(msg.time) || 0);
+      else if (msg.action === 'media-play') el.play().catch(() => {});
+      else el.pause();
     } else if (msg.action === 'transfer-play' || msg.action === 'transfer-pause') {
       const el = getActiveTransferElement();
       if (!el || !el.src) return;
@@ -1731,6 +1833,28 @@
   }
 
   // ---------- TRANSFERÊNCIA DE FICHEIROS (modo "📤 Enviar") ----------
+  document.getElementById('viewer-file-input')?.addEventListener('change', async (e) => {
+    const file=e.target.files[0];
+    e.target.value='';
+    if (!file || !viewerControlGranted) return;
+    transferKind=file.type.startsWith('audio/')?'audio':'video';
+    const url=URL.createObjectURL(file);
+    if (transferUrl) URL.revokeObjectURL(transferUrl);
+    transferUrl=url;
+    const videoEl=document.getElementById('transfer-viewer-video');
+    const audioEl=document.getElementById('transfer-viewer-audio');
+    if (transferKind==='audio') { videoEl.style.display='none'; videoEl.pause(); videoEl.removeAttribute('src'); audioEl.style.display='block'; audioEl.src=url; }
+    else { audioEl.style.display='none'; audioEl.pause(); audioEl.removeAttribute('src'); videoEl.style.display='block'; videoEl.src=url; }
+    const activeEl=transferKind==='audio'?audioEl:videoEl;
+    wireTransferSyncElement(activeEl);
+    activeEl.play().catch(()=>{});
+    applyRemoteMode('transfer');
+    ws.send(JSON.stringify({type:'control',action:'mode',mode:'transfer'}));
+    ws.send(JSON.stringify({type:'control',action:'file-kind',kind:transferKind,title:file.name}));
+    await ensurePeerConnection();
+    sendFileViaDataChannel(file);
+  });
+
   function setupFileChannel(channel) {
     channel.binaryType = 'arraybuffer';
     channel.onmessage = handleFileChannelMessage;
@@ -1790,10 +1914,24 @@
     sendFileViaDataChannel(file);
   });
 
+  function getTransferSendUI() {
+    if (role === 'viewer') return {
+      progress:document.getElementById('viewer-transfer-send-progress'),
+      fill:document.getElementById('viewer-transfer-send-fill'),
+      label:document.getElementById('viewer-transfer-send-label')
+    };
+    return {
+      progress:document.getElementById('transfer-send-progress'),
+      fill:document.getElementById('transfer-send-fill'),
+      label:document.getElementById('transfer-send-label')
+    };
+  }
+
   async function sendFileViaDataChannel(file) {
     if (!fileChannel || fileChannel.readyState !== 'open') {
-      document.getElementById('transfer-send-label').textContent = 'A aguardar que a outra pessoa entre na sessão...';
-      document.getElementById('transfer-send-progress').style.display = 'block';
+      const waitUI=getTransferSendUI();
+      waitUI.label.textContent = 'A aguardar a ligação da outra pessoa...';
+      waitUI.progress.style.display = 'block';
       await new Promise((resolve) => {
         const check = setInterval(() => {
           if (fileChannel && fileChannel.readyState === 'open') { clearInterval(check); resolve(); }
@@ -1801,9 +1939,7 @@
       });
     }
 
-    const progress = document.getElementById('transfer-send-progress');
-    const fill = document.getElementById('transfer-send-fill');
-    const label = document.getElementById('transfer-send-label');
+    const {progress, fill, label} = getTransferSendUI();
     progress.style.display = 'block';
     fill.style.width = '0%';
 
@@ -1841,7 +1977,7 @@
         incomingChunks = [];
         incomingReceived = 0;
         transferKind = (msg.mime || '').startsWith('audio/') ? 'audio' : 'video';
-        applyRemoteMode('transfer');
+        if (role === 'viewer') applyRemoteMode('transfer');
         document.getElementById('transfer-receive-progress').style.display = 'block';
         document.getElementById('transfer-receive-fill').style.width = '0%';
         document.getElementById('transfer-receive-label').textContent = `A receber "${msg.name}"... 0%`;
@@ -1866,8 +2002,9 @@
     if (transferUrl) URL.revokeObjectURL(transferUrl);
     transferUrl = URL.createObjectURL(blob);
 
-    const videoEl = document.getElementById('transfer-viewer-video');
-    const audioEl = document.getElementById('transfer-viewer-audio');
+    const prefix = role === 'host' ? 'transfer-host-' : 'transfer-viewer-';
+    const videoEl = document.getElementById(prefix + 'video');
+    const audioEl = document.getElementById(prefix + 'audio');
     let activeEl;
     if (transferKind === 'audio') {
       videoEl.style.display = 'none'; videoEl.pause(); videoEl.removeAttribute('src');
@@ -1882,6 +2019,10 @@
     }
     wireTransferSyncElement(activeEl);
     document.getElementById('transfer-receive-label').textContent = `✅ Pronto: ${incomingMeta.name}`;
+    if (role === 'host') {
+      document.getElementById('content-panel-card').style.display='flex';
+      document.getElementById('mode-transfer-panel').style.display='block';
+    }
     setTimeout(() => { document.getElementById('transfer-receive-progress').style.display = 'none'; }, 1500);
   }
 
@@ -1975,6 +2116,7 @@
   let viewerControlRequested = false;
   let viewerControlGranted = false;
   let hostControlRequestPending = false;
+  let hostControlGranted = false;
 
   function toggleControlPanel(id) {
     const el = document.getElementById(id);
@@ -2006,6 +2148,26 @@
     const btn = document.getElementById('quick-control-host');
     if (btn) btn.classList.toggle('active', hostControlRequestPending);
   }
+  function canControlPlayback() { return role === 'host' || viewerControlGranted; }
+  function updateViewerPermissionUI() {
+    const tools = document.querySelectorAll('.viewer-granted-tools');
+    tools.forEach(el => { el.style.display = (role === 'viewer' && viewerControlGranted) ? 'block' : 'none'; });
+    const text = document.getElementById('viewer-permission-text');
+    if (text) text.textContent = viewerControlGranted ? 'Autorização ativa: podes controlar a reprodução e partilhar conteúdo.' : (viewerControlRequested ? 'Pedido enviado. Aguarda a autorização do anfitrião.' : 'Pede autorização ao anfitrião para controlar a reprodução e partilhar conteúdo.');
+    const revoke = document.getElementById('host-control-revoke');
+    if (revoke) revoke.style.display = (role === 'host' && hostControlGranted) ? 'block' : 'none';
+  }
+  function setViewerPlaybackButton() {
+    const btn=document.getElementById('viewer-play-pause');
+    if (!btn) return;
+    const ytState = ytPlayer && typeof ytPlayer.getPlayerState==='function' && window.YT ? ytPlayer.getPlayerState() : null;
+    const el = document.getElementById('transfer-viewer-video');
+    const audio = document.getElementById('transfer-viewer-audio');
+    const media = (el && el.src) ? el : ((audio && audio.src) ? audio : viewerVideo);
+    const playing = ytState === 1 || (media && !media.paused);
+    btn.textContent = playing ? '⏸ Pausar' : '▶ Reproduzir';
+  }
+
   function requestViewerControl() {
     if (viewerControlGranted) {
       toggleControlPanel('viewer-control-panel');
@@ -2018,6 +2180,7 @@
     ws.send(JSON.stringify({type:'control-request', name: myName}));
     const sub=document.getElementById('viewer-stage-subtitle'); if(sub) sub.textContent='Pedido enviado ao anfitrião';
     const panel=document.getElementById('viewer-control-panel'); if(panel) panel.style.display='grid';
+    updateViewerPermissionUI();
   }
   document.getElementById('quick-chat-host')?.addEventListener('click',()=>document.getElementById('chat-toggle').click());
   document.getElementById('quick-chat-viewer')?.addEventListener('click',()=>document.getElementById('chat-toggle').click());
@@ -2027,20 +2190,55 @@
   document.getElementById('quick-audio-viewer')?.addEventListener('click',()=>toggleControlPanel('viewer-control-panel'));
   document.getElementById('quick-control-host')?.addEventListener('click',()=>toggleControlPanel('host-control-panel'));
   document.getElementById('quick-control-viewer')?.addEventListener('click',requestViewerControl);
+  document.getElementById('host-control-revoke')?.addEventListener('click',()=>{
+    if (role !== 'host' || ws.readyState !== WebSocket.OPEN) return;
+    ws.send(JSON.stringify({type:'control-revoked'}));
+    hostControlGranted = false;
+    updateViewerPermissionUI();
+    const req=document.getElementById('host-control-request'); if(req) req.classList.remove('show');
+    setHostControlRequestState(false);
+  });
+  document.getElementById('viewer-play-pause')?.addEventListener('click',()=>{
+    if (!viewerControlGranted) return;
+    if (currentMode==='youtube' && ytPlayer && typeof ytPlayer.getPlayerState==='function' && window.YT) {
+      const state=ytPlayer.getPlayerState();
+      if (state===YT.PlayerState.PLAYING) ytPlayer.pauseVideo(); else ytPlayer.playVideo();
+    } else {
+      const v=document.getElementById('transfer-viewer-video');
+      const a=document.getElementById('transfer-viewer-audio');
+      const el=currentMode==='transfer' ? ((v && v.src) ? v : ((a && a.src) ? a : viewerVideo)) : viewerVideo;
+      if (el.paused) el.play().catch(()=>{}); else el.pause();
+    }
+    setTimeout(setViewerPlaybackButton,120);
+  });
+  document.getElementById('viewer-back10')?.addEventListener('click',()=>{
+    if (!viewerControlGranted) return;
+    if (ytPlayer && typeof ytPlayer.getCurrentTime==='function') { const t=Math.max(0,ytPlayer.getCurrentTime()-10); ytPlayer.seekTo(t,true); ws.send(JSON.stringify({type:'control',action:'yt-sync',time:t,playing:true})); }
+    else { const v=document.getElementById('transfer-viewer-video'); const a=document.getElementById('transfer-viewer-audio'); const el=currentMode==='transfer'?((v&&v.src)?v:((a&&a.src)?a:viewerVideo)):viewerVideo; el.currentTime=Math.max(0,el.currentTime-10); ws.send(JSON.stringify({type:'control',action: currentMode==='file' ? 'media-seek' : 'transfer-heartbeat',time:el.currentTime})); }
+  });
+  document.getElementById('viewer-forward10')?.addEventListener('click',()=>{
+    if (!viewerControlGranted) return;
+    if (ytPlayer && typeof ytPlayer.getCurrentTime==='function') { const t=ytPlayer.getCurrentTime()+10; ytPlayer.seekTo(t,true); ws.send(JSON.stringify({type:'control',action:'yt-sync',time:t,playing:true})); }
+    else { const v=document.getElementById('transfer-viewer-video'); const a=document.getElementById('transfer-viewer-audio'); const el=currentMode==='transfer'?((v&&v.src)?v:((a&&a.src)?a:viewerVideo)):viewerVideo; el.currentTime=Math.min(isFinite(el.duration)?el.duration:el.currentTime+10,el.currentTime+10); ws.send(JSON.stringify({type:'control',action: currentMode==='file' ? 'media-seek' : 'transfer-heartbeat',time:el.currentTime})); }
+  });
   document.getElementById('host-call-volume-quick')?.addEventListener('input',e=>{ const v=Number(e.target.value); remoteAudio.volume=v/100; document.getElementById('vol-call-host').value=v; document.getElementById('host-call-volume-output').textContent=v+'%'; });
   document.getElementById('viewer-content-volume-quick')?.addEventListener('input',e=>{ const v=Number(e.target.value); viewerVideo.volume=v/100; document.getElementById('movie-audio').volume=v/100; document.getElementById('vol-content').value=v; document.getElementById('viewer-content-volume-output').textContent=v+'%'; });
   document.getElementById('viewer-call-volume-quick')?.addEventListener('input',e=>{ const v=Number(e.target.value); remoteAudio.volume=v/100; document.getElementById('vol-call').value=v; document.getElementById('viewer-call-volume-output').textContent=v+'%'; });
   document.getElementById('viewer-unmute-quick')?.addEventListener('click',()=>{ btnUnmute.click(); btnAudioUnmute.click(); });
-  document.getElementById('viewer-sync-quick')?.addEventListener('click',()=>document.getElementById('yt-sync-btn-viewer').click());
+  document.getElementById('viewer-sync-quick')?.addEventListener('click',()=>{ if (viewerControlGranted) document.getElementById('yt-sync-btn-viewer').click(); });
   document.getElementById('host-sync-quick')?.addEventListener('click',()=>{ if(currentMode==='youtube') sendYtSync(); else if(role==='host'){ const el=getActiveTransferElement(); if(el && el.src) ws.send(JSON.stringify({type:'control',action:'transfer-heartbeat',time:el.currentTime})); else if(hostVideo.src) ws.send(JSON.stringify({type:'control',action:'media-sync',kind:fileKind,time:hostVideo.currentTime,playing:!hostVideo.paused,index:fileCurrentIndex,title:filePlaylist[fileCurrentIndex]?.name||''})); } });
   document.getElementById('host-install-quick')?.addEventListener('click',handleInstallRequest);
   document.getElementById('host-control-allow')?.addEventListener('click',()=>{
     if (ws.readyState===WebSocket.OPEN) ws.send(JSON.stringify({type:'control-granted'}));
+    hostControlGranted = true;
+    updateViewerPermissionUI();
     setHostControlRequestState(false);
     document.getElementById('host-control-request')?.classList.remove('show');
   });
   document.getElementById('host-control-deny')?.addEventListener('click',()=>{
     if (ws.readyState===WebSocket.OPEN) ws.send(JSON.stringify({type:'control-denied'}));
+    hostControlGranted = false;
+    updateViewerPermissionUI();
     setHostControlRequestState(false);
     document.getElementById('host-control-request')?.classList.remove('show');
   });
@@ -2125,7 +2323,8 @@
     if (hostCard) hostCard.style.display = role === 'host' ? '' : 'none';
     if (viewerCard) viewerCard.style.display = role === 'viewer' ? 'block' : 'none';
     const hostQuickControl = document.getElementById('quick-control-host');
-    if (hostQuickControl) hostQuickControl.style.display = role === 'host' ? 'none' : '';
+    if (hostQuickControl) hostQuickControl.style.display = role === 'host' ? '' : 'none';
+    updateViewerPermissionUI();
   }
 
   // O painel de controlos do convidado fica no próprio ecrã do convidado.
@@ -2143,6 +2342,7 @@
       switch (msg.type) {
         case 'room-created':
           role = 'host';
+          hostControlGranted = false;
           updateRolePanels();
           roomCode = msg.code;
           document.getElementById('room-code').textContent = msg.code;
@@ -2154,6 +2354,7 @@
           showTopbarChip(msg.code);
           loadChatHistory();
           applyPresence(msg);
+          updateViewerPermissionUI();
           if (msg.rejoined) {
             resetPeerConnection();
             reselectBanner.classList.add('show');
@@ -2167,6 +2368,7 @@
           viewerControlRequested = false;
           viewerControlGranted = false;
           updateViewerControlLabel();
+          updateViewerPermissionUI();
           updateRolePanels();
           roomCode = msg.code;
           document.getElementById('viewer-code').textContent = msg.code;
@@ -2243,7 +2445,13 @@
             const name = document.getElementById('host-control-request-name');
             if (name) name.textContent = msg.name || 'A outra pessoa';
             setHostControlRequestState(true);
-            if (request) request.classList.add('show');
+            if (request) {
+              request.classList.add('show');
+              request.classList.remove('pulse-highlight');
+              void request.offsetWidth;
+              request.classList.add('pulse-highlight');
+              request.scrollIntoView({behavior:'smooth', block:'center'});
+            }
           }
           break;
 
@@ -2252,8 +2460,19 @@
             viewerControlGranted = true;
             viewerControlRequested = false;
             updateViewerControlLabel();
+            updateViewerPermissionUI();
             const sub=document.getElementById('viewer-stage-subtitle'); if(sub) sub.textContent='O anfitrião permitiu os controlos';
             const panel=document.getElementById('viewer-control-panel'); if(panel) panel.style.display='grid';
+          }
+          break;
+
+        case 'control-revoked':
+          if (role === 'viewer') {
+            viewerControlGranted = false;
+            viewerControlRequested = false;
+            updateViewerControlLabel();
+            updateViewerPermissionUI();
+            const sub=document.getElementById('viewer-stage-subtitle'); if(sub) sub.textContent='O anfitrião retirou o acesso aos controlos';
           }
           break;
 
@@ -2262,6 +2481,7 @@
             viewerControlGranted = false;
             viewerControlRequested = false;
             updateViewerControlLabel();
+            updateViewerPermissionUI();
             const sub=document.getElementById('viewer-stage-subtitle'); if(sub) sub.textContent='O anfitrião não autorizou os controlos';
           }
           break;
@@ -2288,7 +2508,7 @@
           break;
 
         case 'peer-left':
-          if (role === 'host') setStatus(hostStatus, 'err', 'A outra pessoa encerrou o bilhete.');
+          if (role === 'host') setStatus(hostStatus, 'err', 'A outra pessoa encerrou a sessão.');
           if (role === 'viewer') setStatus(viewerStatus, 'err', 'O anfitrião encerrou a sessão.');
           resetPeerConnection();
           break;
