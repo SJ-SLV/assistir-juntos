@@ -1,316 +1,35 @@
-const express = require('express');
-const http = require('http');
-const path = require('path');
-const crypto = require('crypto');
-const WebSocket = require('ws');
-
-const app = express();
-app.disable('x-powered-by');
-app.use(express.static(path.join(__dirname, 'public')));
-
-const server = http.createServer(app);
-const wss = new WebSocket.Server({ server });
-
-// ---------- Configuração ----------
-const GRACE_MS = 5 * 60 * 1000;        // tolerância antes de expulsar alguém que desligou
-const ROOM_TTL_MS = 6 * 60 * 60 * 1000; // salas inativas há mais de 6h são limpas
-const MAX_MSG_LEN = 1200;               // tamanho máximo de uma mensagem de chat
-const RATE_LIMIT_WINDOW_MS = 10000;     // 10s
-const RATE_LIMIT_MAX_MSGS = 60;         // até 60 mensagens por janela (exceto sinalização)
-
-const FALLBACK_ICE_SERVERS = [
-  { urls: 'stun:stun.l.google.com:19302' },
-  { urls: 'stun:stun1.l.google.com:19302' },
-  { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
-  { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
-  { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' }
-];
-
-// rooms: code -> { code, host, viewer, hostName, viewerName, timers:{host,viewer}, createdAt, lastActivity }
-const rooms = new Map();
-
-// ---------- Utilitários ----------
-function send(ws, data) {
-  if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(data));
-}
-
-function cleanName(value, fallback) {
-  return String(value || fallback).replace(/[<>\u0000-\u001f]/g, '').trim().slice(0, 24) || fallback;
-}
-
-function cleanText(value) {
-  return String(value || '').replace(/[<>\u0000-\u001f]/g, '').slice(0, MAX_MSG_LEN);
-}
-
-function generateCode() {
-  let code;
-  do {
-    code = crypto.randomBytes(8).toString('hex').toUpperCase().replace(/[01]/g, '').slice(0, 5);
-  } while (code.length < 5 || rooms.has(code));
-  return code;
-}
-
-function roomState(room) {
-  return {
-    code: room.code,
-    hostName: room.hostName,
-    viewerName: room.viewerName,
-    hasViewer: !!room.viewer,
-    createdAt: room.createdAt
-  };
-}
-
-function touch(room) {
-  room.lastActivity = Date.now();
-}
-
-function notifyPresence(room) {
-  const state = roomState(room);
-  send(room.host, { type: 'presence', ...state });
-  send(room.viewer, { type: 'presence', ...state });
-}
-
-function scheduleRemoval(room, role) {
-  clearTimeout(room.timers[role]);
-  room.timers[role] = setTimeout(() => {
-    if (!rooms.has(room.code)) return;
-    room[role] = null;
-    room[role + 'Name'] = null;
-    room.controlGranted = false;
-    room.controlRequestPending = false;
-    touch(room);
-    notifyPresence(room);
-    const other = role === 'host' ? room.viewer : room.host;
-    send(other, { type: 'peer-left', reason: 'timeout' });
-    if (!room.host && !room.viewer) rooms.delete(room.code);
-  }, GRACE_MS);
-}
-
-function forwardToPeer(room, ws, msg) {
-  const target = ws.role === 'host' ? room.viewer : room.host;
-  if (!target) return;
-  if (msg.type === 'chat') msg.text = cleanText(msg.text);
-  send(target, msg);
-}
-
-// ---------- Rotas HTTP ----------
-app.get('/health', (req, res) => {
-  res.json({ ok: true, service: 'assistir-juntos', rooms: rooms.size });
-});
-
-app.get('/ice-servers', (req, res) => {
-  const username = process.env.METERED_TURN_USERNAME;
-  const credential = process.env.METERED_TURN_CREDENTIAL;
-  if (!username || !credential) return res.json(FALLBACK_ICE_SERVERS);
-
-  res.json([
-    { urls: 'stun:stun.relay.metered.ca:80' },
-    { urls: 'turn:global.relay.metered.ca:80', username, credential },
-    { urls: 'turn:global.relay.metered.ca:80?transport=tcp', username, credential },
-    { urls: 'turn:global.relay.metered.ca:443', username, credential },
-    { urls: 'turns:global.relay.metered.ca:443?transport=tcp', username, credential }
-  ]);
-});
-
-// ---------- WebSocket ----------
-wss.on('connection', (ws) => {
-  ws.room = null;
-  ws.role = null;
-  ws.isAlive = true;
-  ws.msgWindow = [];
-
-  ws.on('pong', () => { ws.isAlive = true; });
-
-  ws.on('message', (raw) => {
-    let msg;
-    try {
-      msg = JSON.parse(raw.toString());
-    } catch (e) {
-      return;
-    }
-    if (!msg || typeof msg.type !== 'string') return;
-
-    // Limite de taxa: protege o servidor de flood (sinalização fica isenta)
-    const now = Date.now();
-    ws.msgWindow = ws.msgWindow.filter((t) => now - t < RATE_LIMIT_WINDOW_MS);
-    const exemptFromLimit = ['ice-candidate', 'offer', 'answer', 'app-ping'].includes(msg.type);
-    if (!exemptFromLimit) {
-      if (ws.msgWindow.length >= RATE_LIMIT_MAX_MSGS) return;
-      ws.msgWindow.push(now);
-    }
-
-    if (msg.type === 'app-ping') {
-      send(ws, { type: 'app-pong', t: msg.t });
-      return;
-    }
-
-    if (msg.type === 'create-room') {
-      if (ws.room && !rooms.has(ws.room)) { ws.room = null; ws.role = null; }
-      if (ws.room) return send(ws, { type: 'error', message: 'Já estás numa sessão. Encerra-a antes de criar outra.' });
-      const roomCode = generateCode();
-      const room = {
-        code: roomCode,
-        host: ws,
-        viewer: null,
-        hostName: cleanName(msg.name, 'Anfitrião'),
-        viewerName: null,
-        timers: { host: null, viewer: null },
-        createdAt: Date.now(),
-        lastActivity: Date.now(),
-        controlGranted: false,
-        controlRequestPending: false
-      };
-      rooms.set(roomCode, room);
-      ws.room = roomCode;
-      ws.role = 'host';
-      send(ws, { type: 'room-created', ...roomState(room) });
-      return;
-    }
-
-    if (msg.type === 'join-room') {
-      if (ws.room && !rooms.has(ws.room)) { ws.room = null; ws.role = null; }
-      if (ws.room) return send(ws, { type: 'error', message: 'Já estás numa sessão. Encerra-a antes de entrar noutra.' });
-      const roomCode = String(msg.code || '').toUpperCase().trim();
-      const room = rooms.get(roomCode);
-      if (!room) return send(ws, { type: 'error', message: 'Sala não encontrada. Confirma o código.' });
-      if (room.viewer && room.viewer.readyState === WebSocket.OPEN) {
-        return send(ws, { type: 'error', message: 'Esta sala já tem duas pessoas.' });
-      }
-      clearTimeout(room.timers.viewer);
-      room.viewer = ws;
-      room.controlGranted = false;
-      room.controlRequestPending = false;
-      room.viewerName = cleanName(msg.name, 'Convidado');
-      ws.room = roomCode;
-      ws.role = 'viewer';
-      touch(room);
-      send(ws, { type: 'room-joined', ...roomState(room) });
-      send(room.host, { type: 'peer-joined', ...roomState(room) });
-      notifyPresence(room);
-      return;
-    }
-
-    if (msg.type === 'rejoin-room') {
-      const roomCode = String(msg.code || '').toUpperCase().trim();
-      const role = msg.role;
-      const room = rooms.get(roomCode);
-      if (!room || (role !== 'host' && role !== 'viewer')) {
-        return send(ws, { type: 'error', expired: true, message: 'A sala expirou. Cria uma nova sala.' });
-      }
-      const existing = room[role];
-      if (existing && existing !== ws) {
-        try { existing.close(); } catch (e) {}
-      }
-      clearTimeout(room.timers[role]);
-      room[role] = ws;
-      room.controlGranted = false;
-      room.controlRequestPending = false;
-      ws.room = roomCode;
-      ws.role = role;
-      if (msg.name) room[role + 'Name'] = cleanName(msg.name, role === 'host' ? 'Anfitrião' : 'Convidado');
-      touch(room);
-      send(ws, { type: role === 'host' ? 'room-created' : 'room-joined', rejoined: true, ...roomState(room) });
-      const other = role === 'host' ? room.viewer : room.host;
-      send(other, { type: 'peer-joined', rejoined: true, ...roomState(room) });
-      notifyPresence(room);
-      return;
-    }
-
-    const room = rooms.get(ws.room);
-    if (!room) return;
-    touch(room);
-
-    if (msg.type === 'leave-room') {
-      if (room[ws.role] === ws) {
-        clearTimeout(room.timers[ws.role]);
-        room[ws.role] = null;
-        room[ws.role + 'Name'] = null;
-        room.controlGranted = false;
-        room.controlRequestPending = false;
-        const other = ws.role === 'host' ? room.viewer : room.host;
-        send(other, { type: 'peer-left', reason: 'left' });
-        notifyPresence(room);
-        if (!room.host && !room.viewer) rooms.delete(room.code);
-      }
-      ws.room = null;
-      ws.role = null;
-      send(ws, { type: 'left-room' });
-      return;
-    }
-
-    if (msg.type === 'control-request') {
-      if (ws.role === 'viewer' && room.host && !room.controlGranted && !room.controlRequestPending) {
-        room.controlRequestPending = true;
-        send(room.host, { type: 'control-request', name: room.viewerName || cleanName(msg.name, 'Convidado') });
-      }
-      return;
-    }
-
-    if (msg.type === 'control-granted') {
-      if (ws.role === 'host' && room.viewer && room.controlRequestPending) {
-        room.controlGranted = true;
-        room.controlRequestPending = false;
-        send(room.viewer, { type: 'control-granted' });
-      }
-      return;
-    }
-
-    if (msg.type === 'control-denied') {
-      if (ws.role === 'host' && room.viewer) {
-        room.controlGranted = false;
-        room.controlRequestPending = false;
-        send(room.viewer, { type: 'control-denied' });
-      }
-      return;
-    }
-
-    if (msg.type === 'control-revoked') {
-      if (ws.role === 'host' && room.viewer) {
-        room.controlGranted = false;
-        room.controlRequestPending = false;
-        send(room.viewer, { type: 'control-revoked' });
-      }
-      return;
-    }
-
-    if (msg.type === 'control' && ws.role === 'viewer' && !room.controlGranted) {
-      return;
-    }
-
-    if (['offer', 'answer', 'ice-candidate', 'chat', 'reaction', 'control', 'typing'].includes(msg.type)) {
-      if (msg.type === 'chat') msg.name = cleanName(msg.name, 'Pessoa');
-      forwardToPeer(room, ws, msg);
-      return;
-    }
-  });
-
-  ws.on('close', () => {
-    const room = rooms.get(ws.room);
-    if (!room || room[ws.role] !== ws) return;
-    const other = ws.role === 'host' ? room.viewer : room.host;
-    send(other, { type: 'peer-disconnected-temp' });
-    scheduleRemoval(room, ws.role);
-  });
-});
-
-// Limpeza periódica de salas abandonadas + heartbeat das ligações WebSocket
-setInterval(() => {
-  const now = Date.now();
-  for (const [code, room] of rooms) {
-    if ((!room.host && !room.viewer) || now - room.lastActivity > ROOM_TTL_MS) {
-      if (room.host) { room.host.room = null; room.host.role = null; }
-      if (room.viewer) { room.viewer.room = null; room.viewer.role = null; }
-      rooms.delete(code);
-    }
-  }
-  wss.clients.forEach((ws) => {
-    if (ws.isAlive === false) return ws.terminate();
-    ws.isAlive = false;
-    ws.ping();
-  });
-}, 30000);
-
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log(`Assistir Juntos a correr na porta ${PORT}`);
-});
+const express=require('express');const http=require('http');const path=require('path');const crypto=require('crypto');const fs=require('fs');const WebSocket=require('ws');
+const app=express();app.disable('x-powered-by');app.use(express.json({limit:'1mb'}));
+const ROOT=path.join(__dirname,'public');app.use(express.static(ROOT,{setHeaders:(res)=>{res.setHeader('Cache-Control','no-store')}}));
+const server=http.createServer(app);const wss=new WebSocket.Server({server,maxPayload:32*1024});
+const FALLBACK_ICE=[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'},{urls:'turn:openrelay.metered.ca:80',username:'openrelayproject',credential:'openrelayproject'},{urls:'turn:openrelay.metered.ca:443',username:'openrelayproject',credential:'openrelayproject'},{urls:'turn:openrelay.metered.ca:443?transport=tcp',username:'openrelayproject',credential:'openrelayproject'}];
+const streamRooms=new Map();const gameRooms=new Map();const players=new Map();const stats=new Map();const championships=[];
+const TTL=6*60*60*1000;
+const clean=(v,n=80)=>String(v??'').replace(/[<>\u0000-\u001f]/g,'').trim().slice(0,n);const id=p=>p+'_'+crypto.randomBytes(5).toString('hex');
+function send(ws,m){if(ws&&ws.readyState===WebSocket.OPEN)ws.send(JSON.stringify(m))}function code(){let c;do{c=crypto.randomBytes(4).toString('hex').toUpperCase().replace(/[01]/g,'').slice(0,5)}while(c.length<5||streamRooms.has(c)||gameRooms.has(c));return c}
+app.get('/health',(q,r)=>r.json({ok:true,service:'2-on-platform',version:'1.0.0',streamRooms:streamRooms.size,gameRooms:gameRooms.size}));
+app.get('/ice-servers',(q,r)=>{const u=process.env.METERED_TURN_USERNAME,c=process.env.METERED_TURN_CREDENTIAL;r.json(u&&c?[{urls:'stun:stun.relay.metered.ca:80'},{urls:'turn:global.relay.metered.ca:80',username:u,credential:c},{urls:'turn:global.relay.metered.ca:443',username:u,credential:c},{urls:'turns:global.relay.metered.ca:443?transport=tcp',username:u,credential:c}]:FALLBACK_ICE)});
+// ---------- Games API ----------
+app.post('/api/games/rooms',(q,r)=>{const name=clean(q.body?.name,24)||'Jogador';const rc=code();gameRooms.set(rc,{code:rc,players:{X:null,O:null},names:{X:name,O:null},board:Array(9).fill(null),turn:'X',winner:null,winningLine:[],lastActivity:Date.now(),score:{X:0,O:0}});r.status(201).json({roomCode:rc})});
+app.get('/api/games/ranking',(q,r)=>{const arr=[...stats.entries()].map(([name,s])=>({name,wins:s.wins,games:s.games,rate:s.games?Math.round(s.wins/s.games*100):0})).sort((a,b)=>b.wins-a.wins||b.rate-a.rate);r.json({ranking:arr})});
+app.get('/api/games/championships',(q,r)=>r.json({championships}));
+app.post('/api/games/championships',(q,r)=>{const c={id:id('cup'),name:clean(q.body?.name,80)||'Novo campeonato',format:q.body?.format==='knockout'?'knockout':'league',status:'setup',teams:[],createdAt:Date.now()};championships.push(c);r.status(201).json({championship:c})});
+// ---------- WebSocket multiplex ----------
+function winner(b){const lines=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];for(const l of lines)if(b[l[0]]&&b[l[0]]===b[l[1]]&&b[l[1]]===b[l[2]])return{winner:b[l[0]],line:l};if(b.every(Boolean))return{winner:'draw',line:[]};return null}
+function publicGame(r){return{code:r.code,board:r.board,turn:r.turn,winner:r.winner,winningLine:r.winningLine,names:r.names,players:{X:!!r.players.X,O:!!r.players.O},score:r.score}}
+function gameBroadcast(r,m){for(const s of Object.values(r.players))send(s,m)}
+function gameJoin(ws,m){const r=gameRooms.get(clean(m.roomCode,10).toUpperCase());if(!r)return send(ws,{type:'game-error',message:'Sala não encontrada.'});let sym=!r.players.X?'X':!r.players.O?'O':null;if(!sym)return send(ws,{type:'game-error',message:'A sala já está completa.'});ws.gameRoom=r.code;ws.gameSymbol=sym;ws.gameName=clean(m.name,24)||'Jogador';r.players[sym]=ws;r.names[sym]=ws.gameName;r.lastActivity=Date.now();send(ws,{type:'game-'+(sym==='X'?'created':'joined'),roomCode:r.code,symbol:sym,state:publicGame(r)});gameBroadcast(r,{type:'game-state',state:publicGame(r)});}
+function stat(name,key){const s=stats.get(name)||{wins:0,games:0};s.games++;if(key==='win')s.wins++;stats.set(name,s)}
+function gameMove(ws,m){const r=gameRooms.get(ws.gameRoom);if(!r||r.winner)return;if(ws.gameSymbol!==r.turn)return send(ws,{type:'game-error',message:'Não é a tua vez.'});const c=Number(m.cell);if(!Number.isInteger(c)||c<0||c>8||r.board[c])return; r.board[c]=ws.gameSymbol;const z=winner(r.board);if(z){r.winner=z.winner;r.winningLine=z.line;if(z.winner==='X'||z.winner==='O'){r.score[z.winner]++;const loser=z.winner==='X'?'O':'X';stat(r.names[z.winner],'win');stat(r.names[loser],'loss')}else{stat(r.names.X,'draw');stat(r.names.O,'draw')}}else r.turn=r.turn==='X'?'O':'X';r.lastActivity=Date.now();gameBroadcast(r,{type:'game-state',state:publicGame(r)})}
+function gameReset(ws){const r=gameRooms.get(ws.gameRoom);if(!r||ws.gameSymbol!=='X')return;r.board=Array(9).fill(null);r.turn='X';r.winner=null;r.winningLine=[];r.lastActivity=Date.now();gameBroadcast(r,{type:'game-state',state:publicGame(r)})}
+// streaming helpers
+function streamState(r){return{code:r.code,hostName:r.hostName,viewerName:r.viewerName,hasViewer:!!r.viewer,createdAt:r.createdAt}}
+function notifyStream(r){const s=streamState(r);send(r.host,{type:'presence',...s});send(r.viewer,{type:'presence',...s})}function streamTouch(r){r.lastActivity=Date.now()}
+function forwardStream(r,ws,m){const target=ws.streamRole==='host'?r.viewer:r.host;if(!target)return;if(m.type==='chat')m.text=clean(m.text,1200);send(target,m)}
+function createStream(ws,m){const rc=code(),r={code:rc,host:ws,viewer:null,hostName:clean(m.name,24)||'Anfitrião',viewerName:null,timers:{host:null,viewer:null},createdAt:Date.now(),lastActivity:Date.now()};streamRooms.set(rc,r);ws.streamRoom=rc;ws.streamRole='host';send(ws,{type:'room-created',...streamState(r)})}
+function joinStream(ws,m){const rc=clean(m.code,10).toUpperCase(),r=streamRooms.get(rc);if(!r)return send(ws,{type:'error',message:'Sala não encontrada. Confirma o código.'});if(r.viewer&&r.viewer.readyState===WebSocket.OPEN)return send(ws,{type:'error',message:'Esta sala já tem duas pessoas.'});r.viewer=ws;r.viewerName=clean(m.name,24)||'Convidado';ws.streamRoom=rc;ws.streamRole='viewer';streamTouch(r);send(ws,{type:'room-joined',...streamState(r)});send(r.host,{type:'peer-joined',...streamState(r)});notifyStream(r)}
+function leaveStream(ws){const r=streamRooms.get(ws.streamRoom);if(!r)return;const role=ws.streamRole;if(r[role]===ws){r[role]=null;r[role+'Name']=null;const other=role==='host'?r.viewer:r.host;send(other,{type:'peer-left',reason:'left'});notifyStream(r);if(!r.host&&!r.viewer)streamRooms.delete(r.code)}ws.streamRoom=null;ws.streamRole=null;send(ws,{type:'left-room'})}
+function handleStream(ws,m){if(m.type==='app-ping')return send(ws,{type:'app-pong',t:m.t});if(m.type==='create-room')return createStream(ws,m);if(m.type==='join-room')return joinStream(ws,m);if(m.type==='leave-room')return leaveStream(ws);const r=streamRooms.get(ws.streamRoom);if(!r)return;if(['offer','answer','ice-candidate','chat','reaction','control','typing'].includes(m.type)){streamTouch(r);if(m.type==='chat')m.name=clean(m.name,24)||'Pessoa';forwardStream(r,ws,m)}}
+wss.on('connection',ws=>{ws.isAlive=true;ws.on('pong',()=>ws.isAlive=true);ws.on('message',raw=>{let m;try{m=JSON.parse(raw.toString())}catch{return}if(!m||typeof m.type!=='string')return;if(m.type.startsWith('game-')){if(m.type==='game-join')gameJoin(ws,m);else if(m.type==='game-move')gameMove(ws,m);else if(m.type==='game-reset')gameReset(ws);else if(m.type==='game-chat'){const r=gameRooms.get(ws.gameRoom);if(r){const text=clean(m.text,300);gameBroadcast(r,{type:'game-chat',name:clean(m.name,24)||'Jogador',text,from:ws.gameSymbol})}}else if(m.type==='game-leave'){const r=gameRooms.get(ws.gameRoom);if(r){r.players[ws.gameSymbol]=null;r.names[ws.gameSymbol]=null;gameBroadcast(r,{type:'game-left'});if(!r.players.X&&!r.players.O)gameRooms.delete(r.code)}ws.gameRoom=null;ws.gameSymbol=null}else return;}else handleStream(ws,m)});ws.on('close',()=>{const sr=streamRooms.get(ws.streamRoom);if(sr&&sr[ws.streamRole]===ws){const other=ws.streamRole==='host'?sr.viewer:sr.host;send(other,{type:'peer-disconnected-temp'});setTimeout(()=>{if(streamRooms.has(sr.code)&&sr[ws.streamRole]===ws){sr[ws.streamRole]=null;sr[ws.streamRole+'Name']=null;notifyStream(sr)}},5*60*1000)}const gr=gameRooms.get(ws.gameRoom);if(gr&&gr.players[ws.gameSymbol]===ws){gr.players[ws.gameSymbol]=null;gameBroadcast(gr,{type:'game-left'});if(!gr.players.X&&!gr.players.O)gameRooms.delete(gr.code)}})});
+setInterval(()=>{const cut=Date.now()-TTL;for(const [k,r] of streamRooms)if(!r.host&&!r.viewer||r.lastActivity<cut)streamRooms.delete(k);for(const [k,r] of gameRooms)if(!r.players.X&&!r.players.O||r.lastActivity<cut)gameRooms.delete(k);wss.clients.forEach(ws=>{if(ws.isAlive===false)return ws.terminate();ws.isAlive=false;ws.ping()})},30000);
+const PORT=Number(process.env.PORT||3000);server.listen(PORT,()=>console.log(`2 ON Platform v1.0.0 em http://localhost:${PORT}`));
