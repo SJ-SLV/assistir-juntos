@@ -1,0 +1,1315 @@
+{
+  "version": 1,
+  "stats": [
+    {
+      "playerId": "owner_1790187844578",
+      "name": "Owner",
+      "wins": 1,
+      "losses": 0,
+      "draws": 0,
+      "games": 1,
+      "history": [
+        {
+          "at": 1790187844598,
+          "result": "win"
+        }
+      ]
+    },
+    {
+      "playerId": "b_1790187844578",
+      "name": "Beta",
+      "wins": 0,
+      "losses": 1,
+      "draws": 0,
+      "games": 1,
+      "history": [
+        {
+          "at": 1790187844598,
+          "result": "loss"
+        }
+      ]
+    },
+    {
+      "playerId": "p0_1790187975107",
+      "name": "A1",
+      "wins": 1,
+      "losses": 0,
+      "draws": 0,
+      "games": 1,
+      "history": [
+        {
+          "at": 1790187975248,
+          "result": "win"
+        }
+      ]
+    },
+    {
+      "playerId": "p2_1790187975107",
+      "name": "B1",
+      "wins": 0,
+      "losses": 1,
+      "draws": 0,
+      "games": 1,
+      "history": [
+        {
+          "at": 1790187975249,
+          "result": "loss"
+        }
+      ]
+    },
+    {
+      "playerId": "owner_1790187980031",
+      "name": "Owner",
+      "wins": 1,
+      "losses": 0,
+      "draws": 0,
+      "games": 1,
+      "history": [
+        {
+          "at": 1790187980054,
+          "result": "win"
+        }
+      ]
+    },
+    {
+      "playerId": "b_1790187980031",
+      "name": "Beta",
+      "wins": 0,
+      "losses": 1,
+      "draws": 0,
+      "games": 1,
+      "history": [
+        {
+          "at": 1790187980054,
+          "result": "loss"
+        }
+      ]
+    },
+    {
+      "playerId": "p0_1790188027998",
+      "name": "A1",
+      "wins": 1,
+      "losses": 0,
+      "draws": 0,
+      "games": 1,
+      "history": [
+        {
+          "at": 1790188028139,
+          "result": "win"
+        }
+      ]
+    },
+    {
+      "playerId": "p2_1790188027998",
+      "name": "B1",
+      "wins": 0,
+      "losses": 1,
+      "draws": 0,
+      "games": 1,
+      "history": [
+        {
+          "at": 1790188028139,
+          "result": "loss"
+        }
+      ]
+    },
+    {
+      "playerId": "owner_1790188032933",
+      "name": "Owner",
+      "wins": 1,
+      "losses": 0,
+      "draws": 0,
+      "games": 1,
+      "history": [
+        {
+          "at": 1790188032961,
+          "result": "win"
+        }
+      ]
+    },
+    {
+      "playerId": "b_1790188032933",
+      "name": "Beta",
+      "wins": 0,
+      "losses": 1,
+      "draws": 0,
+      "games": 1,
+      "history": [
+        {
+          "at": 1790188032961,
+          "result": "loss"
+        }
+      ]
+    },
+    {
+      "playerId": "p0_1790188098199",
+      "name": "A1",
+      "wins": 1,
+      "losses": 0,
+      "draws": 0,
+      "games": 1,
+      "history": [
+        {
+          "at": 1790188098338,
+          "result": "win"
+        }
+      ]
+    },
+    {
+      "playerId": "p2_1790188098199",
+      "name": "B1",
+      "wins": 0,
+      "losses": 1,
+      "draws": 0,
+      "games": 1,
+      "history": [
+        {
+          "at": 1790188098339,
+          "result": "loss"
+        }
+      ]
+    }
+  ],
+  "championships": [
+    {
+      "id": "cup_99bc310e99d822ce",
+      "name": "E2E",
+      "status": "finished",
+      "participantCount": 2,
+      "plannedMatches": 1,
+      "createdAt": 1790187844581,
+      "ownerPlayerId": "owner_1790187844578",
+      "ownerName": "Owner",
+      "startedAt": 1790187844584,
+      "finishedAt": 1790187844599,
+      "winnerTeamId": "team_15f5184bd0608a3f",
+      "fixtures": [
+        {
+          "id": "fx_89489c64685caa9b",
+          "order": 1,
+          "status": "finished",
+          "homeTeamId": "team_15f5184bd0608a3f",
+          "awayTeamId": "team_3cfd9bd344e97430",
+          "homePlayerId": "owner_1790187844578",
+          "awayPlayerId": "b_1790187844578",
+          "homePlayerName": "Owner",
+          "awayPlayerName": "Beta",
+          "homeScore": 1,
+          "awayScore": 0,
+          "roomCode": "298DC",
+          "finishedAt": 1790187844599,
+          "finalBoard": [
+            "X",
+            "X",
+            "X",
+            "O",
+            "O",
+            null,
+            null,
+            null,
+            null
+          ],
+          "result": "X"
+        }
+      ],
+      "chat": [],
+      "teams": [
+        {
+          "id": "team_15f5184bd0608a3f",
+          "name": "Alpha",
+          "capacity": 1,
+          "joinCode": "A-C856B7",
+          "players": [
+            {
+              "playerId": "owner_1790187844578",
+              "name": "Owner",
+              "joinedAt": 1790187844581
+            }
+          ]
+        },
+        {
+          "id": "team_3cfd9bd344e97430",
+          "name": "Beta",
+          "capacity": 1,
+          "joinCode": "B-5B94B4",
+          "players": [
+            {
+              "playerId": "b_1790187844578",
+              "name": "Beta",
+              "joinedAt": 1790187844582
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cup_c326b4a20431c863",
+      "name": "ADV",
+      "status": "in_progress",
+      "participantCount": 4,
+      "plannedMatches": 2,
+      "createdAt": 1790187862126,
+      "ownerPlayerId": "p0_1790187862110",
+      "ownerName": "A1",
+      "startedAt": 1790187862133,
+      "finishedAt": null,
+      "winnerTeamId": null,
+      "fixtures": [
+        {
+          "id": "fx_257c66a0a4d28767",
+          "order": 1,
+          "status": "scheduled",
+          "homeTeamId": "team_1dc2853e6971ec32",
+          "awayTeamId": "team_dfae558e01418f5d",
+          "homePlayerId": "p0_1790187862110",
+          "awayPlayerId": "p2_1790187862110",
+          "homePlayerName": "A1",
+          "awayPlayerName": "B1",
+          "homeScore": 0,
+          "awayScore": 0,
+          "roomCode": null,
+          "finishedAt": null,
+          "finalBoard": null,
+          "result": null
+        },
+        {
+          "id": "fx_fe8b2d140ddb276a",
+          "order": 2,
+          "status": "scheduled",
+          "homeTeamId": "team_1dc2853e6971ec32",
+          "awayTeamId": "team_dfae558e01418f5d",
+          "homePlayerId": "p1_1790187862110",
+          "awayPlayerId": "p3_1790187862110",
+          "homePlayerName": "A2",
+          "awayPlayerName": "B2",
+          "homeScore": 0,
+          "awayScore": 0,
+          "roomCode": null,
+          "finishedAt": null,
+          "finalBoard": null,
+          "result": null
+        }
+      ],
+      "chat": [],
+      "teams": [
+        {
+          "id": "team_1dc2853e6971ec32",
+          "name": "Alpha",
+          "capacity": 2,
+          "joinCode": "A-9F8CE3",
+          "players": [
+            {
+              "playerId": "p0_1790187862110",
+              "name": "A1",
+              "joinedAt": 1790187862126
+            },
+            {
+              "playerId": "p1_1790187862110",
+              "name": "A2",
+              "joinedAt": 1790187862129
+            }
+          ]
+        },
+        {
+          "id": "team_dfae558e01418f5d",
+          "name": "Beta",
+          "capacity": 2,
+          "joinCode": "B-EB47BD",
+          "players": [
+            {
+              "playerId": "p2_1790187862110",
+              "name": "B1",
+              "joinedAt": 1790187862131
+            },
+            {
+              "playerId": "p3_1790187862110",
+              "name": "B2",
+              "joinedAt": 1790187862132
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cup_19a6c41409206426",
+      "name": "ADV",
+      "status": "in_progress",
+      "participantCount": 4,
+      "plannedMatches": 2,
+      "createdAt": 1790187877468,
+      "ownerPlayerId": "p0_1790187877459",
+      "ownerName": "A1",
+      "startedAt": 1790187877473,
+      "finishedAt": null,
+      "winnerTeamId": null,
+      "fixtures": [
+        {
+          "id": "fx_810b87c82d25245f",
+          "order": 1,
+          "status": "scheduled",
+          "homeTeamId": "team_2ceb1f0116196962",
+          "awayTeamId": "team_6e8f0fab65891d2a",
+          "homePlayerId": "p0_1790187877459",
+          "awayPlayerId": "p2_1790187877459",
+          "homePlayerName": "A1",
+          "awayPlayerName": "B1",
+          "homeScore": 0,
+          "awayScore": 0,
+          "roomCode": null,
+          "finishedAt": null,
+          "finalBoard": null,
+          "result": null
+        },
+        {
+          "id": "fx_8d4bacf2553ecc48",
+          "order": 2,
+          "status": "scheduled",
+          "homeTeamId": "team_2ceb1f0116196962",
+          "awayTeamId": "team_6e8f0fab65891d2a",
+          "homePlayerId": "p1_1790187877459",
+          "awayPlayerId": "p3_1790187877459",
+          "homePlayerName": "A2",
+          "awayPlayerName": "B2",
+          "homeScore": 0,
+          "awayScore": 0,
+          "roomCode": null,
+          "finishedAt": null,
+          "finalBoard": null,
+          "result": null
+        }
+      ],
+      "chat": [],
+      "teams": [
+        {
+          "id": "team_2ceb1f0116196962",
+          "name": "Alpha",
+          "capacity": 2,
+          "joinCode": "A-4F6D8C",
+          "players": [
+            {
+              "playerId": "p0_1790187877459",
+              "name": "A1",
+              "joinedAt": 1790187877468
+            },
+            {
+              "playerId": "p1_1790187877459",
+              "name": "A2",
+              "joinedAt": 1790187877470
+            }
+          ]
+        },
+        {
+          "id": "team_6e8f0fab65891d2a",
+          "name": "Beta",
+          "capacity": 2,
+          "joinCode": "B-12C1CC",
+          "players": [
+            {
+              "playerId": "p2_1790187877459",
+              "name": "B1",
+              "joinedAt": 1790187877471
+            },
+            {
+              "playerId": "p3_1790187877459",
+              "name": "B2",
+              "joinedAt": 1790187877472
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cup_8228607b2423c1cd",
+      "name": "ADV",
+      "status": "in_progress",
+      "participantCount": 4,
+      "plannedMatches": 2,
+      "createdAt": 1790187886820,
+      "ownerPlayerId": "p0_1790187886811",
+      "ownerName": "A1",
+      "startedAt": 1790187886824,
+      "finishedAt": null,
+      "winnerTeamId": null,
+      "fixtures": [
+        {
+          "id": "fx_9a6d7adb76422899",
+          "order": 1,
+          "status": "scheduled",
+          "homeTeamId": "team_48b3078b44d77b29",
+          "awayTeamId": "team_67b11a23221f7563",
+          "homePlayerId": "p0_1790187886811",
+          "awayPlayerId": "p2_1790187886811",
+          "homePlayerName": "A1",
+          "awayPlayerName": "B1",
+          "homeScore": 0,
+          "awayScore": 0,
+          "roomCode": null,
+          "finishedAt": null,
+          "finalBoard": null,
+          "result": null
+        },
+        {
+          "id": "fx_69cc45e40e66c1eb",
+          "order": 2,
+          "status": "scheduled",
+          "homeTeamId": "team_48b3078b44d77b29",
+          "awayTeamId": "team_67b11a23221f7563",
+          "homePlayerId": "p1_1790187886811",
+          "awayPlayerId": "p3_1790187886811",
+          "homePlayerName": "A2",
+          "awayPlayerName": "B2",
+          "homeScore": 0,
+          "awayScore": 0,
+          "roomCode": null,
+          "finishedAt": null,
+          "finalBoard": null,
+          "result": null
+        }
+      ],
+      "chat": [],
+      "teams": [
+        {
+          "id": "team_48b3078b44d77b29",
+          "name": "Alpha",
+          "capacity": 2,
+          "joinCode": "A-741770",
+          "players": [
+            {
+              "playerId": "p0_1790187886811",
+              "name": "A1",
+              "joinedAt": 1790187886820
+            },
+            {
+              "playerId": "p1_1790187886811",
+              "name": "A2",
+              "joinedAt": 1790187886821
+            }
+          ]
+        },
+        {
+          "id": "team_67b11a23221f7563",
+          "name": "Beta",
+          "capacity": 2,
+          "joinCode": "B-0B148B",
+          "players": [
+            {
+              "playerId": "p2_1790187886811",
+              "name": "B1",
+              "joinedAt": 1790187886822
+            },
+            {
+              "playerId": "p3_1790187886811",
+              "name": "B2",
+              "joinedAt": 1790187886823
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cup_74e7b7d16de84a3b",
+      "name": "ADV",
+      "status": "in_progress",
+      "participantCount": 4,
+      "plannedMatches": 2,
+      "createdAt": 1790187901690,
+      "ownerPlayerId": "p0_1790187901681",
+      "ownerName": "A1",
+      "startedAt": 1790187901694,
+      "finishedAt": null,
+      "winnerTeamId": null,
+      "fixtures": [
+        {
+          "id": "fx_314723abbe6f9e32",
+          "order": 1,
+          "status": "scheduled",
+          "homeTeamId": "team_57e28196f67a9b72",
+          "awayTeamId": "team_ddcb5b9f7f19bb1d",
+          "homePlayerId": "p0_1790187901681",
+          "awayPlayerId": "p2_1790187901681",
+          "homePlayerName": "A1",
+          "awayPlayerName": "B1",
+          "homeScore": 0,
+          "awayScore": 0,
+          "roomCode": null,
+          "finishedAt": null,
+          "finalBoard": null,
+          "result": null
+        },
+        {
+          "id": "fx_285abdee25a6493e",
+          "order": 2,
+          "status": "scheduled",
+          "homeTeamId": "team_57e28196f67a9b72",
+          "awayTeamId": "team_ddcb5b9f7f19bb1d",
+          "homePlayerId": "p1_1790187901681",
+          "awayPlayerId": "p3_1790187901681",
+          "homePlayerName": "A2",
+          "awayPlayerName": "B2",
+          "homeScore": 0,
+          "awayScore": 0,
+          "roomCode": null,
+          "finishedAt": null,
+          "finalBoard": null,
+          "result": null
+        }
+      ],
+      "chat": [],
+      "teams": [
+        {
+          "id": "team_57e28196f67a9b72",
+          "name": "Alpha",
+          "capacity": 2,
+          "joinCode": "A-5DA871",
+          "players": [
+            {
+              "playerId": "p0_1790187901681",
+              "name": "A1",
+              "joinedAt": 1790187901690
+            },
+            {
+              "playerId": "p1_1790187901681",
+              "name": "A2",
+              "joinedAt": 1790187901691
+            }
+          ]
+        },
+        {
+          "id": "team_ddcb5b9f7f19bb1d",
+          "name": "Beta",
+          "capacity": 2,
+          "joinCode": "B-E47FB5",
+          "players": [
+            {
+              "playerId": "p2_1790187901681",
+              "name": "B1",
+              "joinedAt": 1790187901692
+            },
+            {
+              "playerId": "p3_1790187901681",
+              "name": "B2",
+              "joinedAt": 1790187901693
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cup_c33d6f2f7541bd32",
+      "name": "ADV",
+      "status": "in_progress",
+      "participantCount": 4,
+      "plannedMatches": 2,
+      "createdAt": 1790187920162,
+      "ownerPlayerId": "p0_1790187920149",
+      "ownerName": "A1",
+      "startedAt": 1790187920171,
+      "finishedAt": null,
+      "winnerTeamId": null,
+      "fixtures": [
+        {
+          "id": "fx_6bc4aa8d3ffd3ec9",
+          "order": 1,
+          "status": "scheduled",
+          "homeTeamId": "team_ec62c34b65038af4",
+          "awayTeamId": "team_c4b7fcef6e70e92e",
+          "homePlayerId": "p0_1790187920149",
+          "awayPlayerId": "p2_1790187920149",
+          "homePlayerName": "A1",
+          "awayPlayerName": "B1",
+          "homeScore": 0,
+          "awayScore": 0,
+          "roomCode": null,
+          "finishedAt": null,
+          "finalBoard": null,
+          "result": null
+        },
+        {
+          "id": "fx_e0cc5c841021539d",
+          "order": 2,
+          "status": "scheduled",
+          "homeTeamId": "team_ec62c34b65038af4",
+          "awayTeamId": "team_c4b7fcef6e70e92e",
+          "homePlayerId": "p1_1790187920149",
+          "awayPlayerId": "p3_1790187920149",
+          "homePlayerName": "A2",
+          "awayPlayerName": "B2",
+          "homeScore": 0,
+          "awayScore": 0,
+          "roomCode": null,
+          "finishedAt": null,
+          "finalBoard": null,
+          "result": null
+        }
+      ],
+      "chat": [],
+      "teams": [
+        {
+          "id": "team_ec62c34b65038af4",
+          "name": "Alpha",
+          "capacity": 2,
+          "joinCode": "A-6EB766",
+          "players": [
+            {
+              "playerId": "p0_1790187920149",
+              "name": "A1",
+              "joinedAt": 1790187920162
+            },
+            {
+              "playerId": "p1_1790187920149",
+              "name": "A2",
+              "joinedAt": 1790187920167
+            }
+          ]
+        },
+        {
+          "id": "team_c4b7fcef6e70e92e",
+          "name": "Beta",
+          "capacity": 2,
+          "joinCode": "B-4086D3",
+          "players": [
+            {
+              "playerId": "p2_1790187920149",
+              "name": "B1",
+              "joinedAt": 1790187920169
+            },
+            {
+              "playerId": "p3_1790187920149",
+              "name": "B2",
+              "joinedAt": 1790187920170
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cup_192c0fdcec4aac49",
+      "name": "ADV",
+      "status": "in_progress",
+      "participantCount": 4,
+      "plannedMatches": 2,
+      "createdAt": 1790187936673,
+      "ownerPlayerId": "p0_1790187936659",
+      "ownerName": "A1",
+      "startedAt": 1790187936684,
+      "finishedAt": null,
+      "winnerTeamId": null,
+      "fixtures": [
+        {
+          "id": "fx_88e83c7c3e643ff0",
+          "order": 1,
+          "status": "scheduled",
+          "homeTeamId": "team_71baa11220c59086",
+          "awayTeamId": "team_000cca950fb29ee8",
+          "homePlayerId": "p0_1790187936659",
+          "awayPlayerId": "p2_1790187936659",
+          "homePlayerName": "A1",
+          "awayPlayerName": "B1",
+          "homeScore": 0,
+          "awayScore": 0,
+          "roomCode": null,
+          "finishedAt": null,
+          "finalBoard": null,
+          "result": null
+        },
+        {
+          "id": "fx_388c498a29cc32d1",
+          "order": 2,
+          "status": "scheduled",
+          "homeTeamId": "team_71baa11220c59086",
+          "awayTeamId": "team_000cca950fb29ee8",
+          "homePlayerId": "p1_1790187936659",
+          "awayPlayerId": "p3_1790187936659",
+          "homePlayerName": "A2",
+          "awayPlayerName": "B2",
+          "homeScore": 0,
+          "awayScore": 0,
+          "roomCode": null,
+          "finishedAt": null,
+          "finalBoard": null,
+          "result": null
+        }
+      ],
+      "chat": [],
+      "teams": [
+        {
+          "id": "team_71baa11220c59086",
+          "name": "Alpha",
+          "capacity": 2,
+          "joinCode": "A-40A756",
+          "players": [
+            {
+              "playerId": "p0_1790187936659",
+              "name": "A1",
+              "joinedAt": 1790187936673
+            },
+            {
+              "playerId": "p1_1790187936659",
+              "name": "A2",
+              "joinedAt": 1790187936678
+            }
+          ]
+        },
+        {
+          "id": "team_000cca950fb29ee8",
+          "name": "Beta",
+          "capacity": 2,
+          "joinCode": "B-7602D1",
+          "players": [
+            {
+              "playerId": "p2_1790187936659",
+              "name": "B1",
+              "joinedAt": 1790187936680
+            },
+            {
+              "playerId": "p3_1790187936659",
+              "name": "B2",
+              "joinedAt": 1790187936682
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cup_c72b9790ca954cf7",
+      "name": "ADV",
+      "status": "in_progress",
+      "participantCount": 4,
+      "plannedMatches": 2,
+      "createdAt": 1790187975121,
+      "ownerPlayerId": "p0_1790187975107",
+      "ownerName": "A1",
+      "startedAt": 1790187975129,
+      "finishedAt": null,
+      "winnerTeamId": null,
+      "fixtures": [
+        {
+          "id": "fx_7db318b0bbb798e5",
+          "order": 1,
+          "status": "finished",
+          "homeTeamId": "team_58eb0f452b062188",
+          "awayTeamId": "team_4499d967bc2c44c1",
+          "homePlayerId": "p0_1790187975107",
+          "awayPlayerId": "p2_1790187975107",
+          "homePlayerName": "A1",
+          "awayPlayerName": "B1",
+          "homeScore": 1,
+          "awayScore": 0,
+          "roomCode": "888FC",
+          "finishedAt": 1790187975249,
+          "finalBoard": [
+            "X",
+            "X",
+            "X",
+            "O",
+            "O",
+            null,
+            null,
+            null,
+            null
+          ],
+          "result": "X"
+        },
+        {
+          "id": "fx_fd31c5cc334db311",
+          "order": 2,
+          "status": "scheduled",
+          "homeTeamId": "team_58eb0f452b062188",
+          "awayTeamId": "team_4499d967bc2c44c1",
+          "homePlayerId": "p1_1790187975107",
+          "awayPlayerId": "p3_1790187975107",
+          "homePlayerName": "A2",
+          "awayPlayerName": "B2",
+          "homeScore": 0,
+          "awayScore": 0,
+          "roomCode": null,
+          "finishedAt": null,
+          "finalBoard": null,
+          "result": null
+        }
+      ],
+      "chat": [
+        {
+          "id": "msg_48ad78811b6c8790",
+          "name": "A2",
+          "text": "Boa sorte",
+          "playerId": "p1_1790187975107",
+          "scope": "general",
+          "at": 1790187975254
+        }
+      ],
+      "teams": [
+        {
+          "id": "team_58eb0f452b062188",
+          "name": "Alpha",
+          "capacity": 2,
+          "joinCode": "A-061632",
+          "players": [
+            {
+              "playerId": "p0_1790187975107",
+              "name": "A1",
+              "joinedAt": 1790187975121
+            },
+            {
+              "playerId": "p1_1790187975107",
+              "name": "A2",
+              "joinedAt": 1790187975126
+            }
+          ]
+        },
+        {
+          "id": "team_4499d967bc2c44c1",
+          "name": "Beta",
+          "capacity": 2,
+          "joinCode": "B-76DF57",
+          "players": [
+            {
+              "playerId": "p2_1790187975107",
+              "name": "B1",
+              "joinedAt": 1790187975127
+            },
+            {
+              "playerId": "p3_1790187975107",
+              "name": "B2",
+              "joinedAt": 1790187975128
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cup_cc073fbc713a4877",
+      "name": "E2E",
+      "status": "finished",
+      "participantCount": 2,
+      "plannedMatches": 1,
+      "createdAt": 1790187980035,
+      "ownerPlayerId": "owner_1790187980031",
+      "ownerName": "Owner",
+      "startedAt": 1790187980040,
+      "finishedAt": 1790187980054,
+      "winnerTeamId": "team_f254e431c22ca90a",
+      "fixtures": [
+        {
+          "id": "fx_3c91962ffb2e4b77",
+          "order": 1,
+          "status": "finished",
+          "homeTeamId": "team_f254e431c22ca90a",
+          "awayTeamId": "team_bc2f0019bd64ca09",
+          "homePlayerId": "owner_1790187980031",
+          "awayPlayerId": "b_1790187980031",
+          "homePlayerName": "Owner",
+          "awayPlayerName": "Beta",
+          "homeScore": 1,
+          "awayScore": 0,
+          "roomCode": "FAACC",
+          "finishedAt": 1790187980054,
+          "finalBoard": [
+            "X",
+            "X",
+            "X",
+            "O",
+            "O",
+            null,
+            null,
+            null,
+            null
+          ],
+          "result": "X"
+        }
+      ],
+      "chat": [],
+      "teams": [
+        {
+          "id": "team_f254e431c22ca90a",
+          "name": "Alpha",
+          "capacity": 1,
+          "joinCode": "A-342286",
+          "players": [
+            {
+              "playerId": "owner_1790187980031",
+              "name": "Owner",
+              "joinedAt": 1790187980035
+            }
+          ]
+        },
+        {
+          "id": "team_bc2f0019bd64ca09",
+          "name": "Beta",
+          "capacity": 1,
+          "joinCode": "B-E2A97D",
+          "players": [
+            {
+              "playerId": "b_1790187980031",
+              "name": "Beta",
+              "joinedAt": 1790187980038
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cup_965360f661ac0a5c",
+      "name": "ADV",
+      "status": "in_progress",
+      "participantCount": 4,
+      "plannedMatches": 2,
+      "createdAt": 1790188028010,
+      "ownerPlayerId": "p0_1790188027998",
+      "ownerName": "A1",
+      "startedAt": 1790188028020,
+      "finishedAt": null,
+      "winnerTeamId": null,
+      "fixtures": [
+        {
+          "id": "fx_1e24a287e4da92bc",
+          "order": 1,
+          "status": "finished",
+          "homeTeamId": "team_42ea1202df6cbf82",
+          "awayTeamId": "team_62bf55fa783ef16c",
+          "homePlayerId": "p0_1790188027998",
+          "awayPlayerId": "p2_1790188027998",
+          "homePlayerName": "A1",
+          "awayPlayerName": "B1",
+          "homeScore": 1,
+          "awayScore": 0,
+          "roomCode": "EF827",
+          "finishedAt": 1790188028140,
+          "finalBoard": [
+            "X",
+            "X",
+            "X",
+            "O",
+            "O",
+            null,
+            null,
+            null,
+            null
+          ],
+          "result": "X"
+        },
+        {
+          "id": "fx_378f0fa90ecf2c8b",
+          "order": 2,
+          "status": "scheduled",
+          "homeTeamId": "team_42ea1202df6cbf82",
+          "awayTeamId": "team_62bf55fa783ef16c",
+          "homePlayerId": "p1_1790188027998",
+          "awayPlayerId": "p3_1790188027998",
+          "homePlayerName": "A2",
+          "awayPlayerName": "B2",
+          "homeScore": 0,
+          "awayScore": 0,
+          "roomCode": null,
+          "finishedAt": null,
+          "finalBoard": null,
+          "result": null
+        }
+      ],
+      "chat": [
+        {
+          "id": "msg_5bc806a8fc07fb40",
+          "name": "A2",
+          "text": "Boa sorte",
+          "playerId": "p1_1790188027998",
+          "scope": "general",
+          "at": 1790188028144
+        }
+      ],
+      "teams": [
+        {
+          "id": "team_42ea1202df6cbf82",
+          "name": "Alpha",
+          "capacity": 2,
+          "joinCode": "A-12E881",
+          "players": [
+            {
+              "playerId": "p0_1790188027998",
+              "name": "A1",
+              "joinedAt": 1790188028010
+            },
+            {
+              "playerId": "p1_1790188027998",
+              "name": "A2",
+              "joinedAt": 1790188028015
+            }
+          ]
+        },
+        {
+          "id": "team_62bf55fa783ef16c",
+          "name": "Beta",
+          "capacity": 2,
+          "joinCode": "B-1EEBE5",
+          "players": [
+            {
+              "playerId": "p2_1790188027998",
+              "name": "B1",
+              "joinedAt": 1790188028017
+            },
+            {
+              "playerId": "p3_1790188027998",
+              "name": "B2",
+              "joinedAt": 1790188028019
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cup_7cb6c065cc9a79a2",
+      "name": "E2E",
+      "status": "finished",
+      "participantCount": 2,
+      "plannedMatches": 1,
+      "createdAt": 1790188032936,
+      "ownerPlayerId": "owner_1790188032933",
+      "ownerName": "Owner",
+      "startedAt": 1790188032940,
+      "finishedAt": 1790188032962,
+      "winnerTeamId": "team_97ae2c10158d6c7e",
+      "fixtures": [
+        {
+          "id": "fx_08574e5339aae70b",
+          "order": 1,
+          "status": "finished",
+          "homeTeamId": "team_97ae2c10158d6c7e",
+          "awayTeamId": "team_5a56d2dc3144150f",
+          "homePlayerId": "owner_1790188032933",
+          "awayPlayerId": "b_1790188032933",
+          "homePlayerName": "Owner",
+          "awayPlayerName": "Beta",
+          "homeScore": 1,
+          "awayScore": 0,
+          "roomCode": "68FE4",
+          "finishedAt": 1790188032961,
+          "finalBoard": [
+            "X",
+            "X",
+            "X",
+            "O",
+            "O",
+            null,
+            null,
+            null,
+            null
+          ],
+          "result": "X"
+        }
+      ],
+      "chat": [],
+      "teams": [
+        {
+          "id": "team_97ae2c10158d6c7e",
+          "name": "Alpha",
+          "capacity": 1,
+          "joinCode": "A-3A7BA6",
+          "players": [
+            {
+              "playerId": "owner_1790188032933",
+              "name": "Owner",
+              "joinedAt": 1790188032936
+            }
+          ]
+        },
+        {
+          "id": "team_5a56d2dc3144150f",
+          "name": "Beta",
+          "capacity": 1,
+          "joinCode": "B-A80EBD",
+          "players": [
+            {
+              "playerId": "b_1790188032933",
+              "name": "Beta",
+              "joinedAt": 1790188032938
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cup_f82cd67fc301aa32",
+      "name": "Test 2 ON",
+      "status": "in_progress",
+      "participantCount": 2,
+      "plannedMatches": 2,
+      "createdAt": 1790188059447,
+      "ownerPlayerId": "a_1790188059444",
+      "ownerName": "A",
+      "startedAt": 1790188059453,
+      "finishedAt": null,
+      "winnerTeamId": null,
+      "fixtures": [
+        {
+          "id": "fx_5115c8a5648b69d3",
+          "order": 1,
+          "status": "scheduled",
+          "homeTeamId": "team_1a4bb772a3d1908d",
+          "awayTeamId": "team_8b57c2d3306a11d8",
+          "homePlayerId": "a_1790188059444",
+          "awayPlayerId": "b_1790188059444",
+          "homePlayerName": "A",
+          "awayPlayerName": "B",
+          "homeScore": 0,
+          "awayScore": 0,
+          "roomCode": null,
+          "finishedAt": null,
+          "finalBoard": null,
+          "result": null
+        },
+        {
+          "id": "fx_a5f6ca07f8a83340",
+          "order": 2,
+          "status": "scheduled",
+          "homeTeamId": "team_1a4bb772a3d1908d",
+          "awayTeamId": "team_8b57c2d3306a11d8",
+          "homePlayerId": "a_1790188059444",
+          "awayPlayerId": "b_1790188059444",
+          "homePlayerName": "A",
+          "awayPlayerName": "B",
+          "homeScore": 0,
+          "awayScore": 0,
+          "roomCode": null,
+          "finishedAt": null,
+          "finalBoard": null,
+          "result": null
+        }
+      ],
+      "chat": [],
+      "teams": [
+        {
+          "id": "team_1a4bb772a3d1908d",
+          "name": "Alpha",
+          "capacity": 1,
+          "joinCode": "A-245201",
+          "players": [
+            {
+              "playerId": "a_1790188059444",
+              "name": "A",
+              "joinedAt": 1790188059447
+            }
+          ]
+        },
+        {
+          "id": "team_8b57c2d3306a11d8",
+          "name": "Beta",
+          "capacity": 1,
+          "joinCode": "B-1C7195",
+          "players": [
+            {
+              "playerId": "b_1790188059444",
+              "name": "B",
+              "joinedAt": 1790188059450
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cup_6d16e68991f9ab96",
+      "name": "ADV",
+      "status": "in_progress",
+      "participantCount": 4,
+      "plannedMatches": 2,
+      "createdAt": 1790188098212,
+      "ownerPlayerId": "p0_1790188098199",
+      "ownerName": "A1",
+      "startedAt": 1790188098220,
+      "finishedAt": null,
+      "winnerTeamId": null,
+      "fixtures": [
+        {
+          "id": "fx_0d6bacabe1dfcc47",
+          "order": 1,
+          "status": "finished",
+          "homeTeamId": "team_b0958d71f82527e0",
+          "awayTeamId": "team_0aa8685dae05cff8",
+          "homePlayerId": "p0_1790188098199",
+          "awayPlayerId": "p2_1790188098199",
+          "homePlayerName": "A1",
+          "awayPlayerName": "B1",
+          "homeScore": 1,
+          "awayScore": 0,
+          "roomCode": "B6DCD",
+          "finishedAt": 1790188098339,
+          "finalBoard": [
+            "X",
+            "X",
+            "X",
+            "O",
+            "O",
+            null,
+            null,
+            null,
+            null
+          ],
+          "result": "X"
+        },
+        {
+          "id": "fx_0d6b8365f51fdaa6",
+          "order": 2,
+          "status": "playing",
+          "homeTeamId": "team_b0958d71f82527e0",
+          "awayTeamId": "team_0aa8685dae05cff8",
+          "homePlayerId": "p1_1790188098199",
+          "awayPlayerId": "p3_1790188098199",
+          "homePlayerName": "A2",
+          "awayPlayerName": "B2",
+          "homeScore": null,
+          "awayScore": null,
+          "roomCode": "F566E",
+          "finishedAt": null,
+          "finalBoard": null,
+          "result": null
+        }
+      ],
+      "teams": [
+        {
+          "id": "team_b0958d71f82527e0",
+          "name": "Alpha",
+          "capacity": 2,
+          "joinCode": "A-6DACBF",
+          "players": [
+            {
+              "playerId": "p0_1790188098199",
+              "name": "A1",
+              "joinedAt": 1790188098212
+            },
+            {
+              "playerId": "p1_1790188098199",
+              "name": "A2",
+              "joinedAt": 1790188098216
+            }
+          ]
+        },
+        {
+          "id": "team_0aa8685dae05cff8",
+          "name": "Beta",
+          "capacity": 2,
+          "joinCode": "B-40E081",
+          "players": [
+            {
+              "playerId": "p2_1790188098199",
+              "name": "B1",
+              "joinedAt": 1790188098218
+            },
+            {
+              "playerId": "p3_1790188098199",
+              "name": "B2",
+              "joinedAt": 1790188098219
+            }
+          ]
+        }
+      ],
+      "chat": [
+        {
+          "id": "msg_ffee862464b5d9be",
+          "playerId": "p1_1790188098199",
+          "name": "A2",
+          "text": "Boa sorte",
+          "scope": "general",
+          "at": 1790188098345
+        }
+      ]
+    }
+  ]
+}
