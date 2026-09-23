@@ -249,7 +249,7 @@ app.get('/api/games/ranking', (req, res) => {
 });
 app.get('/api/games/championships', (req, res) => {
   const publicCups = championships.map(c => ({
-    id:c.id, name:c.name, status:c.status, format:c.format, participantCount:c.participantCount,
+    id:c.id, name:c.name, status:c.status, format:c.format, participantCount:c.participantCount, ownerPlayerId:c.ownerPlayerId,
     teams:c.teams.map(t => ({id:t.id,name:t.name,capacity:t.capacity,players:t.players.length}))
   }));
   res.json({ championships: publicCups });
@@ -271,7 +271,7 @@ app.post('/api/games/championships', (req, res) => {
   const capacity=participantCount/2;
   const ownerName=clean(req.body?.ownerName,24)||'Jogador';
   const ownerPlayerId=clean(req.body?.ownerPlayerId,80)||makeId('player');
-  const championship={id:makeId('cup'),name,format:'team-match',status:'open',participantCount,createdAt:Date.now(),teams:[
+  const championship={id:makeId('cup'),name,format:'team-match',status:'open',participantCount,createdAt:Date.now(),ownerPlayerId,ownerName,teams:[
     {id:makeId('team'),name:teamAName,capacity,joinCode:'A-'+crypto.randomBytes(3).toString('hex').toUpperCase(),players:[{playerId:ownerPlayerId,name:ownerName,joinedAt:Date.now()}]},
     {id:makeId('team'),name:teamBName,capacity,joinCode:'B-'+crypto.randomBytes(3).toString('hex').toUpperCase(),players:[]}
   ]};
@@ -293,9 +293,20 @@ app.post('/api/games/championships/join', (req,res)=>{
 app.post('/api/games/championships/:id/start', (req,res)=>{
   const c=championships.find(x=>x.id===req.params.id);
   if(!c)return res.status(404).json({error:'Campeonato não encontrado.'});
+  const pid=clean(req.body?.playerId,80);
+  if(pid!==c.ownerPlayerId)return res.status(403).json({error:'Apenas o criador do campeonato pode iniciar o confronto.'});
   if(c.teams.some(t=>t.players.length===0))return res.status(409).json({error:'As duas equipas precisam de pelo menos um jogador.'});
   c.status='ready'; c.startedAt=Date.now(); savePersistentData();
   res.json({championship:c,message:'Confronto pronto para começar.'});
+});
+app.delete('/api/games/championships/:id', (req,res)=>{
+  const i=championships.findIndex(x=>x.id===req.params.id);
+  if(i<0)return res.status(404).json({error:'Campeonato não encontrado.'});
+  const c=championships[i];
+  const pid=clean(req.query?.playerId || req.body?.playerId,80);
+  if(pid!==c.ownerPlayerId)return res.status(403).json({error:'Apenas o criador pode eliminar este campeonato.'});
+  championships.splice(i,1); savePersistentData();
+  res.json({ok:true,message:'Campeonato eliminado.'});
 });
 
 // ---------------- Streaming ----------------
