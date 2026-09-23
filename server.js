@@ -7,7 +7,7 @@ const fs = require('fs');
 const WebSocket = require('ws');
 
 const APP_NAME = '2 ON Platform';
-const APP_VERSION = '1.4.0';
+const APP_VERSION = '1.7.0';
 const PORT = Number(process.env.PORT || 3000);
 const HOST = process.env.HOST || '0.0.0.0';
 const ROOM_TTL_MS = 6 * 60 * 60 * 1000;
@@ -44,13 +44,42 @@ const streamRooms = new Map();
 const gameRooms = new Map();
 const stats = new Map();
 let championships = [];
+
+function normalizeStatsRecord(raw){
+  const playerId=cleanBasic(raw?.playerId,80);
+  if(!playerId)return null;
+  const wins=Math.max(0,Number(raw?.wins)||0), losses=Math.max(0,Number(raw?.losses)||0), draws=Math.max(0,Number(raw?.draws)||0);
+  const games=wins+losses+draws;
+  return {playerId,name:cleanBasic(raw?.name,24)||'Jogador',wins,losses,draws,games,history:Array.isArray(raw?.history)?raw.history.slice(0,50):[]};
+}
+function cleanBasic(value,max=80){return String(value??'').replace(/[<>\u0000-\u001f]/g,'').trim().slice(0,max)}
+function normalizeChampionship(raw){
+  if(!raw||typeof raw!=='object')return null;
+  const teams=Array.isArray(raw.teams)?raw.teams.slice(0,2):[];
+  if(teams.length!==2)return null;
+  const participantCount=Math.max(2,Math.min(32,Number(raw.participantCount)||2));
+  const capacity=Math.floor(participantCount/2);
+  const normalizedTeams=teams.map((t,i)=>({
+    id:cleanBasic(t.id,80)||`team_${crypto.randomBytes(8).toString('hex')}`, name:cleanBasic(t.name,50)||`Equipa ${i===0?'A':'B'}`, capacity,
+    joinCode:cleanBasic(t.joinCode,20).toUpperCase()||`${i===0?'A':'B'}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`,
+    players:Array.isArray(t.players)?t.players.slice(0,capacity).map(p=>({playerId:cleanBasic(p?.playerId,80),name:cleanBasic(p?.name,24)||'Jogador',joinedAt:Number(p?.joinedAt)||Date.now()})).filter(p=>p.playerId):[]
+  }));
+  const validStatuses=new Set(['waiting','ready','in_progress','finished']);
+  const fixtures=Array.isArray(raw.fixtures)?raw.fixtures.map(f=>{const x={...f}; if(x.status==='playing'){x.status='scheduled';x.roomCode=null;} return x;}):[];
+  const status=validStatuses.has(raw.status)?raw.status:'waiting';
+  return {id:cleanBasic(raw.id,80)||`cup_${crypto.randomBytes(8).toString('hex')}`,name:cleanBasic(raw.name,80)||'Campeonato 2 ON',status,participantCount:capacity*2,createdAt:Number(raw.createdAt)||Date.now(),ownerPlayerId:cleanBasic(raw.ownerPlayerId,80)||normalizedTeams[0].players[0]?.playerId||`player_${crypto.randomBytes(8).toString('hex')}`,ownerName:cleanBasic(raw.ownerName,24)||normalizedTeams[0].players[0]?.name||'Jogador',startedAt:raw.startedAt?Number(raw.startedAt):null,finishedAt:raw.finishedAt?Number(raw.finishedAt):null,winnerTeamId:raw.winnerTeamId||null,fixtures,teams:normalizedTeams};
+}
+function normalizePersistentData(data){
+  stats.clear();
+  for(const raw of Array.isArray(data?.stats)?data.stats:[]){const item=normalizeStatsRecord(raw);if(item)stats.set(item.playerId,item)}
+  championships=(Array.isArray(data?.championships)?data.championships:[]).map(normalizeChampionship).filter(Boolean);
+}
 function loadPersistentData(){
   try {
     fs.mkdirSync(DATA_DIR, {recursive:true});
     if (!fs.existsSync(DATA_FILE)) return;
     const data=JSON.parse(fs.readFileSync(DATA_FILE,'utf8'));
-    for(const item of (data.stats||[])) if(item.playerId) stats.set(item.playerId,item);
-    championships=Array.isArray(data.championships)?data.championships:[];
+    normalizePersistentData(data);
   } catch(e){ console.error('Falha ao carregar dados:', e.message); }
 }
 function savePersistentData(){
@@ -234,6 +263,7 @@ function gameMove(ws, message) {
 function resetGame(ws) {
   const room = gameRooms.get(ws.gameRoom);
   if (!room || !room.winner) return send(ws, { type: 'game-error', message: 'A revanche só pode começar depois de uma partida.' });
+  if (room.championshipFixture) return send(ws, { type: 'game-error', message: 'Este jogo faz parte do campeonato e já foi encerrado.' });
   if (!room.players.X || !room.players.O) return send(ws, { type: 'game-error', message: 'Aguarda os dois jogadores.' });
   room.board = Array(9).fill(null);
   room.turn = null;
@@ -257,7 +287,13 @@ function leaveGame(ws, announce = true) {
   if (room.players[symbol] === ws) { room.players[symbol] = null; room.names[symbol] = null; room.ids[symbol] = null; }
   ws.gameRoom = null; ws.gameSymbol = null; ws.gamePlayerId = null;
   if (announce) broadcastGame(room, { type: 'game-left', symbol });
-  if (!room.players.X && !room.players.O) gameRooms.delete(room.code);
+  if (!room.players.X && !room.players.O) {
+    if (room.championshipFixture) {
+      const meta=room.championshipFixture; const c=championships.find(x=>x.id===meta.championshipId); const f=c?.fixtures?.find(x=>x.id===meta.fixtureId);
+      if (f && f.status!=='finished') { f.roomCode=null; f.status='scheduled'; savePersistentData(); }
+    }
+    gameRooms.delete(room.code);
+  }
 }
 
 app.post('/api/games/rooms', (req, res) => {
@@ -268,6 +304,18 @@ app.get('/api/games/ranking', (req, res) => {
   const ranking = [...stats.values()].sort((a,b) => b.wins-a.wins || b.games-a.games || a.name.localeCompare(b.name, 'pt'))
     .map(s => ({ name: s.name, wins: s.wins, losses: s.losses, draws: s.draws, games: s.games, rate: s.games ? Math.round(s.wins/s.games*100) : 0 }));
   res.json({ ranking });
+});
+app.get('/api/games/profile/:playerId', (req, res) => {
+  const playerId = clean(req.params.playerId, 80);
+  const profile = stats.get(playerId) || { playerId, name: 'Jogador', wins: 0, losses: 0, draws: 0, games: 0, history: [] };
+  res.json({
+    name: profile.name || 'Jogador',
+    wins: Number(profile.wins) || 0,
+    losses: Number(profile.losses) || 0,
+    draws: Number(profile.draws) || 0,
+    games: Number(profile.games) || 0,
+    history: Array.isArray(profile.history) ? profile.history.slice(0, 50) : []
+  });
 });
 app.get('/api/games/championships', (req, res) => {
   const publicCups = championships.map(c => ({
@@ -284,6 +332,7 @@ function publicChampionship(c, playerId='') {
     id:c.id,name:c.name,status:c.status,participantCount:c.participantCount,ownerPlayerId:c.ownerPlayerId,ownerName:c.ownerName,
     createdAt:c.createdAt,startedAt:c.startedAt||null,finishedAt:c.finishedAt||null,winnerTeamId:c.winnerTeamId||null,
     teams:c.teams.map(t=>({id:t.id,name:t.name,capacity:t.capacity,players:t.players.map(p=>({playerId:p.playerId,name:p.name})),joinCode:(playerId===c.ownerPlayerId||member?.id===t.id)?t.joinCode:undefined})),
+    teamScores:championshipScores(c),
     fixtures:(c.fixtures||[]).map(f=>({id:f.id,order:f.order,status:f.status,homeTeamId:f.homeTeamId,awayTeamId:f.awayTeamId,homePlayerId:f.homePlayerId,awayPlayerId:f.awayPlayerId,homePlayerName:f.homePlayerName,awayPlayerName:f.awayPlayerName,homeScore:f.homeScore,awayScore:f.awayScore,roomCode:f.roomCode||null})),
     memberTeamId:member?.id||null
   };
@@ -343,8 +392,7 @@ function championshipScores(c){
 function maybeFinishChampionship(c){
   if(!c.fixtures.length || c.fixtures.some(f=>f.status!=='finished')) return false;
   const scores=championshipScores(c), a=c.teams[0].id,b=c.teams[1].id;
-  if(scores[a]===scores[b]) return false;
-  c.status='finished'; c.winnerTeamId=scores[a]>scores[b]?a:b; c.finishedAt=Date.now(); savePersistentData(); return true;
+  c.status='finished'; c.winnerTeamId=scores[a]===scores[b]?null:(scores[a]>scores[b]?a:b); c.finishedAt=Date.now(); savePersistentData(); return true;
 }
 app.post('/api/games/championships/:id/start', (req,res)=>{
   const c=championships.find(x=>x.id===req.params.id);
@@ -512,9 +560,7 @@ wss.on('connection', ws => {
           const chatId=makeId('msg'); const name=clean(message.name,24)||room.names[ws.gameSymbol]||'Jogador';
           if(message.scope==='team'){ const team=room.teams[ws.gameSymbol]; if(!team) return send(ws,{type:'game-error',message:'Ainda não estás associado a uma equipa.'}); Object.entries(room.players).forEach(([sym,target])=>{if(target&&room.teams[sym]===team) send(target,{type:'game-chat',messageId:chatId,name,text,from:ws.gameSymbol,scope:'team'});}); }
           else broadcastGame(room, { type: 'game-chat', messageId: chatId, name, text, from: ws.gameSymbol, scope:'general' });
-        } else if (message.type === 'game-rematch-response') gameRematchResponse(ws,message);
-        else if (message.type === 'game-voice') { const room=gameRooms.get(ws.gameRoom); if(room) Object.values(room.players).forEach(target=>{ if(target && target!==ws) send(target,{type:'game-voice',from:ws.gameSymbol,signal:message.signal}); }); }
-        else if (message.type === 'game-leave') leaveGame(ws, true);
+        } else if (message.type === 'game-leave') leaveGame(ws, true);
       } else handleStream(ws, message);
     } catch (error) { console.error('WS handler:', error); send(ws, { type: 'error', message: 'Ocorreu um erro ao processar a ação.' }); }
   });
