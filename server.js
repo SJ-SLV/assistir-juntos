@@ -1,35 +1,453 @@
-const express=require('express');const http=require('http');const path=require('path');const crypto=require('crypto');const fs=require('fs');const WebSocket=require('ws');
-const app=express();app.disable('x-powered-by');app.use(express.json({limit:'1mb'}));
-const ROOT=path.join(__dirname,'public');app.use(express.static(ROOT,{setHeaders:(res)=>{res.setHeader('Cache-Control','no-store')}}));
-const server=http.createServer(app);const wss=new WebSocket.Server({server,maxPayload:32*1024});
-const FALLBACK_ICE=[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'},{urls:'turn:openrelay.metered.ca:80',username:'openrelayproject',credential:'openrelayproject'},{urls:'turn:openrelay.metered.ca:443',username:'openrelayproject',credential:'openrelayproject'},{urls:'turn:openrelay.metered.ca:443?transport=tcp',username:'openrelayproject',credential:'openrelayproject'}];
-const streamRooms=new Map();const gameRooms=new Map();const players=new Map();const stats=new Map();const championships=[];
-const TTL=6*60*60*1000;
-const clean=(v,n=80)=>String(v??'').replace(/[<>\u0000-\u001f]/g,'').trim().slice(0,n);const id=p=>p+'_'+crypto.randomBytes(5).toString('hex');
-function send(ws,m){if(ws&&ws.readyState===WebSocket.OPEN)ws.send(JSON.stringify(m))}function code(){let c;do{c=crypto.randomBytes(4).toString('hex').toUpperCase().replace(/[01]/g,'').slice(0,5)}while(c.length<5||streamRooms.has(c)||gameRooms.has(c));return c}
-app.get('/health',(q,r)=>r.json({ok:true,service:'2-on-platform',version:'1.0.0',streamRooms:streamRooms.size,gameRooms:gameRooms.size}));
-app.get('/ice-servers',(q,r)=>{const u=process.env.METERED_TURN_USERNAME,c=process.env.METERED_TURN_CREDENTIAL;r.json(u&&c?[{urls:'stun:stun.relay.metered.ca:80'},{urls:'turn:global.relay.metered.ca:80',username:u,credential:c},{urls:'turn:global.relay.metered.ca:443',username:u,credential:c},{urls:'turns:global.relay.metered.ca:443?transport=tcp',username:u,credential:c}]:FALLBACK_ICE)});
-// ---------- Games API ----------
-app.post('/api/games/rooms',(q,r)=>{const name=clean(q.body?.name,24)||'Jogador';const rc=code();gameRooms.set(rc,{code:rc,players:{X:null,O:null},names:{X:name,O:null},board:Array(9).fill(null),turn:'X',winner:null,winningLine:[],lastActivity:Date.now(),score:{X:0,O:0}});r.status(201).json({roomCode:rc})});
-app.get('/api/games/ranking',(q,r)=>{const arr=[...stats.entries()].map(([name,s])=>({name,wins:s.wins,games:s.games,rate:s.games?Math.round(s.wins/s.games*100):0})).sort((a,b)=>b.wins-a.wins||b.rate-a.rate);r.json({ranking:arr})});
-app.get('/api/games/championships',(q,r)=>r.json({championships}));
-app.post('/api/games/championships',(q,r)=>{const c={id:id('cup'),name:clean(q.body?.name,80)||'Novo campeonato',format:q.body?.format==='knockout'?'knockout':'league',status:'setup',teams:[],createdAt:Date.now()};championships.push(c);r.status(201).json({championship:c})});
-// ---------- WebSocket multiplex ----------
-function winner(b){const lines=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];for(const l of lines)if(b[l[0]]&&b[l[0]]===b[l[1]]&&b[l[1]]===b[l[2]])return{winner:b[l[0]],line:l};if(b.every(Boolean))return{winner:'draw',line:[]};return null}
-function publicGame(r){return{code:r.code,board:r.board,turn:r.turn,winner:r.winner,winningLine:r.winningLine,names:r.names,players:{X:!!r.players.X,O:!!r.players.O},score:r.score}}
-function gameBroadcast(r,m){for(const s of Object.values(r.players))send(s,m)}
-function gameJoin(ws,m){const r=gameRooms.get(clean(m.roomCode,10).toUpperCase());if(!r)return send(ws,{type:'game-error',message:'Sala não encontrada.'});let sym=!r.players.X?'X':!r.players.O?'O':null;if(!sym)return send(ws,{type:'game-error',message:'A sala já está completa.'});ws.gameRoom=r.code;ws.gameSymbol=sym;ws.gameName=clean(m.name,24)||'Jogador';r.players[sym]=ws;r.names[sym]=ws.gameName;r.lastActivity=Date.now();send(ws,{type:'game-'+(sym==='X'?'created':'joined'),roomCode:r.code,symbol:sym,state:publicGame(r)});gameBroadcast(r,{type:'game-state',state:publicGame(r)});}
-function stat(name,key){const s=stats.get(name)||{wins:0,games:0};s.games++;if(key==='win')s.wins++;stats.set(name,s)}
-function gameMove(ws,m){const r=gameRooms.get(ws.gameRoom);if(!r||r.winner)return;if(ws.gameSymbol!==r.turn)return send(ws,{type:'game-error',message:'Não é a tua vez.'});const c=Number(m.cell);if(!Number.isInteger(c)||c<0||c>8||r.board[c])return; r.board[c]=ws.gameSymbol;const z=winner(r.board);if(z){r.winner=z.winner;r.winningLine=z.line;if(z.winner==='X'||z.winner==='O'){r.score[z.winner]++;const loser=z.winner==='X'?'O':'X';stat(r.names[z.winner],'win');stat(r.names[loser],'loss')}else{stat(r.names.X,'draw');stat(r.names.O,'draw')}}else r.turn=r.turn==='X'?'O':'X';r.lastActivity=Date.now();gameBroadcast(r,{type:'game-state',state:publicGame(r)})}
-function gameReset(ws){const r=gameRooms.get(ws.gameRoom);if(!r||ws.gameSymbol!=='X')return;r.board=Array(9).fill(null);r.turn='X';r.winner=null;r.winningLine=[];r.lastActivity=Date.now();gameBroadcast(r,{type:'game-state',state:publicGame(r)})}
-// streaming helpers
-function streamState(r){return{code:r.code,hostName:r.hostName,viewerName:r.viewerName,hasViewer:!!r.viewer,createdAt:r.createdAt}}
-function notifyStream(r){const s=streamState(r);send(r.host,{type:'presence',...s});send(r.viewer,{type:'presence',...s})}function streamTouch(r){r.lastActivity=Date.now()}
-function forwardStream(r,ws,m){const target=ws.streamRole==='host'?r.viewer:r.host;if(!target)return;if(m.type==='chat')m.text=clean(m.text,1200);send(target,m)}
-function createStream(ws,m){const rc=code(),r={code:rc,host:ws,viewer:null,hostName:clean(m.name,24)||'Anfitrião',viewerName:null,timers:{host:null,viewer:null},createdAt:Date.now(),lastActivity:Date.now()};streamRooms.set(rc,r);ws.streamRoom=rc;ws.streamRole='host';send(ws,{type:'room-created',...streamState(r)})}
-function joinStream(ws,m){const rc=clean(m.code,10).toUpperCase(),r=streamRooms.get(rc);if(!r)return send(ws,{type:'error',message:'Sala não encontrada. Confirma o código.'});if(r.viewer&&r.viewer.readyState===WebSocket.OPEN)return send(ws,{type:'error',message:'Esta sala já tem duas pessoas.'});r.viewer=ws;r.viewerName=clean(m.name,24)||'Convidado';ws.streamRoom=rc;ws.streamRole='viewer';streamTouch(r);send(ws,{type:'room-joined',...streamState(r)});send(r.host,{type:'peer-joined',...streamState(r)});notifyStream(r)}
-function leaveStream(ws){const r=streamRooms.get(ws.streamRoom);if(!r)return;const role=ws.streamRole;if(r[role]===ws){r[role]=null;r[role+'Name']=null;const other=role==='host'?r.viewer:r.host;send(other,{type:'peer-left',reason:'left'});notifyStream(r);if(!r.host&&!r.viewer)streamRooms.delete(r.code)}ws.streamRoom=null;ws.streamRole=null;send(ws,{type:'left-room'})}
-function handleStream(ws,m){if(m.type==='app-ping')return send(ws,{type:'app-pong',t:m.t});if(m.type==='create-room')return createStream(ws,m);if(m.type==='join-room')return joinStream(ws,m);if(m.type==='leave-room')return leaveStream(ws);const r=streamRooms.get(ws.streamRoom);if(!r)return;if(['offer','answer','ice-candidate','chat','reaction','control','typing'].includes(m.type)){streamTouch(r);if(m.type==='chat')m.name=clean(m.name,24)||'Pessoa';forwardStream(r,ws,m)}}
-wss.on('connection',ws=>{ws.isAlive=true;ws.on('pong',()=>ws.isAlive=true);ws.on('message',raw=>{let m;try{m=JSON.parse(raw.toString())}catch{return}if(!m||typeof m.type!=='string')return;if(m.type.startsWith('game-')){if(m.type==='game-join')gameJoin(ws,m);else if(m.type==='game-move')gameMove(ws,m);else if(m.type==='game-reset')gameReset(ws);else if(m.type==='game-chat'){const r=gameRooms.get(ws.gameRoom);if(r){const text=clean(m.text,300);gameBroadcast(r,{type:'game-chat',name:clean(m.name,24)||'Jogador',text,from:ws.gameSymbol})}}else if(m.type==='game-leave'){const r=gameRooms.get(ws.gameRoom);if(r){r.players[ws.gameSymbol]=null;r.names[ws.gameSymbol]=null;gameBroadcast(r,{type:'game-left'});if(!r.players.X&&!r.players.O)gameRooms.delete(r.code)}ws.gameRoom=null;ws.gameSymbol=null}else return;}else handleStream(ws,m)});ws.on('close',()=>{const sr=streamRooms.get(ws.streamRoom);if(sr&&sr[ws.streamRole]===ws){const other=ws.streamRole==='host'?sr.viewer:sr.host;send(other,{type:'peer-disconnected-temp'});setTimeout(()=>{if(streamRooms.has(sr.code)&&sr[ws.streamRole]===ws){sr[ws.streamRole]=null;sr[ws.streamRole+'Name']=null;notifyStream(sr)}},5*60*1000)}const gr=gameRooms.get(ws.gameRoom);if(gr&&gr.players[ws.gameSymbol]===ws){gr.players[ws.gameSymbol]=null;gameBroadcast(gr,{type:'game-left'});if(!gr.players.X&&!gr.players.O)gameRooms.delete(gr.code)}})});
-setInterval(()=>{const cut=Date.now()-TTL;for(const [k,r] of streamRooms)if(!r.host&&!r.viewer||r.lastActivity<cut)streamRooms.delete(k);for(const [k,r] of gameRooms)if(!r.players.X&&!r.players.O||r.lastActivity<cut)gameRooms.delete(k);wss.clients.forEach(ws=>{if(ws.isAlive===false)return ws.terminate();ws.isAlive=false;ws.ping()})},30000);
-const PORT=Number(process.env.PORT||3000);server.listen(PORT,()=>console.log(`2 ON Platform v1.0.0 em http://localhost:${PORT}`));
+'use strict';
+const express = require('express');
+const http = require('http');
+const path = require('path');
+const crypto = require('crypto');
+const fs = require('fs');
+const WebSocket = require('ws');
+
+const APP_NAME = '2 ON Platform';
+const APP_VERSION = '1.3.0';
+const PORT = Number(process.env.PORT || 3000);
+const HOST = process.env.HOST || '0.0.0.0';
+const ROOM_TTL_MS = 6 * 60 * 60 * 1000;
+const RECONNECT_GRACE_MS = 5 * 60 * 1000;
+const MAX_MESSAGE = 32 * 1024;
+const TURN_SECONDS = 20;
+const DATA_DIR = path.join(__dirname, 'data');
+const DATA_FILE = path.join(DATA_DIR, 'games.json');
+
+const app = express();
+app.disable('x-powered-by');
+app.use(express.json({ limit: '256kb' }));
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'camera=*, microphone=*, geolocation=()');
+  next();
+});
+const PUBLIC = path.join(__dirname, 'public');
+app.use(express.static(PUBLIC, { setHeaders: res => res.setHeader('Cache-Control', 'no-store') }));
+
+const server = http.createServer(app);
+const wss = new WebSocket.Server({ server, maxPayload: MAX_MESSAGE });
+
+const FALLBACK_ICE = [
+  { urls: 'stun:stun.l.google.com:19302' },
+  { urls: 'stun:stun1.l.google.com:19302' },
+  { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
+  { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
+  { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' }
+];
+
+const streamRooms = new Map();
+const gameRooms = new Map();
+const stats = new Map();
+let championships = [];
+function loadPersistentData(){
+  try {
+    fs.mkdirSync(DATA_DIR, {recursive:true});
+    if (!fs.existsSync(DATA_FILE)) return;
+    const data=JSON.parse(fs.readFileSync(DATA_FILE,'utf8'));
+    for(const item of (data.stats||[])) if(item.playerId) stats.set(item.playerId,item);
+    championships=Array.isArray(data.championships)?data.championships:[];
+  } catch(e){ console.error('Falha ao carregar dados:', e.message); }
+}
+function savePersistentData(){
+  try {
+    fs.mkdirSync(DATA_DIR,{recursive:true});
+    const tmp=DATA_FILE+'.tmp';
+    fs.writeFileSync(tmp, JSON.stringify({version:1,stats:[...stats.values()],championships},null,2));
+    fs.renameSync(tmp,DATA_FILE);
+  } catch(e){ console.error('Falha ao guardar dados:', e.message); }
+}
+loadPersistentData();
+
+const clean = (value, max = 80) => String(value ?? '').replace(/[<>\u0000-\u001f]/g, '').trim().slice(0, max);
+const makeId = prefix => `${prefix}_${crypto.randomBytes(8).toString('hex')}`;
+const send = (ws, payload) => {
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    try { ws.send(JSON.stringify(payload)); return true; } catch (_) { return false; }
+  }
+  return false;
+};
+function roomCode() {
+  let code;
+  do {
+    code = crypto.randomBytes(4).toString('hex').toUpperCase().replace(/[01]/g, '').slice(0, 5);
+  } while (code.length < 5 || streamRooms.has(code) || gameRooms.has(code));
+  return code;
+}
+
+app.get('/health', (req, res) => res.json({
+  ok: true,
+  service: '2-on-platform',
+  version: APP_VERSION,
+  uptime: Math.round(process.uptime()),
+  streamRooms: streamRooms.size,
+  gameRooms: gameRooms.size,
+  websocketClients: wss.clients.size
+}));
+app.get('/api/status', (req, res) => res.json({ ok: true, name: APP_NAME, version: APP_VERSION, modules: { games: true, streaming: true } }));
+app.get('/ice-servers', (req, res) => {
+  const username = process.env.METERED_TURN_USERNAME;
+  const credential = process.env.METERED_TURN_CREDENTIAL;
+  res.json(username && credential ? [
+    { urls: 'stun:stun.relay.metered.ca:80' },
+    { urls: 'turn:global.relay.metered.ca:80', username, credential },
+    { urls: 'turn:global.relay.metered.ca:443', username, credential },
+    { urls: 'turns:global.relay.metered.ca:443?transport=tcp', username, credential }
+  ] : FALLBACK_ICE);
+});
+
+// ---------------- Games ----------------
+function winner(board) {
+  const lines = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+  for (const line of lines) {
+    const [a,b,c] = line;
+    if (board[a] && board[a] === board[b] && board[b] === board[c]) return { winner: board[a], line };
+  }
+  return board.every(Boolean) ? { winner: 'draw', line: [] } : null;
+}
+function publicGame(room) {
+  const opponentFor = symbol => symbol === 'X' ? 'O' : 'X';
+  return {
+    code: room.code, board: room.board, turn: room.turn, winner: room.winner, winningLine: room.winningLine,
+    names: { X: room.names.X || null, O: room.names.O || null },
+    players: { X: !!room.players.X, O: !!room.players.O }, score: room.score,
+    matchNumber: room.matchNumber || 1, turnStartedAt: room.turnStartedAt || null, turnSeconds: TURN_SECONDS,
+    disconnected: room.disconnected || null, rematch: { X: !!room.rematch.X, O: !!room.rematch.O },
+    teams: room.teams || {X:null,O:null}
+  };
+}
+function broadcastGame(room, payload) {
+  Object.values(room.players).forEach(ws => send(ws, payload));
+}
+function updateStats(playerId, name, result) {
+  if (!playerId) return;
+  const current = stats.get(playerId) || { playerId, name: 'Jogador', wins: 0, losses: 0, draws: 0, games: 0, history: [] };
+  if (!Array.isArray(current.history)) current.history=[];
+  current.name = name || current.name;
+  current.games += 1;
+  if (result === 'win') current.wins += 1;
+  if (result === 'loss') current.losses += 1;
+  if (result === 'draw') current.draws += 1;
+  current.history.unshift({at:Date.now(),result}); current.history=current.history.slice(0,50);
+  stats.set(playerId, current);
+  savePersistentData();
+}
+function createGameRoom(ws, message) {
+  if (ws.gameRoom) return send(ws, { type: 'game-error', message: 'Já estás numa partida.' });
+  const code = roomCode();
+  const name = clean(message.name, 24) || 'Jogador';
+  const playerId = clean(message.playerId, 80) || makeId('player');
+  const room = {
+    code, players: { X: ws, O: null }, names: { X: name, O: null }, ids: { X: playerId, O: null },
+    board: Array(9).fill(null), turn: null, winner: null, winningLine: [], turnStartedAt: null, lastActivity: Date.now(), score: { X: 0, O: 0 }, matchNumber: 1, rematch: {X:false,O:false}, disconnected: null, teams:{X: clean(message.teamName,40) || null, O:null}
+  };
+  gameRooms.set(code, room);
+  ws.gameRoom = code; ws.gameSymbol = 'X'; ws.gamePlayerId = playerId;
+  send(ws, { type: 'game-created', roomCode: code, symbol: 'X', state: publicGame(room) });
+}
+function rejoinGameRoom(ws, message) {
+  const code = clean(message.roomCode, 10).toUpperCase();
+  const room = gameRooms.get(code);
+  const playerId = clean(message.playerId, 80);
+  if (!room || !playerId) return send(ws, { type: 'game-error', message: 'A partida já não está disponível.' });
+  const symbol = room.ids.X === playerId ? 'X' : room.ids.O === playerId ? 'O' : null;
+  if (!symbol) return send(ws, { type: 'game-error', message: 'Jogador não reconhecido nesta partida.' });
+  if (ws.gameRoom && ws.gameRoom !== code) leaveGame(ws, false);
+  const old = room.players[symbol];
+  if (old && old !== ws) { old.gameRoom = null; old.gameSymbol = null; old.gamePlayerId = null; try { old.close(); } catch (_) {} }
+  room.players[symbol] = ws;
+  room.names[symbol] = clean(message.name, 24) || room.names[symbol] || 'Jogador';
+  room.lastActivity = Date.now(); room.disconnected = null;
+  ws.gameRoom = code; ws.gameSymbol = symbol; ws.gamePlayerId = playerId;
+  send(ws, { type: 'game-rejoined', roomCode: code, symbol, state: publicGame(room) });
+  broadcastGame(room, { type: 'game-state', state: publicGame(room) });
+}
+function joinGameRoom(ws, message) {
+  const code = clean(message.roomCode, 10).toUpperCase();
+  const room = gameRooms.get(code);
+  if (!room) return send(ws, { type: 'game-error', message: 'Sala não encontrada.' });
+  if (room.players.X === ws || room.players.O === ws) return;
+  if (room.disconnected && !room.players[room.disconnected]) return send(ws, { type:'game-error', message:'O teu adversário está a tentar reconectar. Aguarda um momento.' });
+  const symbol = !room.players.X ? 'X' : !room.players.O ? 'O' : null;
+  if (!symbol) return send(ws, { type: 'game-error', message: 'A sala já está completa.' });
+  if (ws.gameRoom) leaveGame(ws, false);
+  const name = clean(message.name, 24) || 'Jogador';
+  const playerId = clean(message.playerId, 80) || makeId('player');
+  room.players[symbol] = ws; room.names[symbol] = name; room.ids[symbol] = playerId; room.teams[symbol] = clean(message.teamName,40) || null;
+  room.lastActivity = Date.now(); ws.gameRoom = code; ws.gameSymbol = symbol; ws.gamePlayerId = playerId;
+  send(ws, { type: 'game-joined', roomCode: code, symbol, state: publicGame(room) });
+  broadcastGame(room, { type: 'game-state', state: publicGame(room) });
+}
+function gameMove(ws, message) {
+  const room = gameRooms.get(ws.gameRoom);
+  if (!room || room.winner) return;
+  if (!room.players.X || !room.players.O) return send(ws, { type: 'game-error', message: 'Aguarda o segundo jogador.' });
+  const cell = Number(message.cell);
+  if (!Number.isInteger(cell) || cell < 0 || cell > 8 || room.board[cell]) return send(ws, { type: 'game-error', message: 'Essa casa já não está disponível.' });
+  if (room.turn && ws.gameSymbol !== room.turn) return send(ws, { type: 'game-error', message: 'Espera pela tua vez.' });
+  if (!room.turn) room.turn = ws.gameSymbol;
+  room.board[cell] = ws.gameSymbol;
+  const result = winner(room.board);
+  if (result) {
+    room.winner = result.winner; room.winningLine = result.line; room.turnStartedAt = null;
+    if (result.winner === 'X' || result.winner === 'O') {
+      room.score[result.winner] += 1;
+      const loser = result.winner === 'X' ? 'O' : 'X';
+      updateStats(room.ids[result.winner], room.names[result.winner], 'win');
+      updateStats(room.ids[loser], room.names[loser], 'loss');
+    } else {
+      updateStats(room.ids.X, room.names.X, 'draw'); updateStats(room.ids.O, room.names.O, 'draw');
+    }
+  } else {
+    room.turn = room.turn === 'X' ? 'O' : 'X';
+    room.turnStartedAt = Date.now();
+  }
+  room.lastActivity = Date.now();
+  broadcastGame(room, { type: 'game-state', state: publicGame(room) });
+}
+function resetGame(ws) {
+  const room = gameRooms.get(ws.gameRoom);
+  if (!room) return;
+  if (!room.players.X || !room.players.O) return send(ws, { type: 'game-error', message: 'Aguarda o segundo jogador.' });
+  room.rematch[ws.gameSymbol] = true;
+  if (!room.rematch.X || !room.rematch.O) { broadcastGame(room,{type:'game-state',state:publicGame(room)}); return send(ws,{type:'game-info',message:'Pedido de revanche enviado.'}); }
+  room.board = Array(9).fill(null); room.turn = null; room.winner = null; room.winningLine = []; room.turnStartedAt = null; room.matchNumber += 1; room.rematch={X:false,O:false}; room.lastActivity=Date.now();
+  broadcastGame(room, { type: 'game-state', state: publicGame(room) });
+}
+function gameRematchResponse(ws, message){
+  const room=gameRooms.get(ws.gameRoom); if(!room || !room.winner) return;
+  if(message.accept===false){ room.rematch={X:false,O:false}; broadcastGame(room,{type:'game-rematch-declined',by:ws.gameSymbol}); return; }
+  resetGame(ws);
+}
+function leaveGame(ws, announce = true) {
+  const room = gameRooms.get(ws.gameRoom);
+  if (!room) return;
+  const symbol = ws.gameSymbol;
+  if (room.players[symbol] === ws) { room.players[symbol] = null; room.names[symbol] = null; room.ids[symbol] = null; }
+  ws.gameRoom = null; ws.gameSymbol = null; ws.gamePlayerId = null;
+  if (announce) broadcastGame(room, { type: 'game-left', symbol });
+  if (!room.players.X && !room.players.O) gameRooms.delete(room.code);
+}
+
+app.post('/api/games/rooms', (req, res) => {
+  // Kept for API compatibility. The actual room is attached to the WebSocket via game-create.
+  res.status(410).json({ error: 'Use a ligação em tempo real para criar a sala.' });
+});
+app.get('/api/games/ranking', (req, res) => {
+  const ranking = [...stats.values()].sort((a,b) => b.wins-a.wins || b.games-a.games || a.name.localeCompare(b.name, 'pt'))
+    .map(s => ({ name: s.name, wins: s.wins, losses: s.losses, draws: s.draws, games: s.games, rate: s.games ? Math.round(s.wins/s.games*100) : 0 }));
+  res.json({ ranking });
+});
+app.get('/api/games/championships', (req, res) => res.json({ championships }));
+app.post('/api/games/championships', (req, res) => {
+  const name = clean(req.body?.name, 80);
+  if (!name) return res.status(400).json({ error: 'Nome do campeonato obrigatório.' });
+  const championship = { id: makeId('cup'), name, format: req.body?.format === 'knockout' ? 'knockout' : 'league', status: 'setup', teams: [], createdAt: Date.now() };
+  championships.push(championship);
+  res.status(201).json({ championship });
+});
+
+app.get('/api/games/profile/:playerId', (req,res)=>{
+  const p=stats.get(clean(req.params.playerId,80));
+  res.json({profile:p||{playerId:req.params.playerId,name:'Jogador',wins:0,losses:0,draws:0,games:0}});
+});
+app.get('/api/games/history/:playerId',(req,res)=>{
+  const p=stats.get(clean(req.params.playerId,80));
+  res.json({history:p?.history||[]});
+});
+
+// ---------------- Streaming ----------------
+function streamState(room) {
+  return {
+    code: room.code, hostName: room.hostName, viewerName: room.viewerName,
+    hasViewer: !!room.viewer, createdAt: room.createdAt,
+    controlGranted: !!room.controlGranted, controlRequestPending: !!room.controlRequestPending
+  };
+}
+function streamNotify(room) {
+  const state = streamState(room);
+  send(room.host, { type: 'presence', ...state });
+  send(room.viewer, { type: 'presence', ...state });
+}
+function streamForward(room, from, message) {
+  const target = from.streamRole === 'host' ? room.viewer : room.host;
+  if (target) send(target, message);
+}
+function createStream(ws, message) {
+  if (ws.streamRoom) return send(ws, { type: 'error', message: 'Já estás numa sessão.' });
+  const code = roomCode();
+  const room = { code, host: ws, viewer: null, hostName: clean(message.name, 24) || 'Anfitrião', viewerName: null, controlGranted: false, controlRequestPending: false, createdAt: Date.now(), lastActivity: Date.now(), reconnectTimers: { host: null, viewer: null } };
+  streamRooms.set(code, room); ws.streamRoom = code; ws.streamRole = 'host';
+  send(ws, { type: 'room-created', ...streamState(room) });
+}
+function attachStreamRole(room, ws, role, name, rejoined = false) {
+  const old = room[role];
+  if (room.reconnectTimers[role]) { clearTimeout(room.reconnectTimers[role]); room.reconnectTimers[role] = null; }
+  if (old && old !== ws) { old.streamRoom = null; old.streamRole = null; try { old.close(); } catch (_) {} }
+  room[role] = ws;
+  room[role + 'Name'] = clean(name, 24) || (role === 'host' ? 'Anfitrião' : 'Convidado');
+  ws.streamRoom = room.code; ws.streamRole = role;
+  room.lastActivity = Date.now();
+  if (role === 'viewer' && !rejoined) { room.controlGranted = false; room.controlRequestPending = false; }
+  send(ws, { type: role === 'host' ? 'room-created' : 'room-joined', ...streamState(room), rejoined });
+  const other = role === 'host' ? room.viewer : room.host;
+  if (other) send(other, { type: 'peer-joined', ...streamState(room), rejoined });
+  streamNotify(room);
+  if (role === 'viewer' && room.controlGranted) send(ws, { type: 'control-granted' });
+}
+function joinStream(ws, message) {
+  const code = clean(message.code, 10).toUpperCase();
+  const room = streamRooms.get(code);
+  if (!room) return send(ws, { type: 'error', message: 'Sala não encontrada. Confirma o código.', expired: true });
+  if (ws.streamRoom) leaveStream(ws, false);
+  if (room.viewer && room.viewer.readyState === WebSocket.OPEN && room.viewer !== ws) return send(ws, { type: 'error', message: 'Esta sala já tem duas pessoas.' });
+  attachStreamRole(room, ws, 'viewer', message.name, false);
+}
+function rejoinStream(ws, message) {
+  const code = clean(message.code, 10).toUpperCase();
+  const role = message.role === 'viewer' ? 'viewer' : 'host';
+  const room = streamRooms.get(code);
+  if (!room) return send(ws, { type: 'error', message: 'A sessão expirou ou não existe.', expired: true });
+  if (ws.streamRoom && ws.streamRoom !== code) leaveStream(ws, false);
+  if (role === 'viewer' && !room.host) return send(ws, { type: 'error', message: 'O anfitrião ainda não está ligado.', expired: false });
+  attachStreamRole(room, ws, role, message.name, true);
+}
+function leaveStream(ws, announce = true) {
+  const room = streamRooms.get(ws.streamRoom);
+  if (!room) return;
+  const role = ws.streamRole;
+  if (room[role] !== ws) return;
+  room[role] = null; room[role + 'Name'] = null; room.lastActivity = Date.now();
+  if (room.reconnectTimers[role]) clearTimeout(room.reconnectTimers[role]);
+  room.reconnectTimers[role] = null;
+  if (role === 'viewer') { room.controlGranted = false; room.controlRequestPending = false; }
+  const other = role === 'host' ? room.viewer : room.host;
+  if (announce) send(other, { type: 'peer-left', reason: 'left' });
+  streamNotify(room);
+  ws.streamRoom = null; ws.streamRole = null;
+  if (!room.host && !room.viewer) streamRooms.delete(room.code);
+}
+function handleStream(ws, message) {
+  const type = message.type;
+  if (type === 'app-ping') return send(ws, { type: 'app-pong', t: message.t });
+  if (type === 'create-room') return createStream(ws, message);
+  if (type === 'join-room') return joinStream(ws, message);
+  if (type === 'rejoin-room') return rejoinStream(ws, message);
+  if (type === 'leave-room') return leaveStream(ws, true);
+
+  const room = streamRooms.get(ws.streamRoom);
+  if (!room) return;
+  room.lastActivity = Date.now();
+
+  if (type === 'control-request') {
+    if (ws.streamRole !== 'viewer' || room.controlGranted || room.controlRequestPending) return;
+    room.controlRequestPending = true;
+    return send(room.host, { type: 'control-request', name: clean(message.name, 24) || room.viewerName });
+  }
+  if (type === 'control-granted' || type === 'control-denied') {
+    if (ws.streamRole !== 'host') return;
+    room.controlRequestPending = false;
+    room.controlGranted = type === 'control-granted';
+    streamNotify(room);
+    return send(room.viewer, { type });
+  }
+  if (type === 'control-revoked') {
+    if (ws.streamRole !== 'host') return;
+    room.controlGranted = false; room.controlRequestPending = false;
+    streamNotify(room); return send(room.viewer, { type: 'control-revoked' });
+  }
+  if (type === 'control') {
+    if (ws.streamRole !== 'host' && !room.controlGranted) return;
+    return streamForward(room, ws, message);
+  }
+  if (['offer','answer','ice-candidate','chat','reaction','typing'].includes(type)) {
+    if (type === 'chat') { message.text = clean(message.text, 1200); message.name = clean(message.name, 24) || (ws.streamRole === 'host' ? room.hostName : room.viewerName); }
+    if (type === 'reaction' && !['👍','❤️','😂','🔥','😮','👏','🎉','😢'].includes(message.emoji)) return;
+    return streamForward(room, ws, message);
+  }
+}
+
+wss.on('connection', ws => {
+  ws.isAlive = true;
+  ws.on('pong', () => { ws.isAlive = true; });
+  ws.on('message', raw => {
+    if (raw.length > MAX_MESSAGE) return;
+    let message;
+    try { message = JSON.parse(raw.toString()); } catch (_) { return send(ws, { type: 'error', message: 'Mensagem inválida.' }); }
+    if (!message || typeof message.type !== 'string' || message.type.length > 40) return;
+    try {
+      if (message.type.startsWith('game-')) {
+        if (message.type === 'game-create') createGameRoom(ws, message);
+        else if (message.type === 'game-join') joinGameRoom(ws, message);
+        else if (message.type === 'game-rejoin') rejoinGameRoom(ws, message);
+        else if (message.type === 'game-move') gameMove(ws, message);
+        else if (message.type === 'game-reset') resetGame(ws);
+        else if (message.type === 'game-rematch-response') gameRematchResponse(ws, message);
+        else if (message.type === 'game-voice') { const room=gameRooms.get(ws.gameRoom); if(room) Object.values(room.players).forEach(target=>{ if(target && target!==ws) send(target,{type:'game-voice',from:ws.gameSymbol,signal:message.signal}); }); }
+        else if (message.type === 'game-chat') {
+          const room = gameRooms.get(ws.gameRoom); if (!room) return;
+          const text = clean(message.text, 300); if (!text) return;
+          const chatId=makeId('msg'); const name=clean(message.name,24)||room.names[ws.gameSymbol]||'Jogador';
+          if(message.scope==='team'){ const team=room.teams[ws.gameSymbol]; if(!team) return send(ws,{type:'game-error',message:'Ainda não estás associado a uma equipa.'}); Object.entries(room.players).forEach(([sym,target])=>{if(target&&room.teams[sym]===team) send(target,{type:'game-chat',messageId:chatId,name,text,from:ws.gameSymbol,scope:'team'});}); }
+          else broadcastGame(room, { type: 'game-chat', messageId: chatId, name, text, from: ws.gameSymbol, scope:'general' });
+        } else if (message.type === 'game-rematch-response') gameRematchResponse(ws,message);
+        else if (message.type === 'game-voice') { const room=gameRooms.get(ws.gameRoom); if(room) Object.values(room.players).forEach(target=>{ if(target && target!==ws) send(target,{type:'game-voice',from:ws.gameSymbol,signal:message.signal}); }); }
+        else if (message.type === 'game-leave') leaveGame(ws, true);
+      } else handleStream(ws, message);
+    } catch (error) { console.error('WS handler:', error); send(ws, { type: 'error', message: 'Ocorreu um erro ao processar a ação.' }); }
+  });
+  ws.on('close', () => {
+    const room = gameRooms.get(ws.gameRoom);
+    if (room && room.players[ws.gameSymbol] === ws) {
+      const symbol=ws.gameSymbol; room.players[symbol]=null; room.disconnected=symbol; room.lastActivity=Date.now();
+      broadcastGame(room,{type:'game-disconnected',symbol,state:publicGame(room)});
+      setTimeout(()=>{ if(gameRooms.get(room.code)===room && room.disconnected===symbol && !room.players[symbol]) { room.ids[symbol]=null; room.names[symbol]=null; room.disconnected=null; if(!room.players.X&&!room.players.O) gameRooms.delete(room.code); else broadcastGame(room,{type:'game-left',symbol}); } }, RECONNECT_GRACE_MS);
+    }
+
+    const stream = streamRooms.get(ws.streamRoom);
+    if (!stream || stream[ws.streamRole] !== ws) return;
+    const role = ws.streamRole;
+    if (stream.reconnectTimers[role]) clearTimeout(stream.reconnectTimers[role]);
+    stream.reconnectTimers[role] = setTimeout(() => {
+      if (streamRooms.has(stream.code) && stream[role] === ws) {
+        stream[role] = null; stream[role + 'Name'] = null;
+        if (role === 'viewer') { stream.controlGranted = false; stream.controlRequestPending = false; }
+        streamNotify(stream);
+        if (!stream.host && !stream.viewer) streamRooms.delete(stream.code);
+      }
+    }, RECONNECT_GRACE_MS);
+    send(role === 'host' ? stream.viewer : stream.host, { type: 'peer-disconnected-temp' });
+  });
+});
+
+setInterval(() => {
+  const now=Date.now();
+  for (const room of gameRooms.values()) {
+    if(room.turn && !room.winner && room.players.X && room.players.O && room.turnStartedAt && now-room.turnStartedAt >= TURN_SECONDS*1000){
+      room.turn = room.turn==='X'?'O':'X'; room.turnStartedAt=now; room.lastActivity=now; broadcastGame(room,{type:'game-timeout',state:publicGame(room)});
+    }
+  }
+},1000);
+
+setInterval(() => {
+  const cutoff = Date.now() - ROOM_TTL_MS;
+  for (const [key, room] of streamRooms) if (!room.host && !room.viewer && room.lastActivity < cutoff) streamRooms.delete(key);
+  for (const [key, room] of gameRooms) if (!room.players.X && !room.players.O || room.lastActivity < cutoff) gameRooms.delete(key);
+  for (const ws of wss.clients) {
+    if (ws.isAlive === false) { try { ws.terminate(); } catch (_) {} } else { ws.isAlive = false; try { ws.ping(); } catch (_) {} }
+  }
+}, 30000);
+
+const listener = server.listen(PORT, HOST, () => console.log(`${APP_NAME} v${APP_VERSION} em http://${HOST}:${PORT}`));
+function shutdown(signal) {
+  console.log(`${signal}: a encerrar...`);
+  for (const ws of wss.clients) { try { ws.close(1001, 'Server shutdown'); } catch (_) {} }
+  listener.close(() => process.exit(0));
+  setTimeout(() => process.exit(0), 3000).unref();
+}
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
