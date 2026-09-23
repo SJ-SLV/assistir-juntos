@@ -1,16 +1,15 @@
 {
   "name": "2-on-platform",
-  "version": "1.9.0",
+  "version": "2.1.0",
   "private": true,
-  "description": "2 ON — plataforma unificada para jogar, competir e assistir juntos.",
+  "description": "2 ON — plataforma de jogos competitivos em tempo real, com campeonatos, espectadores, chat e voz.",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
     "check": "node --check server.js && node --check public/games.js",
-    "test:championship": "python3 test-championship.py",
-    "test": "npm run check",
-    "test:advanced": "python3 test-championship-advanced.py"
+    "test": "npm run check && npm run test:static",
+    "test:static": "node scripts/smoke.js"
   },
   "engines": {
     "node": ">=18"
