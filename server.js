@@ -117,7 +117,7 @@ function publicGame(room) {
     players: { X: !!room.players.X, O: !!room.players.O }, score: room.score,
     matchNumber: room.matchNumber || 1, turnStartedAt: room.turnStartedAt || null, turnSeconds: TURN_SECONDS,
     disconnected: room.disconnected || null,
-    teams: room.teams || {X:null,O:null}
+    teams: room.teams || {X:null,O:null}, championshipFixture: room.championshipFixture ? {championshipId:room.championshipFixture.championshipId,fixtureId:room.championshipFixture.fixtureId} : null
   };
 }
 function broadcastGame(room, payload) {
@@ -177,6 +177,15 @@ function joinGameRoom(ws, message) {
   if (ws.gameRoom) leaveGame(ws, false);
   const name = clean(message.name, 24) || 'Jogador';
   const playerId = clean(message.playerId, 80) || makeId('player');
+  if(room.championshipFixture){
+    const allowed = room.championshipFixture;
+    if(playerId!==allowed.homePlayerId && playerId!==allowed.awayPlayerId) return send(ws,{type:'game-error',message:'Esta sala pertence a um jogo de campeonato e está reservada aos dois jogadores.'});
+    const forced = playerId===allowed.homePlayerId ? 'X' : 'O';
+    if(room.players[forced]) return send(ws,{type:'game-error',message:'Este jogador já está conectado à partida.'});
+    if(room.players.X && forced==='O' && room.players.O) return send(ws,{type:'game-error',message:'A partida já está completa.'});
+    room.players[forced] = ws; room.names[forced] = forced==='X'?allowed.homePlayerName:allowed.awayPlayerName; room.ids[forced]=playerId; room.teams[forced]=clean(message.teamName,40)||room.teams[forced]; ws.gameRoom=code; ws.gameSymbol=forced; ws.gamePlayerId=playerId; room.lastActivity=Date.now();
+    send(ws,{type:'game-joined',roomCode:code,symbol:forced,state:publicGame(room)}); broadcastGame(room,{type:'game-state',state:publicGame(room)}); return;
+  }
   room.players[symbol] = ws; room.names[symbol] = name; room.ids[symbol] = playerId; room.teams[symbol] = clean(message.teamName,40) || null;
   room.lastActivity = Date.now(); ws.gameRoom = code; ws.gameSymbol = symbol; ws.gamePlayerId = playerId;
   send(ws, { type: 'game-joined', roomCode: code, symbol, state: publicGame(room) });
@@ -205,6 +214,19 @@ function gameMove(ws, message) {
   } else {
     room.turn = room.turn === 'X' ? 'O' : 'X';
     room.turnStartedAt = Date.now();
+  }
+  if (result && room.championshipFixture) {
+    const meta = room.championshipFixture;
+    const c = championships.find(x => x.id === meta.championshipId);
+    const f = c?.fixtures.find(x => x.id === meta.fixtureId);
+    if (c && f && f.status !== 'finished') {
+      f.homeScore = result.winner === 'X' ? 1 : 0;
+      f.awayScore = result.winner === 'O' ? 1 : 0;
+      f.status = 'finished';
+      f.finishedAt = Date.now();
+      maybeFinishChampionship(c);
+      savePersistentData();
+    }
   }
   room.lastActivity = Date.now();
   broadcastGame(room, { type: 'game-state', state: publicGame(room) });
@@ -249,18 +271,30 @@ app.get('/api/games/ranking', (req, res) => {
 });
 app.get('/api/games/championships', (req, res) => {
   const publicCups = championships.map(c => ({
-    id:c.id, name:c.name, status:c.status, format:c.format, participantCount:c.participantCount, ownerPlayerId:c.ownerPlayerId,
+    id:c.id, name:c.name, status:c.status, participantCount:c.participantCount,
+    ownerPlayerId:c.ownerPlayerId, ownerName:c.ownerName, startedAt:c.startedAt||null, finishedAt:c.finishedAt||null,
     teams:c.teams.map(t => ({id:t.id,name:t.name,capacity:t.capacity,players:t.players.length}))
   }));
   res.json({ championships: publicCups });
 });
+
+function publicChampionship(c, playerId='') {
+  const member = c.teams.find(t => t.players.some(p => p.playerId===playerId));
+  return {
+    id:c.id,name:c.name,status:c.status,participantCount:c.participantCount,ownerPlayerId:c.ownerPlayerId,ownerName:c.ownerName,
+    createdAt:c.createdAt,startedAt:c.startedAt||null,finishedAt:c.finishedAt||null,winnerTeamId:c.winnerTeamId||null,
+    teams:c.teams.map(t=>({id:t.id,name:t.name,capacity:t.capacity,players:t.players.map(p=>({playerId:p.playerId,name:p.name})),joinCode:member?.id===t.id?t.joinCode:undefined})),
+    fixtures:(c.fixtures||[]).map(f=>({id:f.id,order:f.order,status:f.status,homeTeamId:f.homeTeamId,awayTeamId:f.awayTeamId,homePlayerId:f.homePlayerId,awayPlayerId:f.awayPlayerId,homePlayerName:f.homePlayerName,awayPlayerName:f.awayPlayerName,homeScore:f.homeScore,awayScore:f.awayScore,roomCode:f.roomCode||null})),
+    memberTeamId:member?.id||null
+  };
+}
+
 app.get('/api/games/championships/:id', (req,res)=>{
   const c=championships.find(x=>x.id===req.params.id);
   if(!c)return res.status(404).json({error:'Campeonato não encontrado.'});
-  const pid=clean(req.query?.playerId,80);
-  const isMember=c.teams.some(t=>t.players.some(p=>p.playerId===pid));
-  res.json({championship:{...c,teams:c.teams.map(t=>({...t,joinCode:isMember?t.joinCode:undefined}))}});
+  res.json({championship:publicChampionship(c,clean(req.query?.playerId,80))});
 });
+
 app.post('/api/games/championships', (req, res) => {
   const name = clean(req.body?.name, 80);
   const participantCount = Number(req.body?.participantCount);
@@ -271,42 +305,77 @@ app.post('/api/games/championships', (req, res) => {
   const capacity=participantCount/2;
   const ownerName=clean(req.body?.ownerName,24)||'Jogador';
   const ownerPlayerId=clean(req.body?.ownerPlayerId,80)||makeId('player');
-  const championship={id:makeId('cup'),name,format:'team-match',status:'open',participantCount,createdAt:Date.now(),ownerPlayerId,ownerName,teams:[
+  const championship={id:makeId('cup'),name,status:'waiting',participantCount,createdAt:Date.now(),ownerPlayerId,ownerName,startedAt:null,finishedAt:null,winnerTeamId:null,fixtures:[],teams:[
     {id:makeId('team'),name:teamAName,capacity,joinCode:'A-'+crypto.randomBytes(3).toString('hex').toUpperCase(),players:[{playerId:ownerPlayerId,name:ownerName,joinedAt:Date.now()}]},
     {id:makeId('team'),name:teamBName,capacity,joinCode:'B-'+crypto.randomBytes(3).toString('hex').toUpperCase(),players:[]}
   ]};
   championships.push(championship); savePersistentData();
-  res.status(201).json({championship,creatorTeam:'A',message:'Campeonato criado. O criador fica associado à Equipa A.'});
+  res.status(201).json({championship:publicChampionship(championship,ownerPlayerId),creatorTeam:'A',message:'Campeonato criado. Ficaste associado à Equipa A.'});
 });
+
 app.post('/api/games/championships/join', (req,res)=>{
   const code=clean(req.body?.code,20).toUpperCase(); const name=clean(req.body?.name,24)||'Jogador'; const playerId=clean(req.body?.playerId,80)||makeId('player');
-  const c=championships.find(x=>x.status==='open'&&x.teams.some(t=>t.joinCode===code));
-  if(!c)return res.status(404).json({error:'Código de equipa inválido ou campeonato encerrado.'});
+  const c=championships.find(x=>x.status==='waiting'&&x.teams.some(t=>t.joinCode===code));
+  if(!c)return res.status(404).json({error:'Código de equipa inválido ou campeonato que já começou.'});
   const team=c.teams.find(t=>t.joinCode===code);
-  if(team.players.some(p=>p.playerId===playerId))return res.json({championship:c,team});
+  if(team.players.some(p=>p.playerId===playerId))return res.json({championship:publicChampionship(c,playerId),team});
   if(team.players.length>=team.capacity)return res.status(409).json({error:'Esta equipa já atingiu o limite de participantes.'});
   const other=c.teams.find(t=>t.id!==team.id);
   if(other?.players.some(p=>p.playerId===playerId))return res.status(409).json({error:'Já estás associado à outra equipa deste campeonato.'});
-  team.players.push({playerId,name,joinedAt:Date.now()}); savePersistentData();
-  res.status(201).json({championship:c,team:{id:team.id,name:team.name,capacity:team.capacity,players:team.players},message:`Entraste automaticamente na equipa ${team.name}.`});
+  team.players.push({playerId,name,joinedAt:Date.now()});
+  if(c.teams.every(t=>t.players.length===t.capacity)) c.status='ready';
+  savePersistentData();
+  res.status(201).json({championship:publicChampionship(c,playerId),team:{id:team.id,name:team.name,capacity:team.capacity,players:team.players},message:`Entraste automaticamente na equipa ${team.name}.`});
 });
+
+function createChampionshipFixtures(c){
+  const a=c.teams[0], b=c.teams[1];
+  return a.players.map((pa,i)=>{
+    const pb=b.players[i];
+    return {id:makeId('fx'),order:i+1,status:'scheduled',homeTeamId:a.id,awayTeamId:b.id,homePlayerId:pa.playerId,awayPlayerId:pb.playerId,homePlayerName:pa.name,awayPlayerName:pb.name,homeScore:null,awayScore:null,roomCode:null};
+  });
+}
+function championshipScores(c){
+  const scores={}; c.teams.forEach(t=>scores[t.id]=0);
+  for(const f of c.fixtures||[]){if(f.status!=='finished')continue;if(f.homeScore>f.awayScore)scores[f.homeTeamId]++;else if(f.awayScore>f.homeScore)scores[f.awayTeamId]++;}
+  return scores;
+}
+function maybeFinishChampionship(c){
+  if(!c.fixtures.length || c.fixtures.some(f=>f.status!=='finished')) return false;
+  const scores=championshipScores(c), a=c.teams[0].id,b=c.teams[1].id;
+  if(scores[a]===scores[b]) return false;
+  c.status='finished'; c.winnerTeamId=scores[a]>scores[b]?a:b; c.finishedAt=Date.now(); savePersistentData(); return true;
+}
 app.post('/api/games/championships/:id/start', (req,res)=>{
   const c=championships.find(x=>x.id===req.params.id);
   if(!c)return res.status(404).json({error:'Campeonato não encontrado.'});
   const pid=clean(req.body?.playerId,80);
-  if(pid!==c.ownerPlayerId)return res.status(403).json({error:'Apenas o criador do campeonato pode iniciar o confronto.'});
-  if(c.teams.some(t=>t.players.length===0))return res.status(409).json({error:'As duas equipas precisam de pelo menos um jogador.'});
-  c.status='ready'; c.startedAt=Date.now(); savePersistentData();
-  res.json({championship:c,message:'Confronto pronto para começar.'});
+  if(pid!==c.ownerPlayerId)return res.status(403).json({error:'Apenas o criador do campeonato pode iniciar o campeonato.'});
+  if(c.status!=='ready')return res.status(409).json({error:'O campeonato só pode começar quando todas as vagas estiverem preenchidas.'});
+  c.fixtures=createChampionshipFixtures(c); c.status='in_progress'; c.startedAt=Date.now(); c.finishedAt=null; c.winnerTeamId=null; savePersistentData();
+  res.json({championship:publicChampionship(c,pid),message:'Campeonato iniciado. O primeiro jogo está pronto.'});
 });
+
+app.post('/api/games/championships/:id/fixtures/:fixtureId/room', (req,res)=>{
+  const c=championships.find(x=>x.id===req.params.id); if(!c)return res.status(404).json({error:'Campeonato não encontrado.'});
+  const f=c.fixtures.find(x=>x.id===req.params.fixtureId); if(!f)return res.status(404).json({error:'Jogo do campeonato não encontrado.'});
+  const pid=clean(req.body?.playerId,80);
+  if(pid!==f.homePlayerId&&pid!==f.awayPlayerId)return res.status(403).json({error:'Não participas neste jogo.'});
+  if(f.status==='finished')return res.status(409).json({error:'Este jogo já terminou.'});
+  if(f.roomCode){return res.json({roomCode:f.roomCode,fixture:f});}
+  const rc=roomCode(); f.roomCode=rc; f.status='playing';
+  const home=c.teams.find(t=>t.id===f.homeTeamId),away=c.teams.find(t=>t.id===f.awayTeamId);
+  gameRooms.set(rc,{code:rc,players:{X:null,O:null},names:{X:f.homePlayerName,O:f.awayPlayerName},ids:{X:f.homePlayerId,O:f.awayPlayerId},board:Array(9).fill(null),turn:null,winner:null,winningLine:[],turnStartedAt:null,lastActivity:Date.now(),score:{X:0,O:0},matchNumber:1,disconnected:null,teams:{X:home?.name||null,O:away?.name||null},championshipFixture:{championshipId:c.id,fixtureId:f.id}});
+  savePersistentData(); res.json({roomCode:rc,fixture:f});
+});
+
 app.delete('/api/games/championships/:id', (req,res)=>{
   const i=championships.findIndex(x=>x.id===req.params.id);
   if(i<0)return res.status(404).json({error:'Campeonato não encontrado.'});
-  const c=championships[i];
-  const pid=clean(req.query?.playerId || req.body?.playerId,80);
+  const c=championships[i]; const pid=clean(req.query?.playerId || req.body?.playerId,80);
   if(pid!==c.ownerPlayerId)return res.status(403).json({error:'Apenas o criador pode eliminar este campeonato.'});
-  championships.splice(i,1); savePersistentData();
-  res.json({ok:true,message:'Campeonato eliminado.'});
+  if(c.status==='in_progress')return res.status(409).json({error:'Um campeonato em andamento não pode ser eliminado.'});
+  championships.splice(i,1); savePersistentData(); res.json({ok:true,message:'Campeonato eliminado.'});
 });
 
 // ---------------- Streaming ----------------
