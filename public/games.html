@@ -1,6 +1,30 @@
-<!doctype html><html lang="pt"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0b1020"><title>2 ON Streng Games</title><link rel="stylesheet" href="/games.css"></head><body>
-<div class="app"><header><a href="/" class="brand"><span class="logo">2·ON</span><span>Streng Games</span></a><nav><button data-page="home" class="active">Jogar</button><button data-page="championships">Campeonatos</button><button data-page="ranking">Ranking</button></nav></header>
-<main><section id="home" class="page active"><div class="hero"><small>2 ON PLATFORM · COMPETITIVE</small><h1>Joga. Compete. Evolui.</h1><p>Começa uma partida de X/O e convida outra pessoa com um código. Cada jogador usa o seu próprio dispositivo.</p><div class="row"><button id="quickRoom" class="primary">Criar partida</button><button id="joinBtn">Entrar com código</button></div></div><div class="cards"><article><b>⚡ Tempo real</b><span>Tabuleiro sincronizado entre os dois jogadores.</span></article><article><b>🏆 Competição</b><span>Base preparada para campeonatos e ranking.</span></article><article><b>💬 Comunicação</b><span>Chat e reações dentro da partida.</span></article></div></section>
-<section id="play" class="page"><div class="game-head"><div><small>PARTIDA</small><h2 id="roomTitle">Sala</h2><div id="gameStatus" class="muted">A ligar…</div></div><button id="copyCode">Copiar código</button></div><div class="players"><div><span id="meSymbol">X</span><div><b id="meName">Tu</b><small>Jogador</small></div></div><strong>VS</strong><div class="right"><div><b id="opponentName">A aguardar</b><small>Adversário</small></div><span id="opSymbol">O</span></div></div><div id="board" class="board"></div><div class="game-actions"><button id="newRound" class="primary">Nova partida</button><button id="leaveGame">Sair</button></div><div class="chat"><div class="chat-title">Chat da partida</div><div id="messages" class="messages"></div><div class="chat-row"><input id="chatInput" maxlength="300" placeholder="Escreve uma mensagem…"><button id="chatSend">Enviar</button></div></div></section>
-<section id="championships" class="page"><div class="section-head"><div><small>COMPETIÇÃO</small><h2>Campeonatos</h2></div><button id="createCup" class="primary">Criar</button></div><div id="cups" class="list"></div></section>
-<section id="ranking" class="page"><div class="section-head"><div><small>PROGRESSO</small><h2>Ranking</h2></div></div><div id="rankingBox" class="list"></div></section></main><div id="toast"></div></div><script src="/games.js"></script></body></html>
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b1020"><title>2 ON Streng Games</title><link rel="stylesheet" href="/games.css">
+</head>
+<body>
+<div class="app">
+<header><a href="/" class="brand"><span class="logo">2·ON</span><span>STRENG GAMES</span></a><nav><button data-page="home" class="active">Jogar</button><button data-page="championships">Campeonatos</button><button data-page="ranking">Ranking</button></nav></header>
+<main>
+<section id="home" class="page active">
+  <div class="hero"><div class="eyebrow">2 ON · COMPETIÇÃO EM TEMPO REAL</div><h1>Joga. Compete.<br><em>Evolui.</em></h1><p>Cria uma sala, partilha o código e disputa uma partida de X/O em dois dispositivos.</p>
+    <div class="entry-grid"><div class="entry-field"><label>O teu nome</label><input id="playerName" maxlength="24" placeholder="Ex.: André"></div><div class="entry-field"><label>Equipa <span>(opcional)</span></label><input id="teamName" maxlength="40" placeholder="Ex.: 2 ON Alpha"></div></div>
+    <div class="row"><button id="quickRoom" class="primary">Criar partida</button><button id="joinBtn">Entrar com código</button></div>
+  </div>
+  <div class="feature-grid"><article><strong>01</strong><b>Primeiro toque</b><span>Quem tocar primeiro no tabuleiro define quem começa.</span></article><article><strong>02</strong><b>Tempo real</b><span>Jogadas, turnos e estado da partida sincronizados.</span></article><article><strong>03</strong><b>Competição</b><span>Ranking, histórico e campeonatos numa só plataforma.</span></article></div>
+</section>
+<section id="play" class="page">
+  <div class="game-head"><div><div class="eyebrow">PARTIDA · <span id="roomTitle">SALA</span></div><h2 id="gameStatus">A preparar…</h2><div class="turn-meta"><span id="turnClock">—</span><span id="connectionState" class="status-dot online">Ligado</span></div></div><div class="head-actions"><button id="copyCode">Copiar código</button><button id="leaveGame" class="danger">Sair</button></div></div>
+  <div class="match-info"><div class="player-card me"><div id="meAvatar" class="avatar">X</div><div><b id="meName">Tu</b><small id="meTeam">Sem equipa</small></div><span id="meSymbol" class="symbol">X</span></div><div class="score"><small>PARTIDA <b id="matchNumber">1</b></small><strong id="scoreValue">0 — 0</strong></div><div class="player-card opponent"><div class="avatar" id="opAvatar">O</div><div><b id="opponentName">A aguardar</b><small id="opTeam">A aguardar</small></div><span id="opSymbol" class="symbol">O</span></div></div>
+  <div class="board-wrap"><div id="board" class="board"></div><div id="resultBanner" class="result-banner"></div></div>
+  <div class="game-actions"><button id="rematchBtn" class="primary">Revanche</button><button id="voiceBtn">🎙 Voz</button></div>
+  <div class="chat"><div class="chat-header"><div><b>Conversação</b><small>Fala com os competidores</small></div><div class="chat-tabs"><button data-scope="general" class="active">Geral</button><button data-scope="team">Equipa</button></div></div><div id="messages" class="messages"></div><div class="chat-row"><input id="chatInput" maxlength="300" placeholder="Escreve uma mensagem…"><button id="chatSend">Enviar</button></div></div>
+  <audio id="remoteAudio" autoplay playsinline></audio>
+</section>
+<section id="championships" class="page"><div class="section-head"><div><div class="eyebrow">COMPETIÇÃO</div><h2>Campeonatos</h2><p>Competições por liga e eliminatórias.</p></div><button id="createCup" class="primary">Criar campeonato</button></div><div id="cups" class="list"></div></section>
+<section id="ranking" class="page"><div class="section-head"><div><div class="eyebrow">PROGRESSO</div><h2>Ranking</h2><p>Resultados acumulados das partidas.</p></div></div><div id="profileBox" class="profile-box"></div><div id="rankingBox" class="list"></div></section>
+</main>
+<div id="toast"></div><div id="confirm" class="modal" aria-hidden="true"><div class="modal-card"><div class="eyebrow">CONFIRMAR</div><h3 id="confirmTitle">Sair da partida?</h3><p id="confirmText">O teu adversário será informado.</p><div class="modal-actions"><button id="confirmNo">Cancelar</button><button id="confirmYes" class="danger primary">Confirmar</button></div></div></div>
+</div><script src="/games.js"></script></body></html>
