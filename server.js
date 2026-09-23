@@ -283,7 +283,7 @@ function publicChampionship(c, playerId='') {
   return {
     id:c.id,name:c.name,status:c.status,participantCount:c.participantCount,ownerPlayerId:c.ownerPlayerId,ownerName:c.ownerName,
     createdAt:c.createdAt,startedAt:c.startedAt||null,finishedAt:c.finishedAt||null,winnerTeamId:c.winnerTeamId||null,
-    teams:c.teams.map(t=>({id:t.id,name:t.name,capacity:t.capacity,players:t.players.map(p=>({playerId:p.playerId,name:p.name})),joinCode:member?.id===t.id?t.joinCode:undefined})),
+    teams:c.teams.map(t=>({id:t.id,name:t.name,capacity:t.capacity,players:t.players.map(p=>({playerId:p.playerId,name:p.name})),joinCode:(playerId===c.ownerPlayerId||member?.id===t.id)?t.joinCode:undefined})),
     fixtures:(c.fixtures||[]).map(f=>({id:f.id,order:f.order,status:f.status,homeTeamId:f.homeTeamId,awayTeamId:f.awayTeamId,homePlayerId:f.homePlayerId,awayPlayerId:f.awayPlayerId,homePlayerName:f.homePlayerName,awayPlayerName:f.awayPlayerName,homeScore:f.homeScore,awayScore:f.awayScore,roomCode:f.roomCode||null})),
     memberTeamId:member?.id||null
   };
