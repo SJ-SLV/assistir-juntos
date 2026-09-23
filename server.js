@@ -7,7 +7,7 @@ const fs = require('fs');
 const WebSocket = require('ws');
 
 const APP_NAME = '2 ON Platform';
-const APP_VERSION = '1.8.0';
+const APP_VERSION = '1.9.0';
 const PORT = Number(process.env.PORT || 3000);
 const HOST = process.env.HOST || '0.0.0.0';
 const ROOM_TTL_MS = 6 * 60 * 60 * 1000;
@@ -44,6 +44,7 @@ const streamRooms = new Map();
 const gameRooms = new Map();
 const stats = new Map();
 let championships = [];
+const championshipSockets = new Map();
 
 function normalizeStatsRecord(raw){
   const playerId=cleanBasic(raw?.playerId,80);
@@ -57,7 +58,7 @@ function normalizeChampionship(raw){
   if(!raw||typeof raw!=='object')return null;
   const teams=Array.isArray(raw.teams)?raw.teams.slice(0,2):[];
   if(teams.length!==2)return null;
-  const participantCount=Math.max(2,Math.min(32,Number(raw.participantCount)||2));
+  let participantCount=Math.max(2,Math.min(32,Number(raw.participantCount)||2)); if(participantCount%2)participantCount--; if(participantCount<2)participantCount=2;
   const capacity=Math.floor(participantCount/2);
   const normalizedTeams=teams.map((t,i)=>({
     id:cleanBasic(t.id,80)||`team_${crypto.randomBytes(8).toString('hex')}`, name:cleanBasic(t.name,50)||`Equipa ${i===0?'A':'B'}`, capacity,
@@ -71,7 +72,9 @@ function normalizeChampionship(raw){
     homePlayerId:cleanBasic(f?.homePlayerId,80),awayPlayerId:cleanBasic(f?.awayPlayerId,80),
     homePlayerName:cleanBasic(f?.homePlayerName,24)||'Jogador',awayPlayerName:cleanBasic(f?.awayPlayerName,24)||'Jogador',
     homeScore:Number.isFinite(Number(f?.homeScore))?Number(f.homeScore):null,awayScore:Number.isFinite(Number(f?.awayScore))?Number(f.awayScore):null,
-    roomCode:cleanBasic(f?.roomCode,10).toUpperCase()||null,finishedAt:f?.finishedAt?Number(f.finishedAt):null
+    roomCode:cleanBasic(f?.roomCode,10).toUpperCase()||null,finishedAt:f?.finishedAt?Number(f.finishedAt):null,
+    finalBoard:Array.isArray(f?.finalBoard)&&f.finalBoard.length===9?f.finalBoard.map(v=>v==='X'||v==='O'?v:null):null,
+    result:f?.result==='X'||f?.result==='O'||f?.result==='draw'?f.result:null
   })).filter(f=>f.homePlayerId&&f.awayPlayerId):[];
   // A sala WebSocket é memória volátil. Após reiniciar o servidor, qualquer jogo marcado como "playing"
   // volta para "scheduled" para que possa ser aberto novamente sem ficar preso num código morto.
@@ -81,7 +84,9 @@ function normalizeChampionship(raw){
   if(status==='waiting'&&full)status='ready';
   if(status==='ready'&&!full)status='waiting';
   if(status==='in_progress'&&!fixtures.length)status=full?'ready':'waiting';
-  return {id:cleanBasic(raw.id,80)||`cup_${crypto.randomBytes(8).toString('hex')}`,name:cleanBasic(raw.name,80)||'Campeonato 2 ON',status,participantCount:capacity*2,createdAt:Number(raw.createdAt)||Date.now(),ownerPlayerId:cleanBasic(raw.ownerPlayerId,80)||normalizedTeams[0].players[0]?.playerId||`player_${crypto.randomBytes(8).toString('hex')}`,ownerName:cleanBasic(raw.ownerName,24)||normalizedTeams[0].players[0]?.name||'Jogador',startedAt:raw.startedAt?Number(raw.startedAt):null,finishedAt:raw.finishedAt?Number(raw.finishedAt):null,winnerTeamId:raw.winnerTeamId||null,fixtures,teams:normalizedTeams};
+  const plannedMatches=Math.max(1,Math.min(15,Number(raw.plannedMatches)||Math.max(1,fixtures.length||1)));
+  const chat=Array.isArray(raw.chat)?raw.chat.slice(-200).map(m=>({id:cleanBasic(m?.id,80)||`msg_${crypto.randomBytes(8).toString('hex')}`,name:cleanBasic(m?.name,24)||'Jogador',text:cleanBasic(m?.text,300),playerId:cleanBasic(m?.playerId,80),scope:m?.scope==='team'?'team':'general',at:Number(m?.at)||Date.now()})).filter(m=>m.text):[];
+  return {id:cleanBasic(raw.id,80)||`cup_${crypto.randomBytes(8).toString('hex')}`,name:cleanBasic(raw.name,80)||'Campeonato 2 ON',status,participantCount:capacity*2,plannedMatches,createdAt:Number(raw.createdAt)||Date.now(),ownerPlayerId:cleanBasic(raw.ownerPlayerId,80)||normalizedTeams[0].players[0]?.playerId||`player_${crypto.randomBytes(8).toString('hex')}`,ownerName:cleanBasic(raw.ownerName,24)||normalizedTeams[0].players[0]?.name||'Jogador',startedAt:raw.startedAt?Number(raw.startedAt):null,finishedAt:raw.finishedAt?Number(raw.finishedAt):null,winnerTeamId:raw.winnerTeamId||null,fixtures,chat,teams:normalizedTeams};
 }
 function normalizePersistentData(data){
   stats.clear();
@@ -160,11 +165,12 @@ function publicGame(room) {
     players: { X: !!room.players.X, O: !!room.players.O }, score: room.score,
     matchNumber: room.matchNumber || 1, turnStartedAt: room.turnStartedAt || null, turnSeconds: TURN_SECONDS,
     disconnected: room.disconnected || null,
-    teams: room.teams || {X:null,O:null}, championshipFixture: room.championshipFixture ? {championshipId:room.championshipFixture.championshipId,fixtureId:room.championshipFixture.fixtureId} : null
+    teams: room.teams || {X:null,O:null}, championshipFixture: room.championshipFixture ? {championshipId:room.championshipFixture.championshipId,fixtureId:room.championshipFixture.fixtureId} : null, spectatorCount: room.spectators?.size || 0
   };
 }
 function broadcastGame(room, payload) {
   Object.values(room.players).forEach(ws => send(ws, payload));
+  if(room.spectators) for(const ws of room.spectators) send(ws, payload);
 }
 function updateStats(playerId, name, result) {
   if (!playerId) return;
@@ -186,10 +192,10 @@ function createGameRoom(ws, message) {
   const playerId = clean(message.playerId, 80) || makeId('player');
   const room = {
     code, players: { X: ws, O: null }, names: { X: name, O: null }, ids: { X: playerId, O: null },
-    board: Array(9).fill(null), turn: null, winner: null, winningLine: [], turnStartedAt: null, lastActivity: Date.now(), score: { X: 0, O: 0 }, matchNumber: 1, disconnected: null, teams:{X: clean(message.teamName,40) || null, O:null}
+    board: Array(9).fill(null), turn: null, winner: null, winningLine: [], turnStartedAt: null, lastActivity: Date.now(), score: { X: 0, O: 0 }, matchNumber: 1, disconnected: null, teams:{X: clean(message.teamName,40) || null, O:null}, spectators:new Set(), championshipFixture:null
   };
   gameRooms.set(code, room);
-  ws.gameRoom = code; ws.gameSymbol = 'X'; ws.gamePlayerId = playerId;
+  ws.gameRoom = code; ws.gameSymbol = 'X'; ws.gamePlayerId = playerId; ws.gameSpectator=false;
   send(ws, { type: 'game-created', roomCode: code, symbol: 'X', state: publicGame(room) });
 }
 function rejoinGameRoom(ws, message) {
@@ -202,10 +208,11 @@ function rejoinGameRoom(ws, message) {
   if (ws.gameRoom && ws.gameRoom !== code) leaveGame(ws, false);
   const old = room.players[symbol];
   if (old && old !== ws) { old.gameRoom = null; old.gameSymbol = null; old.gamePlayerId = null; try { old.close(); } catch (_) {} }
+  if(room.championshipFixture){const c=championships.find(x=>x.id===room.championshipFixture.championshipId);if(c)addChampSocket(c,ws);}
   room.players[symbol] = ws;
   room.names[symbol] = clean(message.name, 24) || room.names[symbol] || 'Jogador';
   room.lastActivity = Date.now(); room.disconnected = null;
-  ws.gameRoom = code; ws.gameSymbol = symbol; ws.gamePlayerId = playerId;
+  ws.gameRoom = code; ws.gameSymbol = symbol; ws.gamePlayerId = playerId; ws.gameSpectator=false;
   send(ws, { type: 'game-rejoined', roomCode: code, symbol, state: publicGame(room) });
   broadcastGame(room, { type: 'game-state', state: publicGame(room) });
 }
@@ -213,30 +220,36 @@ function joinGameRoom(ws, message) {
   const code = clean(message.roomCode, 10).toUpperCase();
   const room = gameRooms.get(code);
   if (!room) return send(ws, { type: 'game-error', message: 'Sala não encontrada.' });
-  if (room.players.X === ws || room.players.O === ws) return;
-  if (room.disconnected && !room.players[room.disconnected]) return send(ws, { type:'game-error', message:'O teu adversário está a tentar reconectar. Aguarda um momento.' });
-  const symbol = !room.players.X ? 'X' : !room.players.O ? 'O' : null;
-  if (!symbol) return send(ws, { type: 'game-error', message: 'A sala já está completa.' });
-  if (ws.gameRoom) leaveGame(ws, false);
+  if (room.players.X === ws || room.players.O === ws || room.spectators?.has(ws)) return;
   const name = clean(message.name, 24) || 'Jogador';
   const playerId = clean(message.playerId, 80) || makeId('player');
   if(room.championshipFixture){
     const allowed = room.championshipFixture;
-    if(playerId!==allowed.homePlayerId && playerId!==allowed.awayPlayerId) return send(ws,{type:'game-error',message:'Esta sala pertence a um jogo de campeonato e está reservada aos dois jogadores.'});
+    const c=championships.find(x=>x.id===allowed.championshipId);
+    if(!c)return send(ws,{type:'game-error',message:'Campeonato não encontrado.'});
+    if(ws.gameRoom) leaveGame(ws,false);
+    addChampSocket(c,ws);
+    if(playerId!==allowed.homePlayerId && playerId!==allowed.awayPlayerId){
+      room.spectators.add(ws); ws.gameRoom=code; ws.gameSymbol=null; ws.gamePlayerId=playerId; ws.gameSpectator=true; room.lastActivity=Date.now();
+      send(ws,{type:'game-joined',roomCode:code,symbol:null,spectator:true,state:publicGame(room),championship:publicChampionship(c,playerId)}); broadcastGame(room,{type:'game-state',state:publicGame(room)}); return;
+    }
     const forced = playerId===allowed.homePlayerId ? 'X' : 'O';
     if(room.players[forced]) return send(ws,{type:'game-error',message:'Este jogador já está conectado à partida.'});
-    if(room.players.X && forced==='O' && room.players.O) return send(ws,{type:'game-error',message:'A partida já está completa.'});
-    room.players[forced] = ws; room.names[forced] = forced==='X'?allowed.homePlayerName:allowed.awayPlayerName; room.ids[forced]=playerId; room.teams[forced]=clean(message.teamName,40)||room.teams[forced]; ws.gameRoom=code; ws.gameSymbol=forced; ws.gamePlayerId=playerId; room.lastActivity=Date.now();
-    send(ws,{type:'game-joined',roomCode:code,symbol:forced,state:publicGame(room)}); broadcastGame(room,{type:'game-state',state:publicGame(room)}); return;
+    room.players[forced] = ws; room.names[forced] = forced==='X'?allowed.homePlayerName:allowed.awayPlayerName; room.ids[forced]=playerId; room.teams[forced]=clean(message.teamName,40)||room.teams[forced]; ws.gameRoom=code; ws.gameSymbol=forced; ws.gamePlayerId=playerId; ws.gameSpectator=false; room.lastActivity=Date.now();
+    send(ws,{type:'game-joined',roomCode:code,symbol:forced,state:publicGame(room),championship:publicChampionship(c,playerId)}); broadcastGame(room,{type:'game-state',state:publicGame(room)}); return;
   }
+  if (room.disconnected && !room.players[room.disconnected]) return send(ws, { type:'game-error', message:'O teu adversário está a tentar reconectar. Aguarda um momento.' });
+  const symbol = !room.players.X ? 'X' : !room.players.O ? 'O' : null;
+  if (!symbol) return send(ws, { type: 'game-error', message: 'A sala já está completa.' });
+  if (ws.gameRoom) leaveGame(ws, false);
   room.players[symbol] = ws; room.names[symbol] = name; room.ids[symbol] = playerId; room.teams[symbol] = clean(message.teamName,40) || null;
-  room.lastActivity = Date.now(); ws.gameRoom = code; ws.gameSymbol = symbol; ws.gamePlayerId = playerId;
+  room.lastActivity = Date.now(); ws.gameRoom = code; ws.gameSymbol = symbol; ws.gamePlayerId = playerId; ws.gameSpectator=false;
   send(ws, { type: 'game-joined', roomCode: code, symbol, state: publicGame(room) });
   broadcastGame(room, { type: 'game-state', state: publicGame(room) });
 }
 function gameMove(ws, message) {
   const room = gameRooms.get(ws.gameRoom);
-  if (!room || room.winner) return;
+  if (!room || room.winner || ws.gameSpectator) return send(ws,{type:'game-error',message:'Estás a acompanhar como espectador.'});
   if (!room.players.X || !room.players.O) return send(ws, { type: 'game-error', message: 'Aguarda o segundo jogador.' });
   const cell = Number(message.cell);
   if (!Number.isInteger(cell) || cell < 0 || cell > 8 || room.board[cell]) return send(ws, { type: 'game-error', message: 'Essa casa já não está disponível.' });
@@ -265,16 +278,16 @@ function gameMove(ws, message) {
     if (c && f && f.status !== 'finished') {
       f.homeScore = result.winner === 'X' ? 1 : 0;
       f.awayScore = result.winner === 'O' ? 1 : 0;
+      f.result = result.winner;
+      f.finalBoard = [...room.board];
       f.status = 'finished';
       f.finishedAt = Date.now();
-      // O resultado oficial fecha esta sala. A próxima partida fica preparada automaticamente.
-      const finishedRoomCode=room.code;
-      if(gameRooms.has(finishedRoomCode))gameRooms.delete(finishedRoomCode);
       if(!maybeFinishChampionship(c)){
         const next=firstOpenFixture(c);
-        if(next)ensureFixtureRoom(c,next);
+        if(next){const nextRoom=ensureFixtureRoom(c,next); broadcastChampionship(c,{type:'championship-next',championshipId:c.id,fixtureId:next.id,roomCode:nextRoom,homePlayerId:next.homePlayerId,awayPlayerId:next.awayPlayerId});}
       }
       savePersistentData();
+      broadcastChampionship(c,{type:'championship-updated',championshipId:c.id,fixtureId:f.id});
     }
   }
   room.lastActivity = Date.now();
@@ -302,18 +315,20 @@ function gameRematchResponse(ws) {
 }
 function leaveGame(ws, announce = true) {
   const room = gameRooms.get(ws.gameRoom);
-  if (!room) return;
+  if (!room) { removeChampSocket(ws); ws.gameRoom=null; ws.gameSymbol=null; ws.gamePlayerId=null; ws.gameSpectator=false; return; }
   const symbol = ws.gameSymbol;
-  if (room.players[symbol] === ws) { room.players[symbol] = null; room.names[symbol] = null; room.ids[symbol] = null; }
-  ws.gameRoom = null; ws.gameSymbol = null; ws.gamePlayerId = null;
+  if(ws.gameSpectator){room.spectators?.delete(ws); ws.gameRoom=null; ws.gameSymbol=null; ws.gamePlayerId=null; ws.gameSpectator=false; removeChampSocket(ws); if(announce)broadcastGame(room,{type:'game-info',message:'Um espectador saiu.'}); return;}
+  if (room.players[symbol] === ws) { room.players[symbol] = null; room.names[symbol] = null; if(!room.winner)room.ids[symbol] = null; }
+  ws.gameRoom = null; ws.gameSymbol = null; ws.gamePlayerId = null; ws.gameSpectator=false;
   if (announce) broadcastGame(room, { type: 'game-left', symbol });
-  if (!room.players.X && !room.players.O) {
+  if (!room.players.X && !room.players.O && !room.spectators?.size) {
     if (room.championshipFixture) {
       const meta=room.championshipFixture; const c=championships.find(x=>x.id===meta.championshipId); const f=c?.fixtures?.find(x=>x.id===meta.fixtureId);
-      if (f && f.status!=='finished') { f.roomCode=null; f.status='scheduled'; savePersistentData(); }
-    }
-    gameRooms.delete(room.code);
+      if (f && f.status!=='finished') { f.roomCode=null; f.status='scheduled'; savePersistentData(); gameRooms.delete(room.code); }
+      else if(f?.status==='finished'){ room.lastActivity=Date.now(); }
+    } else gameRooms.delete(room.code);
   }
+  removeChampSocket(ws);
 }
 
 app.post('/api/games/rooms', (req, res) => {
@@ -349,12 +364,12 @@ app.get('/api/games/championships', (req, res) => {
 function publicChampionship(c, playerId='') {
   const member = c.teams.find(t => t.players.some(p => p.playerId===playerId));
   return {
-    id:c.id,name:c.name,status:c.status,participantCount:c.participantCount,ownerPlayerId:c.ownerPlayerId,ownerName:c.ownerName,
+    id:c.id,name:c.name,status:c.status,participantCount:c.participantCount,plannedMatches:c.plannedMatches,ownerPlayerId:c.ownerPlayerId,ownerName:c.ownerName,
     createdAt:c.createdAt,startedAt:c.startedAt||null,finishedAt:c.finishedAt||null,winnerTeamId:c.winnerTeamId||null,
     teams:c.teams.map(t=>({id:t.id,name:t.name,capacity:t.capacity,players:t.players.map(p=>({playerId:p.playerId,name:p.name})),joinCode:(playerId===c.ownerPlayerId||member?.id===t.id)?t.joinCode:undefined})),
     teamScores:championshipScores(c),
-    fixtures:(c.fixtures||[]).map(f=>({id:f.id,order:f.order,status:f.status,homeTeamId:f.homeTeamId,awayTeamId:f.awayTeamId,homePlayerId:f.homePlayerId,awayPlayerId:f.awayPlayerId,homePlayerName:f.homePlayerName,awayPlayerName:f.awayPlayerName,homeScore:f.homeScore,awayScore:f.awayScore,roomCode:f.roomCode||null})),
-    memberTeamId:member?.id||null
+    fixtures:(c.fixtures||[]).map(f=>({id:f.id,order:f.order,status:f.status,homeTeamId:f.homeTeamId,awayTeamId:f.awayTeamId,homePlayerId:f.homePlayerId,awayPlayerId:f.awayPlayerId,homePlayerName:f.homePlayerName,awayPlayerName:f.awayPlayerName,homeScore:f.homeScore,awayScore:f.awayScore,roomCode:f.roomCode||null,result:f.result||null})),
+    chat:c.chat||[], memberTeamId:member?.id||null
   };
 }
 
@@ -369,12 +384,13 @@ app.post('/api/games/championships', (req, res) => {
   const participantCount = Number(req.body?.participantCount);
   const teamAName = clean(req.body?.teamAName, 50);
   const teamBName = clean(req.body?.teamBName, 50);
+  const plannedMatches = req.body?.plannedMatches==null ? 1 : Number(req.body?.plannedMatches);
   if(!name || !Number.isInteger(participantCount) || participantCount < 2 || participantCount > 32 || participantCount % 2 !== 0) return res.status(400).json({error:'O número de participantes deve ser par, entre 2 e 32.'});
   if(!teamAName || !teamBName) return res.status(400).json({error:'Indica o nome das duas equipas.'});
   const capacity=participantCount/2;
   const ownerName=clean(req.body?.ownerName,24)||'Jogador';
   const ownerPlayerId=clean(req.body?.ownerPlayerId,80)||makeId('player');
-  const championship={id:makeId('cup'),name,status:'waiting',participantCount,createdAt:Date.now(),ownerPlayerId,ownerName,startedAt:null,finishedAt:null,winnerTeamId:null,fixtures:[],teams:[
+  const championship={id:makeId('cup'),name,status:'waiting',participantCount,plannedMatches,createdAt:Date.now(),ownerPlayerId,ownerName,startedAt:null,finishedAt:null,winnerTeamId:null,fixtures:[],teams:[
     {id:makeId('team'),name:teamAName,capacity,joinCode:'A-'+crypto.randomBytes(3).toString('hex').toUpperCase(),players:[{playerId:ownerPlayerId,name:ownerName,joinedAt:Date.now()}]},
     {id:makeId('team'),name:teamBName,capacity,joinCode:'B-'+crypto.randomBytes(3).toString('hex').toUpperCase(),players:[]}
   ]};
@@ -398,11 +414,13 @@ app.post('/api/games/championships/join', (req,res)=>{
 });
 
 function createChampionshipFixtures(c){
-  const a=c.teams[0], b=c.teams[1];
-  return a.players.map((pa,i)=>{
-    const pb=b.players[i];
-    return {id:makeId('fx'),order:i+1,status:'scheduled',homeTeamId:a.id,awayTeamId:b.id,homePlayerId:pa.playerId,awayPlayerId:pb.playerId,homePlayerName:pa.name,awayPlayerName:pb.name,homeScore:null,awayScore:null,roomCode:null};
-  });
+  const a=c.teams[0], b=c.teams[1], total=Math.max(1,Math.min(15,c.plannedMatches||1));
+  const fixtures=[];
+  for(let i=0;i<total;i++){
+    const pa=a.players[i % a.players.length], pb=b.players[i % b.players.length];
+    fixtures.push({id:makeId('fx'),order:i+1,status:'scheduled',homeTeamId:a.id,awayTeamId:b.id,homePlayerId:pa.playerId,awayPlayerId:pb.playerId,homePlayerName:pa.name,awayPlayerName:pb.name,homeScore:null,awayScore:null,roomCode:null,finishedAt:null,finalBoard:null,result:null});
+  }
+  return fixtures;
 }
 function championshipScores(c){
   const scores={}; c.teams.forEach(t=>scores[t.id]=0);
@@ -415,19 +433,24 @@ function maybeFinishChampionship(c){
   c.status='finished'; c.winnerTeamId=scores[a]===scores[b]?null:(scores[a]>scores[b]?a:b); c.finishedAt=Date.now(); savePersistentData(); return true;
 }
 function ensureFixtureRoom(c,f){
-  if(!c||!f||f.status==='finished')return null;
-  if(f.roomCode&&gameRooms.has(f.roomCode)){
-    f.status='playing';
-    return f.roomCode;
-  }
-  const home=c.teams.find(t=>t.id===f.homeTeamId), away=c.teams.find(t=>t.id===f.awayTeamId);
-  if(!home||!away)return null;
+  if(!c||!f)return null;
+  if(f.roomCode&&gameRooms.has(f.roomCode))return f.roomCode;
+  if(f.status==='finished' && f.finalBoard && f.roomCode && gameRooms.has(f.roomCode)) return f.roomCode;
+  const home=c.teams.find(t=>t.id===f.homeTeamId), away=c.teams.find(t=>t.id===f.awayTeamId); if(!home||!away)return null;
   const rc=roomCode();
-  f.roomCode=rc; f.status='playing';
-  gameRooms.set(rc,{code:rc,players:{X:null,O:null},names:{X:f.homePlayerName,O:f.awayPlayerName},ids:{X:f.homePlayerId,O:f.awayPlayerId},board:Array(9).fill(null),turn:null,winner:null,winningLine:[],turnStartedAt:null,lastActivity:Date.now(),score:{X:0,O:0},matchNumber:1,disconnected:null,teams:{X:home.name,O:away.name},championshipFixture:{championshipId:c.id,fixtureId:f.id,homePlayerId:f.homePlayerId,awayPlayerId:f.awayPlayerId,homePlayerName:f.homePlayerName,awayPlayerName:f.awayPlayerName}});
+  const replay= f.status==='finished' && Array.isArray(f.finalBoard);
+  f.roomCode=rc; if(!replay)f.status='playing';
+  const result=replay?winner(f.finalBoard):null;
+  gameRooms.set(rc,{code:rc,players:{X:null,O:null},names:{X:f.homePlayerName,O:f.awayPlayerName},ids:{X:f.homePlayerId,O:f.awayPlayerId},board:replay?[...f.finalBoard]:Array(9).fill(null),turn:null,winner:replay?(f.result||result?.winner||null):null,winningLine:replay?(result?.line||[]):[],turnStartedAt:null,lastActivity:Date.now(),score:{X:0,O:0},matchNumber:f.order,disconnected:null,teams:{X:home.name,O:away.name},spectators:new Set(),championshipFixture:{championshipId:c.id,fixtureId:f.id,homePlayerId:f.homePlayerId,awayPlayerId:f.awayPlayerId,homePlayerName:f.homePlayerName,awayPlayerName:f.awayPlayerName}});
+  if(replay)gameRooms.get(rc).lastActivity=Date.now();
   return rc;
 }
 function firstOpenFixture(c){return (c.fixtures||[]).find(f=>f.status!=='finished');}
+function isChampionshipMember(c,playerId){return !!c?.teams.some(t=>t.players.some(p=>p.playerId===playerId));}
+function addChampSocket(c,ws){if(!c)return;let set=championshipSockets.get(c.id);if(!set){set=new Set();championshipSockets.set(c.id,set)}set.add(ws);ws.championshipId=c.id;}
+function removeChampSocket(ws){if(!ws.championshipId)return;const set=championshipSockets.get(ws.championshipId);if(set){set.delete(ws);if(!set.size)championshipSockets.delete(ws.championshipId)}ws.championshipId=null;}
+function broadcastChampionship(c,payload){const set=championshipSockets.get(c.id);if(!set)return;for(const target of set)send(target,payload);}
+function pushChampChat(c,playerId,name,text){const msg={id:makeId('msg'),playerId,name,text,scope:'general',at:Date.now()};c.chat=(c.chat||[]).slice(-199);c.chat.push(msg);savePersistentData();broadcastChampionship(c,{type:'championship-chat',message:msg});}
 
 app.post('/api/games/championships/:id/start', (req,res)=>{
   const c=championships.find(x=>x.id===req.params.id);
@@ -445,11 +468,10 @@ app.post('/api/games/championships/:id/fixtures/:fixtureId/room', (req,res)=>{
   const c=championships.find(x=>x.id===req.params.id); if(!c)return res.status(404).json({error:'Campeonato não encontrado.'});
   const f=c.fixtures.find(x=>x.id===req.params.fixtureId); if(!f)return res.status(404).json({error:'Jogo do campeonato não encontrado.'});
   const pid=clean(req.body?.playerId,80);
-  if(pid!==f.homePlayerId&&pid!==f.awayPlayerId)return res.status(403).json({error:'Não participas neste jogo.'});
-  if(f.status==='finished')return res.status(409).json({error:'Este jogo já terminou.'});
+  if(!isChampionshipMember(c,pid))return res.status(403).json({error:'Apenas jogadores deste campeonato podem acompanhar esta partida.'});
   const rc=ensureFixtureRoom(c,f);
-  if(!rc)return res.status(409).json({error:'Não foi possível preparar a sala desta partida.'});
-  savePersistentData(); res.json({roomCode:rc,fixture:f});
+  if(!rc)return res.status(409).json({error:'O replay desta partida não está disponível após reinício do servidor.'});
+  savePersistentData(); res.json({roomCode:rc,fixture:f,spectator:pid!==f.homePlayerId&&pid!==f.awayPlayerId});
 });
 
 app.delete('/api/games/championships/:id', (req,res)=>{
@@ -581,19 +603,37 @@ wss.on('connection', ws => {
     try { message = JSON.parse(raw.toString()); } catch (_) { return send(ws, { type: 'error', message: 'Mensagem inválida.' }); }
     if (!message || typeof message.type !== 'string' || message.type.length > 40) return;
     try {
-      if (message.type.startsWith('game-')) {
+      if (message.type === 'championship-watch') {
+        const cid=clean(message.championshipId,80), pid=clean(message.playerId,80);
+        const c=championships.find(x=>x.id===cid);
+        if(!c||!isChampionshipMember(c,pid)) return send(ws,{type:'game-error',message:'Não tens acesso a este campeonato.'});
+        if(ws.gameRoom) leaveGame(ws,false);
+        ws.gamePlayerId=pid; addChampSocket(c,ws);
+        send(ws,{type:'championship-chat-history',championshipId:c.id,messages:c.chat||[]});
+      } else if (message.type === 'championship-chat') {
+        const cid=clean(message.championshipId,80), pid=clean(message.playerId,80), text=clean(message.text,300), name=clean(message.name,24)||'Jogador';
+        const c=championships.find(x=>x.id===cid);
+        if(!c||!isChampionshipMember(c,pid)||!text)return send(ws,{type:'game-error',message:'Não foi possível enviar a mensagem.'});
+        addChampSocket(c,ws); pushChampChat(c,pid,name,text);
+      } else if (message.type.startsWith('game-')) {
         if (message.type === 'game-create') createGameRoom(ws, message);
         else if (message.type === 'game-join') joinGameRoom(ws, message);
         else if (message.type === 'game-rejoin') rejoinGameRoom(ws, message);
         else if (message.type === 'game-move') gameMove(ws, message);
         else if (message.type === 'game-reset') resetGame(ws);
         else if (message.type === 'game-rematch-response') gameRematchResponse(ws, message);
-        else if (message.type === 'game-voice') { const room=gameRooms.get(ws.gameRoom); if(room) Object.values(room.players).forEach(target=>{ if(target && target!==ws) send(target,{type:'game-voice',from:ws.gameSymbol,signal:message.signal}); }); }
+        else if (message.type === 'game-voice') { const room=gameRooms.get(ws.gameRoom); if(room && !ws.gameSpectator) Object.values(room.players).forEach(target=>{ if(target && target!==ws) send(target,{type:'game-voice',from:ws.gameSymbol,signal:message.signal}); }); }
         else if (message.type === 'game-chat') {
           const room = gameRooms.get(ws.gameRoom); if (!room) return;
           const text = clean(message.text, 300); if (!text) return;
-          const chatId=makeId('msg'); const name=clean(message.name,24)||room.names[ws.gameSymbol]||'Jogador';
-          if(message.scope==='team'){ const team=room.teams[ws.gameSymbol]; if(!team) return send(ws,{type:'game-error',message:'Ainda não estás associado a uma equipa.'}); Object.entries(room.players).forEach(([sym,target])=>{if(target&&room.teams[sym]===team) send(target,{type:'game-chat',messageId:chatId,name,text,from:ws.gameSymbol,scope:'team'});}); }
+          const name=clean(message.name,24)||room.names[ws.gameSymbol]||'Jogador';
+          if(room.championshipFixture){
+            const c=championships.find(x=>x.id===room.championshipFixture.championshipId);
+            if(c){ if(message.scope==='team' && !ws.gameSpectator){ const team=room.teams[ws.gameSymbol]; if(!team)return send(ws,{type:'game-error',message:'Equipa indisponível.'}); const msg={id:makeId('msg'),playerId:ws.gamePlayerId,name,text,scope:'team',at:Date.now()}; c.chat=(c.chat||[]).slice(-199); c.chat.push(msg); savePersistentData(); const teamIds=new Set(c.teams.filter(t=>t.name===team).flatMap(t=>t.players.map(p=>p.playerId))); const set=championshipSockets.get(c.id)||new Set(); for(const target of set) if(teamIds.has(target.gamePlayerId)) send(target,{type:'championship-chat',message:msg,scope:'team'}); } else pushChampChat(c,ws.gamePlayerId,name,text); return;
+            }
+          }
+          const chatId=makeId('msg');
+          if(message.scope==='team' && !ws.gameSpectator){ const team=room.teams[ws.gameSymbol]; if(!team) return send(ws,{type:'game-error',message:'Ainda não estás associado a uma equipa.'}); Object.entries(room.players).forEach(([sym,target])=>{if(target&&room.teams[sym]===team) send(target,{type:'game-chat',messageId:chatId,name,text,from:ws.gameSymbol,scope:'team'});}); }
           else broadcastGame(room, { type: 'game-chat', messageId: chatId, name, text, from: ws.gameSymbol, scope:'general' });
         } else if (message.type === 'game-leave') leaveGame(ws, true);
       } else handleStream(ws, message);
@@ -601,11 +641,13 @@ wss.on('connection', ws => {
   });
   ws.on('close', () => {
     const room = gameRooms.get(ws.gameRoom);
-    if (room && room.players[ws.gameSymbol] === ws) {
+    if (room && ws.gameSpectator) { room.spectators?.delete(ws); room.lastActivity=Date.now(); }
+    else if (room && room.players[ws.gameSymbol] === ws) {
       const symbol=ws.gameSymbol; room.players[symbol]=null; room.disconnected=symbol; room.lastActivity=Date.now();
       broadcastGame(room,{type:'game-disconnected',symbol,state:publicGame(room)});
-      setTimeout(()=>{ if(gameRooms.get(room.code)===room && room.disconnected===symbol && !room.players[symbol]) { room.ids[symbol]=null; room.names[symbol]=null; room.disconnected=null; if(!room.players.X&&!room.players.O) gameRooms.delete(room.code); else broadcastGame(room,{type:'game-left',symbol}); } }, RECONNECT_GRACE_MS);
+      setTimeout(()=>{ if(gameRooms.get(room.code)===room && room.disconnected===symbol && !room.players[symbol]) { room.disconnected=null; if(room.winner){ broadcastGame(room,{type:'game-left',symbol}); } else { room.ids[symbol]=null; room.names[symbol]=null; if(!room.players.X&&!room.players.O&&!room.spectators?.size){ const f=room.championshipFixture&&championships.find(c=>c.id===room.championshipFixture.championshipId)?.fixtures.find(f=>f.id===room.championshipFixture.fixtureId); if(f&&f.status!=='finished'){f.roomCode=null;f.status='scheduled';savePersistentData();gameRooms.delete(room.code);} } else broadcastGame(room,{type:'game-left',symbol}); } } }, RECONNECT_GRACE_MS);
     }
+    removeChampSocket(ws);
 
     const stream = streamRooms.get(ws.streamRoom);
     if (!stream || stream[ws.streamRole] !== ws) return;

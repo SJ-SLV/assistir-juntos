@@ -1,6 +1,6 @@
 {
   "name": "2-on-platform",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "private": true,
   "description": "2 ON — plataforma unificada para jogar, competir e assistir juntos.",
   "main": "server.js",
@@ -9,10 +9,14 @@
     "dev": "node --watch server.js",
     "check": "node --check server.js && node --check public/games.js",
     "test:championship": "python3 test-championship.py",
-    "test": "npm run check && npm run test:championship"
+    "test": "npm run check",
+    "test:advanced": "python3 test-championship-advanced.py"
   },
   "engines": {
     "node": ">=18"
   },
-  "dependencies": {}
+  "dependencies": {
+    "express": "^5.1.0",
+    "ws": "^8.18.0"
+  }
 }
