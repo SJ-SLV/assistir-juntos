@@ -46,16 +46,16 @@ async function loadCups(showEmpty=true){
   }catch{$('cups').innerHTML='<div class="empty-action">Não foi possível carregar os campeonatos.</div>'}
 }
 function renderChampionship(c){
-  const a=c.teams?.[0],b=c.teams?.[1], mine=c.memberTeamId, mineTeam=c.teams?.find(t=>t.id===mine);
+  const a=c.teams?.[0],b=c.teams?.[1], mine=c.memberTeamId, mineTeam=c.teams?.find(t=>t.id===mine), isOwner=c.ownerPlayerId===playerId;
   const scoreA=(c.fixtures||[]).filter(f=>f.status==='finished'&&f.homeScore>f.awayScore&&f.homeTeamId===a?.id).length+(c.fixtures||[]).filter(f=>f.status==='finished'&&f.awayScore>f.homeScore&&f.awayTeamId===a?.id).length;
   const scoreB=(c.fixtures||[]).filter(f=>f.status==='finished'&&f.homeScore>f.awayScore&&f.homeTeamId===b?.id).length+(c.fixtures||[]).filter(f=>f.status==='finished'&&f.awayScore>f.homeScore&&f.awayTeamId===b?.id).length;
   const canStart=c.ownerPlayerId===playerId&&c.status==='ready';
   const winner=c.winnerTeamId?(c.teams.find(t=>t.id===c.winnerTeamId)?.name):null;
-  const myCode=mineTeam?.joinCode;
+  const myCode=mineTeam?.joinCode, codeA=a?.joinCode, codeB=b?.joinCode;
   $('cupAccess').hidden=false;
   $('cupAccess').innerHTML=`<div class="champ-shell"><div class="champ-top"><div><div class="eyebrow">${cupStatusLabel(c.status).toUpperCase()}</div><h3>${esc(c.name)}</h3><p class="sub">${c.participantCount} jogadores · ${esc(a?.name||'Equipa A')} vs ${esc(b?.name||'Equipa B')}</p></div><div class="row compact"><button id="closeCupView">Fechar</button></div></div>
     <div class="champ-score"><div class="team-score"><b>${esc(a?.name||'Equipa A')}</b><strong>${scoreA}</strong><small>${a?.players?.length||0}/${a?.capacity||0} jogadores</small></div><div class="versus">VS</div><div class="team-score right"><b>${esc(b?.name||'Equipa B')}</b><strong>${scoreB}</strong><small>${b?.players?.length||0}/${b?.capacity||0} jogadores</small></div></div>
-    ${c.status==='waiting'||c.status==='ready'?`<div class="access-grid"><div class="access-code"><small>${esc(a?.name||'Equipa A')}</small><strong>${mine===a?.id?esc(a.joinCode):'••••••'}</strong>${mine===a?.id?`<button data-copy="${esc(a.joinCode)}">Copiar</button>`:''}</div><div class="access-code"><small>${esc(b?.name||'Equipa B')}</small><strong>${mine===b?.id?esc(b.joinCode):'••••••'}</strong>${mine===b?.id?`<button data-copy="${esc(b.joinCode)}">Copiar</button>`:''}</div></div>`:''}
+    ${c.status==='waiting'||c.status==='ready'?`<div class="access-grid"><div class="access-code"><small>${esc(a?.name||'Equipa A')}</small><strong>${codeA?esc(codeA):'••••••'}</strong>${codeA?`<button data-copy="${esc(codeA)}">Copiar</button>`:''}</div><div class="access-code"><small>${esc(b?.name||'Equipa B')}</small><strong>${codeB?esc(codeB):'••••••'}</strong>${codeB?`<button data-copy="${esc(codeB)}">Copiar</button>`:''}</div></div><div class="create-note">${isOwner?'Como criador, tens acesso aos dois códigos. Partilha o código de cada equipa apenas com os jogadores dessa equipa.':mineTeam?'Estás a ver apenas o código da tua equipa.':''}</div>`:''}
     ${mineTeam?`<div class="create-note">Estás na <b>${esc(mineTeam.name)}</b>. ${c.status==='waiting'?'Partilha apenas o código desta equipa com os teus companheiros.':''}</div>`:''}
     ${canStart?`<div class="row"><button id="startCup" class="primary">Iniciar campeonato</button></div>`:c.status==='waiting'?`<div class="create-note">${(a?.players?.length||0)}/${a?.capacity||0} na Equipa A · ${(b?.players?.length||0)}/${b?.capacity||0} na Equipa B. O botão de início aparece quando todas as vagas estiverem preenchidas.</div>`:''}
     ${c.status==='in_progress'||c.status==='finished'?`<div class="list-heading"><span>JOGOS DO CONFRONTO</span><small>${(c.fixtures||[]).filter(f=>f.status==='finished').length}/${c.fixtures?.length||0} concluídos</small></div><div class="fixture-list">${(c.fixtures||[]).map(f=>renderFixture(c,f)).join('')}</div>`:''}
