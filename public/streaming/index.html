@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-<title>2 on Streaming</title>
+<title>2 ON Streaming</title>
 <link rel="manifest" href="manifest.json" />
 <meta name="theme-color" content="#4c6fff" />
 <link rel="icon" href="icon.png" type="image/png" />
@@ -439,9 +439,9 @@
   <div class="topbar">
     <div class="topbar-brand">
       <div class="brand-mark">
-        <img src="icon.svg" alt="2 on Streaming" />
+        <img src="icon.svg" alt="2 ON Streaming" />
       </div>
-      <span class="topbar-title">2 on Streaming</span>
+      <span class="topbar-title">2 ON Streaming</span>
     </div>
     <div class="topbar-chip" id="topbar-room-chip">
       <span class="dot-live"></span><span id="topbar-room-code">-----</span>
@@ -1260,7 +1260,7 @@
   document.getElementById('btn-share-link').addEventListener('click', async () => {
     const url = shareLink();
     if (navigator.share) {
-      try { await navigator.share({ title: '2 on Streaming', text: 'Usa este link para assistirmos juntos:', url }); return; }
+      try { await navigator.share({ title: '2 ON Streaming', text: 'Usa este link para assistirmos juntos:', url }); return; }
       catch (e) { /* utilizador cancelou ou não suportado — cai para copiar */ }
     }
     await copyText(url);
@@ -2339,8 +2339,15 @@
 
   // ---------- MENSAGENS DO SERVIDOR ----------
   function wireSocket(socket) {
+    // Centraliza o envio para evitar exceções quando a ligação fecha durante uma ação.
+    const nativeSend = socket.send.bind(socket);
+    socket.send = (data) => {
+      if (socket.readyState !== WebSocket.OPEN) return false;
+      try { nativeSend(data); return true; } catch (e) { return false; }
+    };
     socket.onmessage = async (event) => {
-      const msg = JSON.parse(event.data);
+      let msg;
+      try { msg = JSON.parse(event.data); } catch (e) { return; }
 
       switch (msg.type) {
         case 'room-created':
