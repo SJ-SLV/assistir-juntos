@@ -7,7 +7,7 @@ const fs = require('fs');
 const WebSocket = require('ws');
 
 const APP_NAME = '2 ON Platform';
-const APP_VERSION = '1.3.0';
+const APP_VERSION = '1.4.0';
 const PORT = Number(process.env.PORT || 3000);
 const HOST = process.env.HOST || '0.0.0.0';
 const ROOM_TTL_MS = 6 * 60 * 60 * 1000;
@@ -116,7 +116,7 @@ function publicGame(room) {
     names: { X: room.names.X || null, O: room.names.O || null },
     players: { X: !!room.players.X, O: !!room.players.O }, score: room.score,
     matchNumber: room.matchNumber || 1, turnStartedAt: room.turnStartedAt || null, turnSeconds: TURN_SECONDS,
-    disconnected: room.disconnected || null, rematch: { X: !!room.rematch.X, O: !!room.rematch.O },
+    disconnected: room.disconnected || null,
     teams: room.teams || {X:null,O:null}
   };
 }
@@ -143,7 +143,7 @@ function createGameRoom(ws, message) {
   const playerId = clean(message.playerId, 80) || makeId('player');
   const room = {
     code, players: { X: ws, O: null }, names: { X: name, O: null }, ids: { X: playerId, O: null },
-    board: Array(9).fill(null), turn: null, winner: null, winningLine: [], turnStartedAt: null, lastActivity: Date.now(), score: { X: 0, O: 0 }, matchNumber: 1, rematch: {X:false,O:false}, disconnected: null, teams:{X: clean(message.teamName,40) || null, O:null}
+    board: Array(9).fill(null), turn: null, winner: null, winningLine: [], turnStartedAt: null, lastActivity: Date.now(), score: { X: 0, O: 0 }, matchNumber: 1, disconnected: null, teams:{X: clean(message.teamName,40) || null, O:null}
   };
   gameRooms.set(code, room);
   ws.gameRoom = code; ws.gameSymbol = 'X'; ws.gamePlayerId = playerId;
@@ -211,16 +211,21 @@ function gameMove(ws, message) {
 }
 function resetGame(ws) {
   const room = gameRooms.get(ws.gameRoom);
-  if (!room) return;
-  if (!room.players.X || !room.players.O) return send(ws, { type: 'game-error', message: 'Aguarda o segundo jogador.' });
-  room.rematch[ws.gameSymbol] = true;
-  if (!room.rematch.X || !room.rematch.O) { broadcastGame(room,{type:'game-state',state:publicGame(room)}); return send(ws,{type:'game-info',message:'Pedido de revanche enviado.'}); }
-  room.board = Array(9).fill(null); room.turn = null; room.winner = null; room.winningLine = []; room.turnStartedAt = null; room.matchNumber += 1; room.rematch={X:false,O:false}; room.lastActivity=Date.now();
+  if (!room || !room.winner) return send(ws, { type: 'game-error', message: 'A revanche só pode começar depois de uma partida.' });
+  if (!room.players.X || !room.players.O) return send(ws, { type: 'game-error', message: 'Aguarda os dois jogadores.' });
+  room.board = Array(9).fill(null);
+  room.turn = null;
+  room.winner = null;
+  room.winningLine = [];
+  room.turnStartedAt = null;
+  room.matchNumber = (room.matchNumber || 1) + 1;
+  room.lastActivity = Date.now();
+  // Uma única confirmação é suficiente: quem clicar em Revanche inicia imediatamente a nova partida.
   broadcastGame(room, { type: 'game-state', state: publicGame(room) });
+  broadcastGame(room, { type: 'game-info', message: `${room.names[ws.gameSymbol] || 'Um jogador'} iniciou a revanche.` });
 }
-function gameRematchResponse(ws, message){
-  const room=gameRooms.get(ws.gameRoom); if(!room || !room.winner) return;
-  if(message.accept===false){ room.rematch={X:false,O:false}; broadcastGame(room,{type:'game-rematch-declined',by:ws.gameSymbol}); return; }
+function gameRematchResponse(ws) {
+  // Mantido apenas para compatibilidade com clientes antigos.
   resetGame(ws);
 }
 function leaveGame(ws, announce = true) {
@@ -242,22 +247,55 @@ app.get('/api/games/ranking', (req, res) => {
     .map(s => ({ name: s.name, wins: s.wins, losses: s.losses, draws: s.draws, games: s.games, rate: s.games ? Math.round(s.wins/s.games*100) : 0 }));
   res.json({ ranking });
 });
-app.get('/api/games/championships', (req, res) => res.json({ championships }));
+app.get('/api/games/championships', (req, res) => {
+  const publicCups = championships.map(c => ({
+    id:c.id, name:c.name, status:c.status, format:c.format, participantCount:c.participantCount,
+    teams:c.teams.map(t => ({id:t.id,name:t.name,capacity:t.capacity,players:t.players.length}))
+  }));
+  res.json({ championships: publicCups });
+});
+app.get('/api/games/championships/:id', (req,res)=>{
+  const c=championships.find(x=>x.id===req.params.id);
+  if(!c)return res.status(404).json({error:'Campeonato não encontrado.'});
+  const pid=clean(req.query?.playerId,80);
+  const isMember=c.teams.some(t=>t.players.some(p=>p.playerId===pid));
+  res.json({championship:{...c,teams:c.teams.map(t=>({...t,joinCode:isMember?t.joinCode:undefined}))}});
+});
 app.post('/api/games/championships', (req, res) => {
   const name = clean(req.body?.name, 80);
-  if (!name) return res.status(400).json({ error: 'Nome do campeonato obrigatório.' });
-  const championship = { id: makeId('cup'), name, format: req.body?.format === 'knockout' ? 'knockout' : 'league', status: 'setup', teams: [], createdAt: Date.now() };
-  championships.push(championship);
-  res.status(201).json({ championship });
+  const participantCount = Number(req.body?.participantCount);
+  const teamAName = clean(req.body?.teamAName, 50);
+  const teamBName = clean(req.body?.teamBName, 50);
+  if(!name || !Number.isInteger(participantCount) || participantCount < 2 || participantCount > 32 || participantCount % 2 !== 0) return res.status(400).json({error:'O número de participantes deve ser par, entre 2 e 32.'});
+  if(!teamAName || !teamBName) return res.status(400).json({error:'Indica o nome das duas equipas.'});
+  const capacity=participantCount/2;
+  const ownerName=clean(req.body?.ownerName,24)||'Jogador';
+  const ownerPlayerId=clean(req.body?.ownerPlayerId,80)||makeId('player');
+  const championship={id:makeId('cup'),name,format:'team-match',status:'open',participantCount,createdAt:Date.now(),teams:[
+    {id:makeId('team'),name:teamAName,capacity,joinCode:'A-'+crypto.randomBytes(3).toString('hex').toUpperCase(),players:[{playerId:ownerPlayerId,name:ownerName,joinedAt:Date.now()}]},
+    {id:makeId('team'),name:teamBName,capacity,joinCode:'B-'+crypto.randomBytes(3).toString('hex').toUpperCase(),players:[]}
+  ]};
+  championships.push(championship); savePersistentData();
+  res.status(201).json({championship,creatorTeam:'A',message:'Campeonato criado. O criador fica associado à Equipa A.'});
 });
-
-app.get('/api/games/profile/:playerId', (req,res)=>{
-  const p=stats.get(clean(req.params.playerId,80));
-  res.json({profile:p||{playerId:req.params.playerId,name:'Jogador',wins:0,losses:0,draws:0,games:0}});
+app.post('/api/games/championships/join', (req,res)=>{
+  const code=clean(req.body?.code,20).toUpperCase(); const name=clean(req.body?.name,24)||'Jogador'; const playerId=clean(req.body?.playerId,80)||makeId('player');
+  const c=championships.find(x=>x.status==='open'&&x.teams.some(t=>t.joinCode===code));
+  if(!c)return res.status(404).json({error:'Código de equipa inválido ou campeonato encerrado.'});
+  const team=c.teams.find(t=>t.joinCode===code);
+  if(team.players.some(p=>p.playerId===playerId))return res.json({championship:c,team});
+  if(team.players.length>=team.capacity)return res.status(409).json({error:'Esta equipa já atingiu o limite de participantes.'});
+  const other=c.teams.find(t=>t.id!==team.id);
+  if(other?.players.some(p=>p.playerId===playerId))return res.status(409).json({error:'Já estás associado à outra equipa deste campeonato.'});
+  team.players.push({playerId,name,joinedAt:Date.now()}); savePersistentData();
+  res.status(201).json({championship:c,team:{id:team.id,name:team.name,capacity:team.capacity,players:team.players},message:`Entraste automaticamente na equipa ${team.name}.`});
 });
-app.get('/api/games/history/:playerId',(req,res)=>{
-  const p=stats.get(clean(req.params.playerId,80));
-  res.json({history:p?.history||[]});
+app.post('/api/games/championships/:id/start', (req,res)=>{
+  const c=championships.find(x=>x.id===req.params.id);
+  if(!c)return res.status(404).json({error:'Campeonato não encontrado.'});
+  if(c.teams.some(t=>t.players.length===0))return res.status(409).json({error:'As duas equipas precisam de pelo menos um jogador.'});
+  c.status='ready'; c.startedAt=Date.now(); savePersistentData();
+  res.json({championship:c,message:'Confronto pronto para começar.'});
 });
 
 // ---------------- Streaming ----------------
