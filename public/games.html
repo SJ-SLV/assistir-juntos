@@ -16,21 +16,36 @@
   <div class="feature-grid"><article><strong>01</strong><b>Primeiro toque</b><span>Quem tocar primeiro no tabuleiro define quem começa.</span></article><article><strong>02</strong><b>Tempo real</b><span>Jogadas, turnos e estado da partida sincronizados.</span></article><article><strong>03</strong><b>Competição</b><span>Ranking, histórico e campeonatos numa só plataforma.</span></article></div>
 </section>
 <section id="play" class="page">
-  <div class="game-head"><div><div class="eyebrow">PARTIDA · <span id="roomTitle">SALA</span></div><h2 id="gameStatus">A preparar…</h2><div class="turn-meta"><span id="turnClock">—</span><span id="connectionState" class="status-dot online">Ligado</span></div></div><div class="head-actions"><button id="copyCode">Copiar código</button><button id="leaveGame" class="danger">Sair</button></div></div>
+  <div class="game-head"><div><div class="eyebrow">PARTIDA · <span id="roomTitle">SALA</span></div><h2 id="gameStatus">A preparar…</h2><div class="turn-meta"><span id="turnClock">—</span><span id="connectionState" class="status-dot online">Ligado</span></div></div><div class="head-actions"><button id="backChamp" hidden>Campeonato</button><button id="copyCode">Copiar código</button><button id="leaveGame" class="danger">Sair</button></div></div>
   <div class="match-info"><div class="player-card me"><div id="meAvatar" class="avatar">X</div><div><b id="meName">Tu</b><small id="meTeam">Sem equipa</small></div><span id="meSymbol" class="symbol">X</span></div><div class="score"><small>PARTIDA <b id="matchNumber">1</b></small><strong id="scoreValue">0 — 0</strong></div><div class="player-card opponent"><div class="avatar" id="opAvatar">O</div><div><b id="opponentName">A aguardar</b><small id="opTeam">A aguardar</small></div><span id="opSymbol" class="symbol">O</span></div></div>
   <div class="board-wrap"><div id="board" class="board"></div><div id="resultBanner" class="result-banner"></div></div>
   <div class="game-actions"><button id="rematchBtn" class="primary">Revanche</button><button id="voiceBtn">🎙 Voz</button></div>
   <div class="chat"><div class="chat-header"><div><b>Conversação</b><small>Fala com os competidores</small></div><div class="chat-tabs"><button data-scope="general" class="active">Geral</button><button data-scope="team">Equipa</button></div></div><div id="messages" class="messages"></div><div class="chat-row"><input id="chatInput" maxlength="300" placeholder="Escreve uma mensagem…"><button id="chatSend">Enviar</button></div></div>
   <audio id="remoteAudio" autoplay playsinline></audio>
 </section>
-<section id="championships" class="page"><div class="section-head"><div><div class="eyebrow">COMPETIÇÃO ENTRE EQUIPAS</div><h2>Campeonatos</h2><p>Cria uma sala, divide os jogadores em duas equipas e partilha o código certo com cada grupo.</p></div><div class="row compact"><button id="joinCup" >Entrar com código</button><button id="createCup" class="primary">Criar campeonato</button></div></div><div id="cupCreate" class="cup-create" hidden>
-  <div class="form-grid">
-    <label>Nome do campeonato<input id="cupName" maxlength="70" placeholder="Ex.: 2 ON Luanda Cup"></label>
-    <label>Participantes no total<select id="cupParticipants"><option>2</option><option>4</option><option>6</option><option>8</option><option>10</option><option>12</option><option>16</option><option>20</option><option>24</option><option>32</option></select></label>
-    <label>Equipa A<input id="teamAName" maxlength="50" placeholder="Ex.: 2 ON Alpha"></label>
-    <label>Equipa B<input id="teamBName" maxlength="50" placeholder="Ex.: 2 ON Warriors"></label>
-  </div><div class="row"><button id="cupCancel">Cancelar</button><button id="cupCreateSubmit" class="primary">Criar sala de campeonato</button></div>
-</div><div id="cupAccess" class="access-card" hidden></div><div id="cupJoin" class="cup-create" hidden><div class="form-grid"><label>Código da equipa<input id="cupJoinCode" maxlength="20" placeholder="A-7K4P9 ou B-3M8Q2"></label><label>O teu nome<input id="cupJoinName" maxlength="24" placeholder="Ex.: João"></label></div><div class="row"><button id="cupJoinCancel">Cancelar</button><button id="cupJoinSubmit" class="primary">Entrar na equipa</button></div></div><div id="cups" class="list"></div></section>
+<section id="championships" class="page">
+  <div class="section-head"><div><div class="eyebrow">COMPETIÇÃO ENTRE EQUIPAS</div><h2>Campeonatos</h2><p>Cria o confronto, reúne as duas equipas e acompanha cada jogo até ao campeão.</p></div><div class="row compact"><button id="joinCup">Entrar com código</button><button id="createCup" class="primary">Criar campeonato</button></div></div>
+  <div id="cupCreate" class="cup-create" hidden>
+    <div class="step-label"><span>01</span> Dados do campeonato</div>
+    <div class="form-grid">
+      <label>Nome do campeonato<input id="cupName" maxlength="70" placeholder="Ex.: 2 ON Luanda Cup"></label>
+      <label>Jogadores no total<select id="cupParticipants"><option value="2">2 — 1 × 1</option><option value="4">4 — 2 × 2</option><option value="6">6 — 3 × 3</option><option value="8">8 — 4 × 4</option><option value="10">10 — 5 × 5</option><option value="12">12 — 6 × 6</option><option value="16">16 — 8 × 8</option><option value="20">20 — 10 × 10</option><option value="24">24 — 12 × 12</option><option value="32">32 — 16 × 16</option></select></label>
+      <label>Equipa A<input id="teamAName" maxlength="50" placeholder="Ex.: 2 ON Alpha"></label>
+      <label>Equipa B<input id="teamBName" maxlength="50" placeholder="Ex.: 2 ON Warriors"></label>
+    </div>
+    <div class="create-note">O criador entra automaticamente na Equipa A. Depois da criação, cada equipa recebe o seu próprio código de acesso.</div>
+    <div class="row"><button id="cupCancel">Cancelar</button><button id="cupCreateSubmit" class="primary">Criar campeonato</button></div>
+  </div>
+  <div id="cupJoin" class="cup-create" hidden>
+    <div class="step-label"><span>ENTRAR</span> Código da tua equipa</div>
+    <div class="form-grid"><label>Código da equipa<input id="cupJoinCode" maxlength="20" placeholder="Ex.: B-7A31F2"></label><label>O teu nome<input id="cupJoinName" maxlength="24" placeholder="Ex.: João"></label></div>
+    <div class="create-note">O código define automaticamente em qual equipa vais jogar.</div>
+    <div class="row"><button id="cupJoinCancel">Cancelar</button><button id="cupJoinSubmit" class="primary">Entrar na equipa</button></div>
+  </div>
+  <div id="cupAccess" class="access-card" hidden></div>
+  <div class="list-heading"><span>OS TEUS CAMPEONATOS</span><small>Atualização automática</small></div>
+  <div id="cups" class="list"></div>
+</section>
 <section id="ranking" class="page"><div class="section-head"><div><div class="eyebrow">PROGRESSO</div><h2>Ranking</h2><p>Resultados acumulados das partidas.</p></div></div><div id="profileBox" class="profile-box"></div><div id="rankingBox" class="list"></div></section>
 </main>
 <div id="toast"></div><div id="confirm" class="modal" aria-hidden="true"><div class="modal-card"><div class="eyebrow">CONFIRMAR</div><h3 id="confirmTitle">Sair da partida?</h3><p id="confirmText">O teu adversário será informado.</p><div class="modal-actions"><button id="confirmNo">Cancelar</button><button id="confirmYes" class="danger primary">Confirmar</button></div></div></div>
