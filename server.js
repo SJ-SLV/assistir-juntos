@@ -7,7 +7,7 @@ const fs = require('fs');
 const WebSocket = require('ws');
 
 const APP_NAME = '2 ON Platform';
-const APP_VERSION = '1.7.0';
+const APP_VERSION = '1.8.0';
 const PORT = Number(process.env.PORT || 3000);
 const HOST = process.env.HOST || '0.0.0.0';
 const ROOM_TTL_MS = 6 * 60 * 60 * 1000;
@@ -64,9 +64,23 @@ function normalizeChampionship(raw){
     joinCode:cleanBasic(t.joinCode,20).toUpperCase()||`${i===0?'A':'B'}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`,
     players:Array.isArray(t.players)?t.players.slice(0,capacity).map(p=>({playerId:cleanBasic(p?.playerId,80),name:cleanBasic(p?.name,24)||'Jogador',joinedAt:Number(p?.joinedAt)||Date.now()})).filter(p=>p.playerId):[]
   }));
-  const validStatuses=new Set(['waiting','ready','in_progress','finished']);
-  const fixtures=Array.isArray(raw.fixtures)?raw.fixtures.map(f=>{const x={...f}; if(x.status==='playing'){x.status='scheduled';x.roomCode=null;} return x;}):[];
-  const status=validStatuses.has(raw.status)?raw.status:'waiting';
+  const fixtures=Array.isArray(raw.fixtures)?raw.fixtures.map((f,i)=>({
+    id:cleanBasic(f?.id,80)||`fx_${crypto.randomBytes(8).toString('hex')}`,order:Number(f?.order)||i+1,
+    status:['scheduled','playing','finished'].includes(f?.status)?f.status:'scheduled',
+    homeTeamId:cleanBasic(f?.homeTeamId,80),awayTeamId:cleanBasic(f?.awayTeamId,80),
+    homePlayerId:cleanBasic(f?.homePlayerId,80),awayPlayerId:cleanBasic(f?.awayPlayerId,80),
+    homePlayerName:cleanBasic(f?.homePlayerName,24)||'Jogador',awayPlayerName:cleanBasic(f?.awayPlayerName,24)||'Jogador',
+    homeScore:Number.isFinite(Number(f?.homeScore))?Number(f.homeScore):null,awayScore:Number.isFinite(Number(f?.awayScore))?Number(f.awayScore):null,
+    roomCode:cleanBasic(f?.roomCode,10).toUpperCase()||null,finishedAt:f?.finishedAt?Number(f.finishedAt):null
+  })).filter(f=>f.homePlayerId&&f.awayPlayerId):[];
+  // A sala WebSocket é memória volátil. Após reiniciar o servidor, qualquer jogo marcado como "playing"
+  // volta para "scheduled" para que possa ser aberto novamente sem ficar preso num código morto.
+  for(const f of fixtures){if(f.status==='playing'){f.status='scheduled';f.roomCode=null;}}
+  const full=normalizedTeams.every(t=>t.players.length===t.capacity);
+  let status=['waiting','ready','in_progress','finished'].includes(raw.status)?raw.status:'waiting';
+  if(status==='waiting'&&full)status='ready';
+  if(status==='ready'&&!full)status='waiting';
+  if(status==='in_progress'&&!fixtures.length)status=full?'ready':'waiting';
   return {id:cleanBasic(raw.id,80)||`cup_${crypto.randomBytes(8).toString('hex')}`,name:cleanBasic(raw.name,80)||'Campeonato 2 ON',status,participantCount:capacity*2,createdAt:Number(raw.createdAt)||Date.now(),ownerPlayerId:cleanBasic(raw.ownerPlayerId,80)||normalizedTeams[0].players[0]?.playerId||`player_${crypto.randomBytes(8).toString('hex')}`,ownerName:cleanBasic(raw.ownerName,24)||normalizedTeams[0].players[0]?.name||'Jogador',startedAt:raw.startedAt?Number(raw.startedAt):null,finishedAt:raw.finishedAt?Number(raw.finishedAt):null,winnerTeamId:raw.winnerTeamId||null,fixtures,teams:normalizedTeams};
 }
 function normalizePersistentData(data){
@@ -253,7 +267,13 @@ function gameMove(ws, message) {
       f.awayScore = result.winner === 'O' ? 1 : 0;
       f.status = 'finished';
       f.finishedAt = Date.now();
-      maybeFinishChampionship(c);
+      // O resultado oficial fecha esta sala. A próxima partida fica preparada automaticamente.
+      const finishedRoomCode=room.code;
+      if(gameRooms.has(finishedRoomCode))gameRooms.delete(finishedRoomCode);
+      if(!maybeFinishChampionship(c)){
+        const next=firstOpenFixture(c);
+        if(next)ensureFixtureRoom(c,next);
+      }
       savePersistentData();
     }
   }
@@ -394,14 +414,31 @@ function maybeFinishChampionship(c){
   const scores=championshipScores(c), a=c.teams[0].id,b=c.teams[1].id;
   c.status='finished'; c.winnerTeamId=scores[a]===scores[b]?null:(scores[a]>scores[b]?a:b); c.finishedAt=Date.now(); savePersistentData(); return true;
 }
+function ensureFixtureRoom(c,f){
+  if(!c||!f||f.status==='finished')return null;
+  if(f.roomCode&&gameRooms.has(f.roomCode)){
+    f.status='playing';
+    return f.roomCode;
+  }
+  const home=c.teams.find(t=>t.id===f.homeTeamId), away=c.teams.find(t=>t.id===f.awayTeamId);
+  if(!home||!away)return null;
+  const rc=roomCode();
+  f.roomCode=rc; f.status='playing';
+  gameRooms.set(rc,{code:rc,players:{X:null,O:null},names:{X:f.homePlayerName,O:f.awayPlayerName},ids:{X:f.homePlayerId,O:f.awayPlayerId},board:Array(9).fill(null),turn:null,winner:null,winningLine:[],turnStartedAt:null,lastActivity:Date.now(),score:{X:0,O:0},matchNumber:1,disconnected:null,teams:{X:home.name,O:away.name},championshipFixture:{championshipId:c.id,fixtureId:f.id,homePlayerId:f.homePlayerId,awayPlayerId:f.awayPlayerId,homePlayerName:f.homePlayerName,awayPlayerName:f.awayPlayerName}});
+  return rc;
+}
+function firstOpenFixture(c){return (c.fixtures||[]).find(f=>f.status!=='finished');}
+
 app.post('/api/games/championships/:id/start', (req,res)=>{
   const c=championships.find(x=>x.id===req.params.id);
   if(!c)return res.status(404).json({error:'Campeonato não encontrado.'});
   const pid=clean(req.body?.playerId,80);
   if(pid!==c.ownerPlayerId)return res.status(403).json({error:'Apenas o criador do campeonato pode iniciar o campeonato.'});
   if(c.status!=='ready')return res.status(409).json({error:'O campeonato só pode começar quando todas as vagas estiverem preenchidas.'});
-  c.fixtures=createChampionshipFixtures(c); c.status='in_progress'; c.startedAt=Date.now(); c.finishedAt=null; c.winnerTeamId=null; savePersistentData();
-  res.json({championship:publicChampionship(c,pid),message:'Campeonato iniciado. O primeiro jogo está pronto.'});
+  c.fixtures=createChampionshipFixtures(c); c.status='in_progress'; c.startedAt=Date.now(); c.finishedAt=null; c.winnerTeamId=null;
+  const first=firstOpenFixture(c); if(first)ensureFixtureRoom(c,first);
+  savePersistentData();
+  res.json({championship:publicChampionship(c,pid),message:'Campeonato iniciado. A primeira partida está pronta para os dois jogadores.'});
 });
 
 app.post('/api/games/championships/:id/fixtures/:fixtureId/room', (req,res)=>{
@@ -410,10 +447,8 @@ app.post('/api/games/championships/:id/fixtures/:fixtureId/room', (req,res)=>{
   const pid=clean(req.body?.playerId,80);
   if(pid!==f.homePlayerId&&pid!==f.awayPlayerId)return res.status(403).json({error:'Não participas neste jogo.'});
   if(f.status==='finished')return res.status(409).json({error:'Este jogo já terminou.'});
-  if(f.roomCode){return res.json({roomCode:f.roomCode,fixture:f});}
-  const rc=roomCode(); f.roomCode=rc; f.status='playing';
-  const home=c.teams.find(t=>t.id===f.homeTeamId),away=c.teams.find(t=>t.id===f.awayTeamId);
-  gameRooms.set(rc,{code:rc,players:{X:null,O:null},names:{X:f.homePlayerName,O:f.awayPlayerName},ids:{X:f.homePlayerId,O:f.awayPlayerId},board:Array(9).fill(null),turn:null,winner:null,winningLine:[],turnStartedAt:null,lastActivity:Date.now(),score:{X:0,O:0},matchNumber:1,disconnected:null,teams:{X:home?.name||null,O:away?.name||null},championshipFixture:{championshipId:c.id,fixtureId:f.id}});
+  const rc=ensureFixtureRoom(c,f);
+  if(!rc)return res.status(409).json({error:'Não foi possível preparar a sala desta partida.'});
   savePersistentData(); res.json({roomCode:rc,fixture:f});
 });
 

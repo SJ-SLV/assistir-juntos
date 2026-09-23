@@ -1,4 +1,4 @@
-# 2 ON Platform — v1.7.0 Auditado e executável
+# 2 ON Platform — v1.8.0 Auditado e executável
 
 Versão consolidada da plataforma 2 ON, com **2 ON Streng Games** e **2 ON Streaming** no mesmo servidor.
 
@@ -129,3 +129,12 @@ METERED_TURN_CREDENTIAL
 ## Nota sobre o teste de produção
 
 Os testes realizados nesta auditoria foram locais. Ainda é necessário validar em dois dispositivos reais, especialmente WebRTC/microfone e redes móveis diferentes, antes de publicar como serviço de produção.
+
+
+## v1.8.0 — Campeonato
+- Preparação automática da primeira sala ao iniciar o campeonato.
+- Reabertura segura de salas cujo código ficou inválido após reinício.
+- Atualização automática da tela do campeonato.
+- Próxima partida preparada após cada resultado.
+- Normalização de estados persistentes.
+- Teste E2E do fluxo de campeonato.
