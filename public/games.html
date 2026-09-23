@@ -30,6 +30,7 @@
     <div class="form-grid">
       <label>Nome do campeonato<input id="cupName" maxlength="70" placeholder="Ex.: 2 ON Luanda Cup"></label>
       <label>Jogadores no total<select id="cupParticipants"><option value="2">2 — 1 × 1</option><option value="4">4 — 2 × 2</option><option value="6">6 — 3 × 3</option><option value="8">8 — 4 × 4</option><option value="10">10 — 5 × 5</option><option value="12">12 — 6 × 6</option><option value="16">16 — 8 × 8</option><option value="20">20 — 10 × 10</option><option value="24">24 — 12 × 12</option><option value="32">32 — 16 × 16</option></select></label>
+      <label>Partidas até à final<select id="cupMatches"><option value="1">1 partida</option><option value="3">3 partidas</option><option value="5" selected>5 partidas</option><option value="7">7 partidas</option><option value="9">9 partidas</option><option value="11">11 partidas</option><option value="13">13 partidas</option><option value="15">15 partidas</option></select></label>
       <label>Equipa A<input id="teamAName" maxlength="50" placeholder="Ex.: 2 ON Alpha"></label>
       <label>Equipa B<input id="teamBName" maxlength="50" placeholder="Ex.: 2 ON Warriors"></label>
     </div>
@@ -43,6 +44,7 @@
     <div class="row"><button id="cupJoinCancel">Cancelar</button><button id="cupJoinSubmit" class="primary">Entrar na equipa</button></div>
   </div>
   <div id="cupAccess" class="access-card" hidden></div>
+  <div id="cupChat" class="cup-chat" hidden><div class="chat-header"><div><b>💬 Chat do campeonato</b><small>Conversa disponível até ao final do campeonato</small></div></div><div id="cupMessages" class="messages"></div><div class="chat-row"><input id="cupChatInput" maxlength="300" placeholder="Escreve para todos os participantes…"><button id="cupChatSend">Enviar</button></div></div>
   <div class="list-heading"><span>OS TEUS CAMPEONATOS</span><small>Atualização automática</small></div>
   <div id="cups" class="list"></div>
 </section>
