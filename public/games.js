@@ -27,10 +27,10 @@ function render(){if(!state)return;const op=mySymbol==='X'?'O':'X',connected=!!s
 function updateClock(){clearInterval(clockTimer);const tick=()=>{if(!state?.turn||state.winner||!state.turnStartedAt){$('turnClock').textContent='—';return}$('turnClock').textContent=`${Math.max(0,Math.ceil((state.turnStartedAt+state.turnSeconds*1000-Date.now())/1000))}s · ${state.turn===mySymbol?'a tua vez':'vez do adversário'}`};tick();clockTimer=setInterval(tick,250)}
 function addMsg(name,text,me,scope){const n=document.createElement('div');n.className='msg'+(me?' me':'');const who=document.createElement('small');who.textContent=(scope==='team'?'Equipa · ':'')+(name||'Jogador');n.append(document.createTextNode(text),who);$('messages').appendChild(n);$('messages').scrollTop=$('messages').scrollHeight}
 function sendChat(){const text=$('chatInput').value.trim();if(!text)return;if(send({type:'game-chat',text,name:myName,scope:chatScope}))$('chatInput').value=''}
-let cupPollTimer=null;
+let cupPollTimer=null,currentCupId=null,currentCupTimer=null;
 function cupStatusLabel(status){return ({waiting:'Preparação',ready:'Pronto',in_progress:'Em andamento',finished:'Concluído'})[status]||status||'Preparação'}
 function cupStatusClass(status){return status==='in_progress'?'live':status==='finished'?'done':status==='ready'?'ready':''}
-function hideCupPanels(){ $('cupCreate').hidden=true; $('cupJoin').hidden=true; $('cupAccess').hidden=true; }
+function hideCupPanels(){ $('cupCreate').hidden=true; $('cupJoin').hidden=true; $('cupAccess').hidden=true; currentCupId=null; clearInterval(currentCupTimer); currentCupTimer=null; }
 function startCupPolling(){clearInterval(cupPollTimer);cupPollTimer=setInterval(()=>{if(document.getElementById('championships')?.classList.contains('active'))loadCups(false)},3000)}
 async function loadCups(showEmpty=true){
   startCupPolling();
@@ -69,12 +69,15 @@ function renderChampionship(c){
 }
 function renderFixture(c,f){
   const playable=(f.status==='scheduled'||f.status==='playing')&&(f.homePlayerId===playerId||f.awayPlayerId===playerId);
-  const status=f.status==='finished'?'Concluído':f.status==='playing'?'Em jogo':'Aguardando';
+  const status=f.status==='finished'?'Concluído':f.status==='playing'?'Pronto para jogar':'Aguardando';
   const result=f.status==='finished'?`${f.homeScore} — ${f.awayScore}`:status;
-  return `<div class="fixture"><div class="fixture-num">${f.order}</div><div class="fixture-names"><b>${esc(f.homePlayerName)} <span class="sub">(${esc(c.teams.find(t=>t.id===f.homeTeamId)?.name||'')})</span></b><small>vs ${esc(f.awayPlayerName)} <span>(${esc(c.teams.find(t=>t.id===f.awayTeamId)?.name||'')})</span></small></div><div class="fixture-result"><strong>${esc(result)}</strong>${playable?`<button data-play-fixture="${esc(f.id)}" class="primary">${f.status==='playing'?'Entrar no jogo':'Jogar'}</button>`:''}</div></div>`;
+  return `<div class="fixture"><div class="fixture-num">${f.order}</div><div class="fixture-names"><b>${esc(f.homePlayerName)} <span class="sub">(${esc(c.teams.find(t=>t.id===f.homeTeamId)?.name||'')})</span></b><small>vs ${esc(f.awayPlayerName)} <span>(${esc(c.teams.find(t=>t.id===f.awayTeamId)?.name||'')})</span></small></div><div class="fixture-result"><strong>${esc(result)}</strong>${playable?`<button data-play-fixture="${esc(f.id)}" class="primary">${f.status==='playing'?'Abrir partida':'Abrir partida'}</button>`:''}</div></div>`;
 }
 async function openChampionship(id){
-  try{const r=await fetch('/api/games/championships/'+encodeURIComponent(id)+'?playerId='+encodeURIComponent(playerId),{cache:'no-store'});const d=await r.json();if(!r.ok)throw new Error(d.error||'Campeonato não encontrado.');renderChampionship(d.championship)}catch(e){toast(e.message||'Não foi possível abrir o campeonato.')}
+  currentCupId=id; clearInterval(currentCupTimer);
+  const refresh=async()=>{try{const r=await fetch('/api/games/championships/'+encodeURIComponent(id)+'?playerId='+encodeURIComponent(playerId),{cache:'no-store'});const d=await r.json();if(!r.ok)throw new Error(d.error||'Campeonato não encontrado.');renderChampionship(d.championship);return true}catch(e){toast(e.message||'Não foi possível abrir o campeonato.');return false}};
+  await refresh();
+  currentCupTimer=setInterval(()=>{if(currentCupId===id&&$('championships')?.classList.contains('active'))refresh()},2000);
 }
 async function startChampionship(id){
   try{const r=await fetch('/api/games/championships/'+encodeURIComponent(id)+'/start',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({playerId})});const d=await r.json();if(!r.ok)throw new Error(d.error);toast(d.message||'Campeonato iniciado.');openChampionship(id);loadCups(false)}catch(e){toast(e.message||'Não foi possível iniciar o campeonato.')}
