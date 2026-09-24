@@ -1,8 +1,8 @@
 {
   "name": "2-on-platform",
-  "version": "2.3.0",
+  "version": "2.4.1",
   "private": true,
-  "description": "2 ON — plataforma de jogos competitivos em tempo real, com campeonatos, espectadores, chat e voz.",
+  "description": "2 ON — plataforma de jogos competitivos em tempo real, com campeonatos, espectadores, chat, voz e streaming sincronizado.",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

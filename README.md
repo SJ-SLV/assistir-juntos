@@ -1,4 +1,4 @@
-# 2 ON Platform 2.3.0
+# 2 ON Platform 2.4.0
 
 Plataforma web de jogos competitivos em tempo real, com partidas rápidas e campeonatos entre duas equipas.
 
@@ -13,6 +13,19 @@ Plataforma web de jogos competitivos em tempo real, com partidas rápidas e camp
 - Removidos scripts de testes antigos que apontavam para ficheiros inexistentes.
 - Mantidos espectadores sem permissão de jogar.
 - O chat do campeonato continua persistente.
+
+
+## Correções adicionais da 2.4.0
+
+- Corrigidos elementos HTML em falta que impediam o JavaScript de inicializar corretamente na página de jogos (`shareCode` e `chat`).
+- Corrigido o envio do chat do campeonato: o `playerId` passa a ser associado à identidade do WebSocket e validado no servidor.
+- Corrigida a transferência P2P para permitir que **qualquer um dos dois participantes** seja o primeiro a enviar um ficheiro; o canal de dados é criado sob demanda.
+- Adicionado limite de 512 MB por transferência e espera com timeout/backpressure para evitar bloqueios indefinidos.
+- Corrigida a recuperação de estado quando alguém entra/reentra numa sessão de streaming: modo, reprodução local e YouTube podem ser sincronizados novamente.
+- Adicionada validação de ações de controlo no servidor de streaming e proteção básica contra spam no chat.
+- Melhorada a distribuição dos confrontos do campeonato para rodar os adversários e reduzir repetições prematuras.
+- O launcher inicial e a reconexão WebSocket agora evitam falhas quando o utilizador toca em criar/entrar enquanto a ligação ainda está a abrir.
+- A versão da plataforma e o `.nvmrc` foram atualizados para a linha Node 22.
 
 ## Fluxo do campeonato
 
@@ -70,7 +83,7 @@ npm run test:static
 npm test
 ```
 
-A verificação disponível neste pacote é estática: sintaxe JavaScript, ficheiros obrigatórios, IDs HTML, presença dos fluxos principais e estrutura do JSON de dados.
+A verificação automática inclui sintaxe do servidor, jogos e streaming, IDs HTML críticos, fluxos de campeonato/chat/voz/transferência e estrutura do JSON de dados. O teste E2E real de dois clientes WebSocket continua dependente das dependências instaladas no ambiente de execução.
 
 A instalação das dependências (`express` e `ws`) deve ser feita no ambiente de execução. Nesta revisão, o ambiente de análise não conseguiu concluir `npm install`, portanto não é correto declarar um teste E2E real de WebSocket como concluído.
 
@@ -167,3 +180,16 @@ Foram reforçados os seguintes pontos:
 - produção deve usar HTTPS/WSS e TURN configurado.
 
 A voz não é considerada garantida apenas por testes estáticos: deve ser validada em dois dispositivos/browser diferentes numa rede móvel/Wi-Fi real.
+
+
+## v2.4.1 — auditoria de botões e streaming
+
+- Corrigido um erro crítico no `socketSend()` do Streaming que fazia a função chamar a si própria em vez de enviar a mensagem pelo WebSocket.
+- Corrigida a ação **Sincronizar** rápida do convidado para funcionar nos modos YouTube, ficheiro e transferência.
+- Todos os botões HTML passaram a declarar explicitamente `type="button"`, evitando submissões acidentais.
+- O smoke test passou a verificar a interatividade estrutural dos botões e a impedir o regresso da recursão em `socketSend()`.
+- Sintaxe de servidor, games e JavaScript inline do Streaming validada.
+
+### Nota de validação
+
+A funcionalidade WebRTC/P2P depende de dois navegadores/dispositivos reais, HTTPS/WSS e, para redes NAT restritivas, TURN. O pacote não declara esse teste físico como concluído sem uma execução real entre dois dispositivos.

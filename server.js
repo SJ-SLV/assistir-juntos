@@ -7,7 +7,7 @@ const fs = require('fs');
 const WebSocket = require('ws');
 
 const APP_NAME = '2 ON Platform';
-const APP_VERSION = '2.3.0';
+const APP_VERSION = '2.4.1';
 const PORT = Number(process.env.PORT || 3000);
 const HOST = process.env.HOST || '0.0.0.0';
 const ROOM_TTL_MS = 6 * 60 * 60 * 1000;
@@ -54,6 +54,7 @@ const championshipSockets = new Map();
 const playerSockets = new Map();
 const chatRate = new Map();
 const chatRecent = new Map();
+const streamChatRate = new Map();
 
 function normalizeStatsRecord(raw){
   const playerId=cleanBasic(raw?.playerId,80);
@@ -444,8 +445,15 @@ app.post('/api/games/championships/join', (req,res)=>{
 function createChampionshipFixtures(c){
   const a=c.teams[0], b=c.teams[1], total=Math.max(1,Math.min(15,c.plannedMatches||1));
   const fixtures=[];
+  const aPlayers=a.players||[], bPlayers=b.players||[];
+  if(!aPlayers.length||!bPlayers.length)return fixtures;
+  // Distribui os confrontos por rotação. Assim, quando há mais partidas do
+  // que jogadores, o mesmo par não é repetido antes de percorrer as combinações
+  // disponíveis entre as duas equipas.
   for(let i=0;i<total;i++){
-    const pa=a.players[i % a.players.length], pb=b.players[i % b.players.length];
+    const pa=aPlayers[i % aPlayers.length];
+    const cycle=Math.floor(i / aPlayers.length);
+    const pb=bPlayers[(i + cycle) % bPlayers.length];
     fixtures.push({id:makeId('fx'),order:i+1,status:i===0?'ready':'locked',homeTeamId:a.id,awayTeamId:b.id,homePlayerId:pa.playerId,awayPlayerId:pb.playerId,homePlayerName:pa.name,awayPlayerName:pb.name,homeScore:null,awayScore:null,roomCode:null,finishedAt:null,finalBoard:null,result:null});
   }
   return fixtures;
@@ -534,6 +542,14 @@ function chatAllowed(playerId, clientMessageId=''){
     chatRecent.set(key,now);
   }
   if(chatRecent.size>2000){for(const [k,t] of chatRecent)if(now-t>60000)chatRecent.delete(k)}
+  return true;
+}
+function streamChatAllowed(ws){
+  const key=ws.streamChatKey||(ws.streamChatKey=crypto.randomUUID());
+  const now=Date.now(), bucket=(streamChatRate.get(key)||[]).filter(t=>now-t<10000);
+  if(bucket.length>=8)return false;
+  bucket.push(now); streamChatRate.set(key,bucket);
+  if(streamChatRate.size>2000){for(const [k,times] of streamChatRate){if(!times.length||now-times[times.length-1]>60000)streamChatRate.delete(k)}}
   return true;
 }
 function pushChampChat(c,playerId,name,text,clientMessageId=''){
@@ -697,10 +713,17 @@ function handleStream(ws, message) {
   }
   if (type === 'control') {
     if (ws.streamRole !== 'host' && !room.controlGranted) return;
+    const allowedActions=['mode','file-kind','media-play','media-pause','media-seek','media-sync','yt-load','yt-play','yt-pause','yt-sync','yt-heartbeat','transfer-play','transfer-pause','transfer-heartbeat'];
+    if(!allowedActions.includes(clean(message.action,40)))return;
     return streamForward(room, ws, message);
   }
   if (['offer','answer','ice-candidate','chat','reaction','typing'].includes(type)) {
-    if (type === 'chat') { message.text = clean(message.text, 1200); message.name = clean(message.name, 24) || (ws.streamRole === 'host' ? room.hostName : room.viewerName); }
+    if (type === 'chat') {
+      if(!streamChatAllowed(ws))return send(ws,{type:'error',message:'Aguarda um momento antes de enviar outra mensagem.'});
+      message.text = clean(message.text, 1200);
+      if(!message.text)return;
+      message.name = ws.streamRole === 'host' ? room.hostName : room.viewerName;
+    }
     if (type === 'reaction' && !['👍','❤️','😂','🔥','😮','👏','🎉','😢'].includes(message.emoji)) return;
     return streamForward(room, ws, message);
   }
@@ -726,8 +749,9 @@ wss.on('connection', ws => {
         const current=firstOpenFixture(c);
         if(current && current.roomCode && gameRooms.has(current.roomCode)) send(ws,{type:'championship-fixture-ready',championshipId:c.id,fixtureId:current.id,roomCode:current.roomCode,homePlayerId:current.homePlayerId,awayPlayerId:current.awayPlayerId,order:current.order,status:current.status});
       } else if (message.type === 'championship-chat') {
-        const cid=clean(message.championshipId,80), pid=clean(message.playerId,80), text=clean(message.text,300), clientMessageId=clean(message.clientMessageId,80);
+        const cid=clean(message.championshipId,80), requestedPid=clean(message.playerId,80), pid=clean(ws.gamePlayerId||ws.identityPlayerId||requestedPid,80), text=clean(message.text,300), clientMessageId=clean(message.clientMessageId,80);
         const c=championships.find(x=>x.id===cid);
+        if(!pid || (requestedPid && requestedPid!==pid))return send(ws,{type:'game-error',message:'Identidade do jogador inválida.'});
         if(!c||!isChampionshipMember(c,pid)||!text)return send(ws,{type:'game-error',message:'Não foi possível enviar a mensagem.'});
         if(!chatAllowed(pid,clientMessageId))return send(ws,{type:'game-chat-error',message:'Aguarda um momento antes de enviar outra mensagem.'});
         addChampSocket(c,ws,pid); const member=c.teams.flatMap(t=>t.players).find(p=>p.playerId===pid); const msg={id:makeId('msg'),clientMessageId:clientMessageId||null,playerId:pid,name:member?.name||'Jogador',text,scope:'general',at:Date.now()}; c.chat=(c.chat||[]).slice(-199); c.chat.push(msg); savePersistentData(); broadcastChampionship(c,{type:'championship-chat',message:msg});
