@@ -2,25 +2,108 @@
 <html lang="pt">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#0b1020"><title>2 ON Streng Games</title><link rel="stylesheet" href="/games.css">
+<meta name="theme-color" content="#060c16"><title>2 ON Streaming Games</title><link rel="stylesheet" href="/games.css">
 </head>
 <body>
 <div class="app">
-<header><a href="/" class="brand"><span class="logo">2·ON</span><span>STRENG GAMES</span></a><nav><button type="button" data-page="home" class="active">Jogar</button><button type="button" data-page="championships">Campeonatos</button><button type="button" data-page="ranking">Ranking</button></nav></header>
+<header class="topbar">
+  <div class="topbar__inner">
+    <a class="topbar-brand" href="#" onclick="goToHomePanel();return false" aria-label="2 ON Streaming Games — início">
+      <span class="topbar-brand__mark">2O</span>
+      <span class="topbar-brand__copy"><b>2 ON STREAMING GAMES</b><small>Jogue. Compita. Evolua.</small></span>
+    </a>
+    <nav aria-label="Navegação principal">
+      <button type="button" data-page="home" class="active">Jogos</button>
+      <button type="button" data-page="championships">Campeonatos</button>
+      <button type="button" data-page="ranking">Ranking</button>
+    </nav>
+  </div>
+</header>
 <main>
 <section id="home" class="page active">
-  <div class="hero"><div class="eyebrow">2 ON · COMPETIÇÃO EM TEMPO REAL</div><h1>Joga. Compete.<br><em>Evolui.</em></h1><p>Cria uma sala, partilha o código e disputa uma partida de X/O em dois dispositivos.</p>
-    <div class="entry-grid"><div class="entry-field"><label>O teu nome</label><input id="playerName" maxlength="24" placeholder="Ex.: André"></div><div class="entry-field"><label>Equipa <span>(opcional)</span></label><input id="teamName" maxlength="40" placeholder="Ex.: 2 ON Alpha"></div></div>
-    <div class="row"><button type="button" id="quickRoom" class="primary">Criar partida</button><button type="button" id="joinBtn">Entrar com código</button></div>
+
+
+  <div class="lobby-main">
+    <section class="lobby-intro" aria-labelledby="page-title">
+      <div>
+        <div class="lobby-eyebrow"><span></span> PLATAFORMA DE JOGOS EM TEMPO REAL</div>
+        <h1 id="page-title">Escolha o seu jogo.</h1>
+        <p>Entre numa partida, convide um adversário e acompanhe a competição em tempo real. O motor multiplayer já ativo do 2 ON continua ligado a esta nova interface.</p>
+      </div>
+      <div class="lobby-intro__actions">
+        <button class="lobby-button lobby-button--primary" type="button" id="openGameEntry">Criar partida</button>
+        <button class="lobby-button" type="button" id="openJoinEntry">Entrar com código</button>
+      </div>
+    </section>
+
+    <section class="lobby-entry" id="lobbyEntry" hidden aria-label="Dados do jogador">
+      <div class="lobby-entry__head"><div><b>Preparar partida</b><small>Indica o teu nome antes de entrar.</small></div><button type="button" id="closeLobbyEntry" class="lobby-close">×</button></div>
+      <div class="lobby-entry__grid">
+        <label>O teu nome<input id="playerName" maxlength="24" placeholder="Ex.: André" autocomplete="name"></label>
+        <label>Equipa <span>(opcional)</span><input id="teamName" maxlength="40" placeholder="Ex.: 2 ON Alpha"></label>
+      </div>
+      <div class="lobby-entry__actions"><button type="button" id="lobbyCreateBtn" class="lobby-button lobby-button--primary">Criar partida</button><button type="button" id="lobbyJoinBtn" class="lobby-button">Entrar com código</button></div>
+    </section>
+
+    <section aria-labelledby="games-title">
+      <div class="lobby-games-header"><div><h2 id="games-title">Jogos disponíveis</h2><span>O motor multiplayer atual está ativo no Jogo do Galo.</span></div><button type="button" id="openChampionshipFromLobby" class="lobby-link-button">Ver campeonatos →</button></div>
+
+      <div class="lobby-games-grid">
+        <article class="lobby-game-card lobby-game-card--active">
+          <div class="lobby-game-card__top"><span>01</span><div class="lobby-game-icon">⭕</div></div>
+          <div class="lobby-status live"><i></i> Disponível agora</div>
+          <h3>Jogo do Galo</h3>
+          <p>O clássico duelo de X/O com salas, reconexão, espectadores, chat, voz e campeonatos.</p>
+          <div class="lobby-game-card__footer"><button class="lobby-game-button" type="button" data-game="tictactoe">Jogar agora</button></div>
+        </article>
+
+        <article class="lobby-game-card">
+          <div class="lobby-game-card__top"><span>02</span><div class="lobby-game-icon">✊</div></div>
+          <div class="lobby-status soon"><i></i> Em preparação</div>
+          <h3>Pedra, Papel e Tesoura</h3>
+          <p>Duelo simultâneo com escolhas ocultas e resultado validado pelo servidor.</p>
+          <div class="lobby-game-card__footer"><button class="lobby-game-button" type="button" data-game="rps">Em breve</button></div>
+        </article>
+
+        <article class="lobby-game-card">
+          <div class="lobby-game-card__top"><span>03</span><div class="lobby-game-icon">🔢</div></div>
+          <div class="lobby-status soon"><i></i> Em preparação</div>
+          <h3>2048 Multiplayer</h3>
+          <p>Modo competitivo com o mesmo estado inicial para os dois jogadores.</p>
+          <div class="lobby-game-card__footer"><button class="lobby-game-button" type="button" data-game="2048">Em breve</button></div>
+        </article>
+
+        <article class="lobby-game-card">
+          <div class="lobby-game-card__top"><span>04</span><div class="lobby-game-icon">🃏</div></div>
+          <div class="lobby-status soon"><i></i> Em preparação</div>
+          <h3>Jogo da Memória</h3>
+          <p>Encontra os pares, controla o turno e disputa a maior pontuação.</p>
+          <div class="lobby-game-card__footer"><button class="lobby-game-button" type="button" data-game="memory">Em breve</button></div>
+        </article>
+
+        <article class="lobby-game-card">
+          <div class="lobby-game-card__top"><span>05</span><div class="lobby-game-icon">⚫⚪</div></div>
+          <div class="lobby-status soon"><i></i> Em preparação</div>
+          <h3>Reversi</h3>
+          <p>Controle o tabuleiro, capture peças e conquiste a maior pontuação.</p>
+          <div class="lobby-game-card__footer"><button class="lobby-game-button" type="button" data-game="reversi">Em breve</button></div>
+        </article>
+      </div>
+    </section>
+
+    <section class="lobby-features" aria-label="Recursos ativos">
+      <article><strong>01</strong><b>Tempo real</b><span>Jogadas e estado da partida sincronizados pelo servidor.</span></article>
+      <article><strong>02</strong><b>Competição</b><span>Ranking, histórico, campeonatos e espectadores integrados.</span></article>
+      <article><strong>03</strong><b>Conversa</b><span>Geral para todos e Equipa para os membros autorizados.</span></article>
+    </section>
   </div>
-  <div class="feature-grid"><article><strong>01</strong><b>Primeiro toque</b><span>Quem tocar primeiro no tabuleiro define quem começa.</span></article><article><strong>02</strong><b>Tempo real</b><span>Jogadas, turnos e estado da partida sincronizados.</span></article><article><strong>03</strong><b>Competição</b><span>Ranking, histórico e campeonatos numa só plataforma.</span></article></div>
 </section>
 <section id="play" class="page">
   <div class="game-head"><div><div class="eyebrow">PARTIDA · <span id="roomTitle">SALA</span></div><h2 id="gameStatus">A preparar…</h2><div class="turn-meta"><span id="turnClock">—</span><span id="connectionState" class="status-dot online">Ligado</span></div></div><div class="head-actions"><button type="button" id="backChamp" hidden>Campeonato</button><button type="button" id="copyCode">Copiar código</button><button type="button" id="shareCode">🔗 Partilhar</button><button type="button" id="leaveGame" class="danger">Sair</button></div></div>
   <div class="match-info"><div class="player-card me"><div id="meAvatar" class="avatar">X</div><div><b id="meName">Tu</b><small id="meTeam">Sem equipa</small></div><span id="meSymbol" class="symbol">X</span></div><div class="score"><small>PARTIDA <b id="matchNumber">1</b></small><strong id="scoreValue">0 — 0</strong></div><div class="player-card opponent"><div class="avatar" id="opAvatar">O</div><div><b id="opponentName">A aguardar</b><small id="opTeam">A aguardar</small></div><span id="opSymbol" class="symbol">O</span></div></div>
   <div class="board-wrap"><div id="board" class="board"></div><div id="resultBanner" class="result-banner"></div></div>
   <div id="champResultActions" class="champ-result-actions" hidden></div><div class="game-actions"><button type="button" id="rematchBtn" class="primary">Revanche</button><button type="button" id="voiceBtn">🎙 Voz</button></div>
-  <div id="chat" class="chat"><div class="chat-header"><div><b>Conversação</b><small>Fala com os competidores</small></div><div class="chat-tabs"><button type="button" data-scope="general" class="active">Geral</button><button type="button" data-scope="team">Equipa</button></div></div><div id="messages" class="messages"></div><div class="chat-row"><input id="chatInput" maxlength="300" placeholder="Escreve uma mensagem…"><button type="button" id="chatSend">Enviar</button></div></div>
+  <div id="chat" class="chat"><div class="chat-header"><div><b>Conversação</b><small>Fala com os competidores</small></div><div class="chat-tabs"><button type="button" data-scope="general" class="active">Geral</button><button type="button" data-scope="team">Equipa <span id="teamChatBadge" class="chat-badge" hidden></span></button></div></div><div id="messages" class="messages"></div><div class="chat-row"><input id="chatInput" maxlength="300" placeholder="Escreve uma mensagem…"><button type="button" id="chatSend">Enviar</button></div></div>
   <audio id="remoteAudio" autoplay playsinline></audio>
 </section>
 <section id="championships" class="page">
@@ -50,5 +133,13 @@
 </section>
 <section id="ranking" class="page"><div class="section-head"><div><div class="eyebrow">PROGRESSO</div><h2>Ranking</h2><p>Resultados acumulados das partidas.</p></div></div><div id="profileBox" class="profile-box"></div><div id="rankingBox" class="list"></div></section>
 </main>
+<div id="globalChatDock" class="global-chat-dock">
+  <button type="button" id="globalChatToggle" class="global-chat-toggle">💬 Conversação <span id="globalChatBadge" class="chat-badge" hidden></span></button>
+  <div id="globalChatPanel" class="global-chat-panel" hidden>
+    <div class="chat-header"><div><b>Conversação</b><small>Geral · visível para todos os participantes online</small></div><button type="button" id="globalChatClose" class="chat-close">×</button></div>
+    <div id="globalMessages" class="messages"></div>
+    <div class="chat-row"><input id="globalChatInput" maxlength="300" placeholder="Escreve uma mensagem…"><button type="button" id="globalChatSend">Enviar</button></div>
+  </div>
+</div>
 <div id="qrModal" class="modal" aria-hidden="true"><div class="modal-card qr-card"><div class="eyebrow">PARTILHAR ACESSO</div><h3 id="qrTitle">QR de acesso</h3><div class="qr-wrap"><canvas id="qrCanvas" width="240" height="240"></canvas><img id="qrImage" alt="QR Code de acesso" hidden></div><a id="qrLink" class="qr-link" target="_blank" rel="noopener"></a><div class="modal-actions"><button type="button" id="qrClose">Fechar</button><button type="button" id="qrShare">🔗 Partilhar</button><button type="button" id="qrDownload" class="primary">Guardar QR</button></div></div></div><div id="toast"></div><div id="confirm" class="modal" aria-hidden="true"><div class="modal-card"><div class="eyebrow">CONFIRMAR</div><h3 id="confirmTitle">Sair da partida?</h3><p id="confirmText">O teu adversário será informado.</p><div class="modal-actions"><button type="button" id="confirmNo">Cancelar</button><button type="button" id="confirmYes" class="danger primary">Confirmar</button></div></div></div>
 </div><script src="/vendor/qrcode.min.js"></script><script src="/games.js"></script></body></html>
