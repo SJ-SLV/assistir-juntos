@@ -11,3 +11,7 @@
 .fixture.ready{border-color:rgba(79,124,255,.45)}
 .fixture .watching{font-size:.78rem;opacity:.72;margin-top:4px}
 .champ-shell .eyebrow{letter-spacing:.08em}
+
+.fixture.is-current{border-color:rgba(31,77,61,.35);box-shadow:0 2px 12px rgba(31,77,61,.08)}
+.fixture.is-locked{opacity:.78}.fixture-lock-note{display:block;color:var(--muted);margin-top:3px;font-size:11px}
+.champ-result-actions{width:min(560px,100%);margin:4px auto 16px}.champ-result-card{padding:16px;border:1px solid var(--line);border-radius:16px;background:var(--surface);box-shadow:var(--shadow);text-align:center}.champ-result-card.finished{border-color:rgba(216,193,140,.28);background:linear-gradient(180deg,rgba(216,193,140,.08),var(--surface))}.result-kicker{font-size:9px;letter-spacing:.14em;font-weight:900;color:var(--muted);margin-bottom:6px}.champ-result-card h3{margin:4px 0 5px;font-size:18px}.champ-result-card h3 span{color:var(--muted);font-size:11px;margin:0 4px}.champ-result-card p{margin:0;color:var(--muted);font-size:12px;line-height:1.45}.result-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:13px}.result-actions button{width:100%;min-height:42px}.result-actions button:disabled{opacity:.45;cursor:not-allowed}.result-hint{display:block;color:var(--muted);font-size:10px;margin-top:9px}.result-loading{padding:11px 13px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--muted);text-align:center;font-size:12px}@media(max-width:680px){.result-actions{grid-template-columns:1fr}.champ-result-card{padding:14px}}
