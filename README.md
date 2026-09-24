@@ -1,4 +1,4 @@
-# 2 ON Platform 2.2.2
+# 2 ON Platform 2.2.3
 
 Plataforma web de jogos competitivos em tempo real, com partidas rápidas e campeonatos entre duas equipas.
 
@@ -125,3 +125,8 @@ Os testes estáticos e de sintaxe podem ser executados localmente. O teste E2E d
 - A abertura de uma partida muda imediatamente para a tela de jogo após a preparação do room.
 - Erros de entrada limpam a ação pendente para impedir reentrada automática incorreta.
 - Atualizações do campeonato durante uma partida usam refresh silencioso e não derrubam o jogador/espectador da sala.
+
+
+## 2.2.3 — Pós-jogo visível
+
+Após uma partida de campeonato terminar, o painel de continuidade permanece visível no ecrã de jogo. O sistema consulta o estado atualizado do campeonato e apresenta a próxima ação disponível: entrar para jogar quando o utilizador está escalado, assistir quando é espectador, ou, quando o campeonato terminou, mostrar a equipa vencedora e as opções de recomeçar/encerrar.
