@@ -7,11 +7,12 @@ const ids=[...html.matchAll(/id=["']([^"']+)["']/g)].map(m=>m[1]);const dup=ids.
 const js=fs.readFileSync(path.join(root,'public/games.js'),'utf8');
 for(const token of ['championship-fixture-ready','openFixture','toggleVoice','game-voice-ready','activeFixtureId'])if(!js.includes(token))throw new Error(`Fluxo ausente: ${token}`);
 const server=fs.readFileSync(path.join(root,'server.js'),'utf8');
-for(const token of ['ensureFixtureRoom','notifyFixtureReady','sendFixtureReadyToPlayer','currentFixtureForPlayer','playerSockets','championships/:id/start','championships/:id/fixtures/:fixtureId/room','game-voice-ready'])if(!server.includes(token))throw new Error(`Servidor incompleto: ${token}`);
+for(const token of ['ensureFixtureRoom','notifyFixtureReady','sendFixtureReadyToPlayer','currentFixtureForPlayer','playerSockets','championships/:id/start','championships/:id/fixtures/:fixtureId/room','championships/:id/restart','game-voice-ready'])if(!server.includes(token))throw new Error(`Servidor incompleto: ${token}`);
 
 const pkg=fs.readFileSync(path.join(root,'package.json'),'utf8');
 if(pkg.includes('test-championship.py')||pkg.includes('test-championship-advanced.py'))throw new Error('Scripts de teste removidos continuam no package.json');
-if(!server.includes("const APP_VERSION = '2.1.0';"))throw new Error('Versão do servidor não foi atualizada');
+if(!server.includes("const APP_VERSION = '2.2.1';"))throw new Error('Versão do servidor não foi atualizada');
+for(const token of ['status=\'locked\'','status=\'ready\'','Esta partida está bloqueada'])if(!server.includes(token))throw new Error(`Regra de estado ausente: ${token}`);
 
 const data=JSON.parse(fs.readFileSync(path.join(root,'data/games.json'),'utf8'));if(!Array.isArray(data.stats)||!Array.isArray(data.championships))throw new Error('Estrutura de dados inválida');
 console.log('STATIC SMOKE PASSED');
