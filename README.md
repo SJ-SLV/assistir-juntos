@@ -1,4 +1,4 @@
-# 2 ON Platform 2.2.3
+# 2 ON Platform 2.3.0
 
 Plataforma web de jogos competitivos em tempo real, com partidas rápidas e campeonatos entre duas equipas.
 
@@ -130,3 +130,40 @@ Os testes estáticos e de sintaxe podem ser executados localmente. O teste E2E d
 ## 2.2.3 — Pós-jogo visível
 
 Após uma partida de campeonato terminar, o painel de continuidade permanece visível no ecrã de jogo. O sistema consulta o estado atualizado do campeonato e apresenta a próxima ação disponível: entrar para jogar quando o utilizador está escalado, assistir quando é espectador, ou, quando o campeonato terminou, mostrar a equipa vencedora e as opções de recomeçar/encerrar.
+
+## Partilha de acesso — 2.3.0
+
+A plataforma passou a permitir partilhar acessos por três meios:
+
+- **Código** — continua disponível para cópia manual.
+- **Link** — gera um endereço direto com o código de acesso. Ao abrir `?join=...`, o formulário de entrada é preenchido automaticamente; `?room=...` permite entrar diretamente numa partida normal.
+- **QR Code** — o navegador gera o QR localmente quando a biblioteca `qrcode` está instalada; existe fallback visual por serviço externo caso a biblioteca não esteja disponível.
+
+Os códigos de equipa continuam a funcionar como credenciais de entrada. Portanto, um link/QR deve ser partilhado apenas com as pessoas autorizadas a entrar na equipa.
+
+## Auditoria de chat — 2.3.0
+
+Foram reforçados os seguintes pontos:
+
+- limite de frequência de mensagens no servidor (8 mensagens/10 s por `playerId`);
+- deduplicação por `clientMessageId`;
+- nome do remetente resolvido pelo servidor em chats de campeonato;
+- mensagens de equipa passam a usar o **ID da equipa**, e não apenas o nome;
+- mensagens recebem horário e identificação única;
+- mensagens continuam limitadas a 300 caracteres;
+- espectadores não podem enviar mensagens de equipa;
+- o chat geral do campeonato permanece persistente.
+
+## Auditoria de voz — 2.3.0
+
+- voz continua P2P via WebRTC;
+- microfone é opt-in e não é solicitado automaticamente ao outro participante;
+- `game-voice-ready` só inicia negociação quando há intenção de voz;
+- sinalização aceita apenas `offer`, `answer` e `ice`;
+- `bundlePolicy: max-bundle` e `rtcpMuxPolicy: require` reduzem overhead;
+- ICE usa pool pequeno de candidatos;
+- falha ICE tenta `restartIce()` quando suportado;
+- desligar voz avisa o outro participante e encerra o peer local;
+- produção deve usar HTTPS/WSS e TURN configurado.
+
+A voz não é considerada garantida apenas por testes estáticos: deve ser validada em dois dispositivos/browser diferentes numa rede móvel/Wi-Fi real.
