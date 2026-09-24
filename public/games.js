@@ -14,7 +14,7 @@ function closeConfirm(){$('confirm').classList.remove('open');$('confirm').setAt
 function socketOpen(){return ws&&ws.readyState===WebSocket.OPEN}
 function send(payload){if(!socketOpen()){toast('A ligação está a ser recuperada…');connect();return false}try{ws.send(JSON.stringify(payload));return true}catch{toast('Não foi possível concluir a ação.');return false}}
 function connect(){if(ws&&(ws.readyState===1||ws.readyState===0))return;clearTimeout(reconnectTimer);const proto=location.protocol==='https:'?'wss:':'ws:';ws=new WebSocket(proto+'//'+location.host);ws.onopen=()=>{reconnectDelay=800;$('connectionState').textContent='Ligado';$('connectionState').className='status-dot online';if(currentCupId)send({type:'championship-watch',championshipId:currentCupId,playerId});if(roomCode&&mySymbol){send({type:'game-rejoin',roomCode,name:myName,playerId});return}if(pendingAction){const action=pendingAction;pendingAction=null;send(action)}};ws.onmessage=e=>{let m;try{m=JSON.parse(e.data)}catch{return}handle(m)};ws.onclose=()=>{if(intentionalClose)return;$('connectionState').textContent='Reconectando…';$('connectionState').className='status-dot offline';clearTimeout(reconnectTimer);reconnectTimer=setTimeout(connect,reconnectDelay);reconnectDelay=Math.min(reconnectDelay*2,8000)};ws.onerror=()=>{}}
-function handle(m){switch(m.type){case'game-created':case'game-joined':case'game-rejoined':actionBusy=false;roomCode=m.roomCode;mySymbol=m.symbol;isSpectator=!!m.spectator;state=m.state;activeFixtureId=state?.championshipFixture?.fixtureId||null;saveSession();render();page('play');if(voiceOn&&!isSpectator&&state?.players?.X&&state?.players?.O){if(mySymbol==='X')makeVoiceOffer().catch(()=>{});else send({type:'game-voice-ready'});}break;case'game-state':state=m.state;render();break;case'game-timeout':state=m.state;render();toast('⏱️ Tempo esgotado. A vez passou para o adversário.');break;case'game-disconnected':state=m.state;render();toast('📡 O adversário perdeu a ligação. Aguardando reconexão…');break;case'game-left':if(state){state.players[m.symbol]=false;state.names[m.symbol]=null;state.disconnected=null;render()}toast('👋 O adversário saiu da partida.');break;case'game-info':toast(m.message||'');break;case'game-error':actionBusy=false;toast(m.message||'Não foi possível concluir.');break;case'game-chat':if(m.messageId&&seen.has(m.messageId))break;if(m.messageId){seen.add(m.messageId);if(seen.size>300)seen.delete(seen.values().next().value)}if(!m.scope||m.scope===chatScope)addMsg(m.name,m.text,m.from===mySymbol,m.scope);break;case'championship-chat-history':currentChampChat=m.messages||[];if($('cupMessages')){$('cupMessages').innerHTML='';currentChampChat.forEach(x=>addChampMsg(x.name,x.text,x.playerId===playerId,x.scope||'general'))}break;case'championship-chat':if(m.message?.id&&seen.has(m.message.id))break;if(m.message?.id)seen.add(m.message.id);currentChampChat.push(m.message);if(currentChampChat.length>200)currentChampChat.shift();addChampMsg(m.message.name,m.message.text,m.message.playerId===playerId,m.scope);break;case'championship-updated':if(currentCupId===m.championshipId)openChampionship(m.championshipId);break;case'championship-fixture-ready':{
+function handle(m){switch(m.type){case'game-created':case'game-joined':case'game-rejoined':actionBusy=false;roomCode=m.roomCode;mySymbol=m.symbol;isSpectator=!!m.spectator;state=m.state;activeFixtureId=state?.championshipFixture?.fixtureId||null;saveSession();render();page('play');if(voiceOn&&!isSpectator&&state?.players?.X&&state?.players?.O){if(mySymbol==='X')makeVoiceOffer().catch(()=>{});else send({type:'game-voice-ready'});}break;case'game-state':state=m.state;render();break;case'game-timeout':state=m.state;render();toast('⏱️ Tempo esgotado. A vez passou para o adversário.');break;case'game-disconnected':state=m.state;render();toast('📡 O adversário perdeu a ligação. Aguardando reconexão…');break;case'game-left':if(state){state.players[m.symbol]=false;state.names[m.symbol]=null;state.disconnected=null;render()}toast('👋 O adversário saiu da partida.');break;case'game-info':toast(m.message||'');break;case'game-error':actionBusy=false;pendingAction=null;toast(m.message||'Não foi possível concluir.');break;case'game-chat':if(m.messageId&&seen.has(m.messageId))break;if(m.messageId){seen.add(m.messageId);if(seen.size>300)seen.delete(seen.values().next().value)}if(!m.scope||m.scope===chatScope)addMsg(m.name,m.text,m.from===mySymbol,m.scope);break;case'championship-chat-history':currentChampChat=m.messages||[];if($('cupMessages')){$('cupMessages').innerHTML='';currentChampChat.forEach(x=>addChampMsg(x.name,x.text,x.playerId===playerId,x.scope||'general'))}break;case'championship-chat':if(m.message?.id&&seen.has(m.message.id))break;if(m.message?.id)seen.add(m.message.id);currentChampChat.push(m.message);if(currentChampChat.length>200)currentChampChat.shift();addChampMsg(m.message.name,m.message.text,m.message.playerId===playerId,m.scope);break;case'championship-updated':if(currentCupId===m.championshipId){if(roomCode&&state?.championshipFixture)fetchChampionshipSilently(m.championshipId);else openChampionship(m.championshipId)}break;case'championship-fixture-ready':{
   const isPlayer=m.homePlayerId===playerId||m.awayPlayerId===playerId;
   if(!isPlayer)break;
   currentCupId=m.championshipId;
@@ -129,6 +129,14 @@ function renderFixture(c,f){
   const note=!canOpen&&f.status!=='finished'?`<small class="fixture-lock-note">Disponível após o Jogo ${(f.order||2)-1}</small>`:'';
   return `<div class="fixture ${isCurrent?'is-current':''} ${f.status==='finished'?'is-finished':'is-locked'}"><div class="fixture-num">${f.order}</div><div class="fixture-names"><b>${esc(f.homePlayerName)} <span class="sub">(${esc(c.teams.find(t=>t.id===f.homeTeamId)?.name||'')})</span></b><small>vs ${esc(f.awayPlayerName)} <span>(${esc(c.teams.find(t=>t.id===f.awayTeamId)?.name||'')})</span></small>${note}</div><div class="fixture-result"><strong>${esc(result)}</strong><button data-play-fixture="${esc(f.id)}" ${canOpen?'':'disabled'} class="${mine&&f.status!=='finished'&&canOpen?'primary':''}">${action}</button></div></div>`;
 }
+async function fetchChampionshipSilently(id){
+  try{
+    const r=await fetch('/api/games/championships/'+encodeURIComponent(id)+'?playerId='+encodeURIComponent(playerId),{cache:'no-store'});
+    const d=await r.json();
+    if(!r.ok)throw new Error(d.error||'Não foi possível atualizar o campeonato.');
+    if(currentCupId===id && $('championships')?.classList.contains('active')) renderChampionship(d.championship);
+  }catch(e){}
+}
 async function openChampionship(id){
   currentCupId=id; clearInterval(currentCupTimer);
   const refresh=async()=>{try{const r=await fetch('/api/games/championships/'+encodeURIComponent(id)+'?playerId='+encodeURIComponent(playerId),{cache:'no-store'});const d=await r.json();if(!r.ok)throw new Error(d.error||'Campeonato não encontrado.');renderChampionship(d.championship);return true}catch(e){toast(e.message||'Não foi possível abrir o campeonato.');return false}};
@@ -143,12 +151,21 @@ async function openFixture(cupId,fixtureId){
   try{
     const r=await fetch(`/api/games/championships/${encodeURIComponent(cupId)}/fixtures/${encodeURIComponent(fixtureId)}/room`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({playerId})});
     const d=await r.json(); if(!r.ok)throw new Error(d.error||'Não foi possível preparar a partida.');
-    currentCupId=cupId; roomCode=String(d.roomCode).toUpperCase(); mySymbol=null; state=null; isSpectator=!!d.spectator; activeFixtureId=fixtureId;
-    myName=localStorage.getItem('2on_player_name')||myName; myTeam=localStorage.getItem('2on_player_team')||myTeam;
+    currentCupId=cupId;
+    roomCode=String(d.roomCode).toUpperCase();
+    mySymbol=null;
+    state=null;
+    isSpectator=!!d.spectator;
+    activeFixtureId=fixtureId;
+    clearSession();
+    myName=localStorage.getItem('2on_player_name')||myName;
+    myTeam=localStorage.getItem('2on_player_team')||myTeam;
     const action={type:'game-join',roomCode,name:myName,teamName:myTeam,playerId};
     pendingAction=action;
+    page('play');
     if(!socketOpen()){toast('🔄 A ligar à partida…');connect();return;}
-    pendingAction=null; send(action); toast(isSpectator?'👀 A abrir o modo espectador…':'🎮 A entrar na partida…');
+    pendingAction=null;
+    if(send(action)) toast(isSpectator?'👀 A abrir o modo espectador…':'🎮 A entrar na partida…');
   }catch(e){toast(e.message||'Não foi possível abrir este jogo.')}
 }
 async function deleteChampionship(id){if(!confirm('Eliminar este campeonato? Esta ação não pode ser desfeita.'))return;try{const r=await fetch('/api/games/championships/'+encodeURIComponent(id)+'?playerId='+encodeURIComponent(playerId),{method:'DELETE'});const d=await r.json();if(!r.ok)throw new Error(d.error||'Não foi possível eliminar.');$('cupAccess').hidden=true;toast('Campeonato eliminado.');loadCups(false)}catch(e){toast(e.message||'Não foi possível eliminar o campeonato.')}
