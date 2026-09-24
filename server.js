@@ -7,7 +7,7 @@ const fs = require('fs');
 const WebSocket = require('ws');
 
 const APP_NAME = '2 ON Platform';
-const APP_VERSION = '2.1.0';
+const APP_VERSION = '2.2.1';
 const PORT = Number(process.env.PORT || 3000);
 const HOST = process.env.HOST || '0.0.0.0';
 const ROOM_TTL_MS = 6 * 60 * 60 * 1000;
@@ -68,7 +68,7 @@ function normalizeChampionship(raw){
   }));
   const fixtures=Array.isArray(raw.fixtures)?raw.fixtures.map((f,i)=>({
     id:cleanBasic(f?.id,80)||`fx_${crypto.randomBytes(8).toString('hex')}`,order:Number(f?.order)||i+1,
-    status:['scheduled','playing','finished'].includes(f?.status)?f.status:'scheduled',
+    status:['locked','ready','playing','finished'].includes(f?.status)?f.status:(f?.status==='scheduled'?'ready':'locked'),
     homeTeamId:cleanBasic(f?.homeTeamId,80),awayTeamId:cleanBasic(f?.awayTeamId,80),
     homePlayerId:cleanBasic(f?.homePlayerId,80),awayPlayerId:cleanBasic(f?.awayPlayerId,80),
     homePlayerName:cleanBasic(f?.homePlayerName,24)||'Jogador',awayPlayerName:cleanBasic(f?.awayPlayerName,24)||'Jogador',
@@ -77,9 +77,13 @@ function normalizeChampionship(raw){
     finalBoard:Array.isArray(f?.finalBoard)&&f.finalBoard.length===9?f.finalBoard.map(v=>v==='X'||v==='O'?v:null):null,
     result:f?.result==='X'||f?.result==='O'||f?.result==='draw'?f.result:null
   })).filter(f=>f.homePlayerId&&f.awayPlayerId):[];
-  // A sala WebSocket é memória volátil. Após reiniciar o servidor, qualquer jogo marcado como "playing"
-  // volta para "scheduled" para que possa ser aberto novamente sem ficar preso num código morto.
-  for(const f of fixtures){if(f.status==='playing'){f.status='scheduled';f.roomCode=null;}}
+  // As salas WebSocket são voláteis. Depois de reiniciar o servidor, apenas a primeira
+  // partida ainda não concluída pode voltar a ficar disponível; todas as seguintes
+  // permanecem bloqueadas até a anterior terminar.
+  for(const f of fixtures){if(f.status==='playing'){f.status='ready';f.roomCode=null;}}
+  const firstPending=fixtures.find(f=>f.status!=='finished');
+  for(const f of fixtures){if(f!==firstPending && f.status!=='finished')f.status='locked';}
+  if(firstPending && firstPending.status==='locked')firstPending.status='ready';
   const full=normalizedTeams.every(t=>t.players.length===t.capacity);
   let status=['waiting','ready','in_progress','finished'].includes(raw.status)?raw.status:'waiting';
   if(status==='waiting'&&full)status='ready';
@@ -228,6 +232,10 @@ function joinGameRoom(ws, message) {
     const allowed = room.championshipFixture;
     const c=championships.find(x=>x.id===allowed.championshipId);
     if(!c)return send(ws,{type:'game-error',message:'Campeonato não encontrado.'});
+    const fixture=c.fixtures?.find(x=>x.id===allowed.fixtureId);
+    const current=firstOpenFixture(c);
+    const isReplay=fixture?.status==='finished' && Array.isArray(fixture.finalBoard);
+    if(!fixture || (!isReplay && (!current || current.id!==fixture.id || !['ready','playing'].includes(fixture.status)))) return send(ws,{type:'game-error',message:'Esta partida ainda está bloqueada. Aguarda a conclusão da partida anterior.'});
     if(ws.gameRoom) leaveGame(ws,false);
     addChampSocket(c,ws,playerId);
     if(playerId!==allowed.homePlayerId && playerId!==allowed.awayPlayerId){
@@ -237,7 +245,9 @@ function joinGameRoom(ws, message) {
     const forced = playerId===allowed.homePlayerId ? 'X' : 'O';
     if(room.players[forced]) return send(ws,{type:'game-error',message:'Este jogador já está conectado à partida.'});
     room.players[forced] = ws; room.names[forced] = forced==='X'?allowed.homePlayerName:allowed.awayPlayerName; room.ids[forced]=playerId; room.teams[forced]=clean(message.teamName,40)||room.teams[forced]; ws.gameRoom=code; ws.gameSymbol=forced; ws.gamePlayerId=playerId; ws.gameSpectator=false; room.lastActivity=Date.now();
-    send(ws,{type:'game-joined',roomCode:code,symbol:forced,state:publicGame(room),championship:publicChampionship(c,playerId)}); broadcastGame(room,{type:'game-state',state:publicGame(room)}); return;
+    if(!isReplay && fixture.status==='ready')fixture.status='playing';
+    savePersistentData();
+    send(ws,{type:'game-joined',roomCode:code,symbol:forced,state:publicGame(room),championship:publicChampionship(c,playerId)}); broadcastGame(room,{type:'game-state',state:publicGame(room)}); if(room.players.X&&room.players.O)broadcastGame(room,{type:'game-voice-ready',from:forced}); return;
   }
   if (room.disconnected && !room.players[room.disconnected]) return send(ws, { type:'game-error', message:'O teu adversário está a tentar reconectar. Aguarda um momento.' });
   const symbol = !room.players.X ? 'X' : !room.players.O ? 'O' : null;
@@ -247,6 +257,7 @@ function joinGameRoom(ws, message) {
   room.lastActivity = Date.now(); ws.gameRoom = code; ws.gameSymbol = symbol; ws.gamePlayerId = playerId; ws.gameSpectator=false;
   send(ws, { type: 'game-joined', roomCode: code, symbol, state: publicGame(room) });
   broadcastGame(room, { type: 'game-state', state: publicGame(room) });
+  if(room.players.X&&room.players.O)broadcastGame(room,{type:'game-voice-ready',from:symbol});
 }
 function gameMove(ws, message) {
   const room = gameRooms.get(ws.gameRoom);
@@ -325,7 +336,7 @@ function leaveGame(ws, announce = true) {
   if (!room.players.X && !room.players.O && !room.spectators?.size) {
     if (room.championshipFixture) {
       const meta=room.championshipFixture; const c=championships.find(x=>x.id===meta.championshipId); const f=c?.fixtures?.find(x=>x.id===meta.fixtureId);
-      if (f && f.status!=='finished') { f.roomCode=null; f.status='scheduled'; savePersistentData(); gameRooms.delete(room.code); }
+      if (f && f.status!=='finished') { f.roomCode=null; f.status='ready'; savePersistentData(); gameRooms.delete(room.code); }
       else if(f?.status==='finished'){ room.lastActivity=Date.now(); }
     } else gameRooms.delete(room.code);
   }
@@ -387,6 +398,7 @@ app.post('/api/games/championships', (req, res) => {
   const teamBName = clean(req.body?.teamBName, 50);
   const plannedMatches = req.body?.plannedMatches==null ? 1 : Number(req.body?.plannedMatches);
   if(!name || !Number.isInteger(participantCount) || participantCount < 2 || participantCount > 32 || participantCount % 2 !== 0) return res.status(400).json({error:'O número de participantes deve ser par, entre 2 e 32.'});
+  if(!Number.isInteger(plannedMatches) || plannedMatches < 1 || plannedMatches > 15) return res.status(400).json({error:'O número de partidas deve ser um inteiro entre 1 e 15.'});
   if(!teamAName || !teamBName) return res.status(400).json({error:'Indica o nome das duas equipas.'});
   const capacity=participantCount/2;
   const ownerName=clean(req.body?.ownerName,24)||'Jogador';
@@ -419,7 +431,7 @@ function createChampionshipFixtures(c){
   const fixtures=[];
   for(let i=0;i<total;i++){
     const pa=a.players[i % a.players.length], pb=b.players[i % b.players.length];
-    fixtures.push({id:makeId('fx'),order:i+1,status:'scheduled',homeTeamId:a.id,awayTeamId:b.id,homePlayerId:pa.playerId,awayPlayerId:pb.playerId,homePlayerName:pa.name,awayPlayerName:pb.name,homeScore:null,awayScore:null,roomCode:null,finishedAt:null,finalBoard:null,result:null});
+    fixtures.push({id:makeId('fx'),order:i+1,status:i===0?'ready':'locked',homeTeamId:a.id,awayTeamId:b.id,homePlayerId:pa.playerId,awayPlayerId:pb.playerId,homePlayerName:pa.name,awayPlayerName:pb.name,homeScore:null,awayScore:null,roomCode:null,finishedAt:null,finalBoard:null,result:null});
   }
   return fixtures;
 }
@@ -433,21 +445,33 @@ function maybeFinishChampionship(c){
   const scores=championshipScores(c), a=c.teams[0].id,b=c.teams[1].id;
   c.status='finished'; c.winnerTeamId=scores[a]===scores[b]?null:(scores[a]>scores[b]?a:b); c.finishedAt=Date.now(); savePersistentData(); return true;
 }
+function firstOpenFixture(c){
+  return (c.fixtures||[]).find(f=>f.status!=='finished')||null;
+}
 function ensureFixtureRoom(c,f){
   if(!c||!f)return null;
+  const current=firstOpenFixture(c);
+  const isReplay=f.status==='finished' && Array.isArray(f.finalBoard);
+  if(!isReplay){
+    if(c.status!=='in_progress')return null;
+    if(!current || current.id!==f.id)return null;
+    if(!['ready','playing'].includes(f.status))return null;
+  }
   if(f.roomCode&&gameRooms.has(f.roomCode))return f.roomCode;
   const home=c.teams.find(t=>t.id===f.homeTeamId), away=c.teams.find(t=>t.id===f.awayTeamId);
   if(!home||!away||!f.homePlayerId||!f.awayPlayerId)return null;
   const rc=roomCode();
-  const replay=f.status==='finished' && Array.isArray(f.finalBoard);
   f.roomCode=rc;
-  if(!replay)f.status='playing';
-  const result=replay?winner(f.finalBoard):null;
-  gameRooms.set(rc,{code:rc,players:{X:null,O:null},names:{X:f.homePlayerName,O:f.awayPlayerName},ids:{X:f.homePlayerId,O:f.awayPlayerId},board:replay?[...f.finalBoard]:Array(9).fill(null),turn:null,winner:replay?(f.result||result?.winner||null):null,winningLine:replay?(result?.line||[]):[],turnStartedAt:null,lastActivity:Date.now(),score:{X:0,O:0},matchNumber:f.order,disconnected:null,teams:{X:home.name,O:away.name},spectators:new Set(),championshipFixture:{championshipId:c.id,fixtureId:f.id,homePlayerId:f.homePlayerId,awayPlayerId:f.awayPlayerId,homePlayerName:f.homePlayerName,awayPlayerName:f.awayPlayerName}});
+  if(!isReplay && f.status==='locked')f.status='ready';
+  const result=isReplay?winner(f.finalBoard):null;
+  gameRooms.set(rc,{code:rc,players:{X:null,O:null},names:{X:f.homePlayerName,O:f.awayPlayerName},ids:{X:f.homePlayerId,O:f.awayPlayerId},board:isReplay?[...f.finalBoard]:Array(9).fill(null),turn:null,winner:isReplay?(f.result||result?.winner||null):null,winningLine:isReplay?(result?.line||[]):[],turnStartedAt:null,lastActivity:Date.now(),score:{X:0,O:0},matchNumber:f.order,disconnected:null,teams:{X:home.name,O:away.name},spectators:new Set(),championshipFixture:{championshipId:c.id,fixtureId:f.id,homePlayerId:f.homePlayerId,awayPlayerId:f.awayPlayerId,homePlayerName:f.homePlayerName,awayPlayerName:f.awayPlayerName}});
   return rc;
 }
 function notifyFixtureReady(c,f){
-  if(!c||!f)return;
+  if(!c||!f||c.status!=='in_progress')return;
+  const current=firstOpenFixture(c);
+  if(!current || current.id!==f.id)return;
+  if(f.status==='locked'||f.status==='scheduled')f.status='ready';
   const rc=ensureFixtureRoom(c,f);
   if(!rc)return;
   const payload={type:'championship-fixture-ready',championshipId:c.id,fixtureId:f.id,roomCode:rc,homePlayerId:f.homePlayerId,awayPlayerId:f.awayPlayerId,order:f.order,status:f.status};
@@ -455,7 +479,6 @@ function notifyFixtureReady(c,f){
   sendFixtureReadyToPlayer(c,f,f.homePlayerId);
   sendFixtureReadyToPlayer(c,f,f.awayPlayerId);
 }
-function firstOpenFixture(c){return (c.fixtures||[]).find(f=>f.status!=='finished');}
 function isChampionshipMember(c,playerId){return !!c?.teams.some(t=>t.players.some(p=>p.playerId===playerId));}
 function addPlayerSocket(ws,playerId){
   const pid=clean(playerId,80); if(!pid)return;
@@ -479,7 +502,11 @@ function sendFixtureReadyToPlayer(c,f,playerId){
   const payload={type:'championship-fixture-ready',championshipId:c.id,fixtureId:f.id,roomCode:f.roomCode,homePlayerId:f.homePlayerId,awayPlayerId:f.awayPlayerId,order:f.order,status:f.status};
   for(const target of set)send(target,payload);
 }
-function currentFixtureForPlayer(c,playerId){return (c.fixtures||[]).find(f=>f.status==='playing'&&(f.homePlayerId===playerId||f.awayPlayerId===playerId)) || (c.fixtures||[]).find(f=>f.status==='scheduled'&&(f.homePlayerId===playerId||f.awayPlayerId===playerId));}
+function currentFixtureForPlayer(c,playerId){
+  const current=firstOpenFixture(c);
+  if(!current)return null;
+  return current.homePlayerId===playerId||current.awayPlayerId===playerId?current:null;
+}
 function pushChampChat(c,playerId,name,text){const msg={id:makeId('msg'),playerId,name,text,scope:'general',at:Date.now()};c.chat=(c.chat||[]).slice(-199);c.chat.push(msg);savePersistentData();broadcastChampionship(c,{type:'championship-chat',message:msg});}
 
 app.post('/api/games/championships/:id/start', (req,res)=>{
@@ -499,9 +526,30 @@ app.post('/api/games/championships/:id/fixtures/:fixtureId/room', (req,res)=>{
   const f=c.fixtures.find(x=>x.id===req.params.fixtureId); if(!f)return res.status(404).json({error:'Jogo do campeonato não encontrado.'});
   const pid=clean(req.body?.playerId,80);
   if(!isChampionshipMember(c,pid))return res.status(403).json({error:'Apenas jogadores deste campeonato podem acompanhar esta partida.'});
+  const current=firstOpenFixture(c);
+  const isCurrent=!!current&&current.id===f.id&&['ready','playing'].includes(f.status);
+  const isReplay=f.status==='finished' && Array.isArray(f.finalBoard);
+  if(!isCurrent && !isReplay)return res.status(409).json({error:'Esta partida está bloqueada. Aguarda a conclusão da partida anterior.'});
   const rc=ensureFixtureRoom(c,f);
   if(!rc)return res.status(409).json({error:'O replay desta partida não está disponível após reinício do servidor.'});
   savePersistentData(); res.json({roomCode:rc,fixture:f,spectator:pid!==f.homePlayerId&&pid!==f.awayPlayerId});
+});
+
+app.post('/api/games/championships/:id/restart', (req,res)=>{
+  const c=championships.find(x=>x.id===req.params.id);
+  if(!c)return res.status(404).json({error:'Campeonato não encontrado.'});
+  const pid=clean(req.body?.playerId,80);
+  if(pid!==c.ownerPlayerId)return res.status(403).json({error:'Apenas o criador pode recomeçar o campeonato.'});
+  const full=c.teams.every(t=>t.players.length===t.capacity);
+  if(!full)return res.status(409).json({error:'Não é possível recomeçar enquanto as equipas não estiverem completas.'});
+  for(const [code,room] of gameRooms){
+    if(room.championshipFixture?.championshipId===c.id)gameRooms.delete(code);
+  }
+  c.fixtures=createChampionshipFixtures(c);
+  c.status='in_progress'; c.startedAt=Date.now(); c.finishedAt=null; c.winnerTeamId=null;
+  const first=firstOpenFixture(c); if(first)notifyFixtureReady(c,first);
+  savePersistentData();
+  res.json({championship:publicChampionship(c,pid),message:'Campeonato recomeçado. A primeira partida está pronta.'});
 });
 
 app.delete('/api/games/championships/:id', (req,res)=>{
@@ -640,8 +688,8 @@ wss.on('connection', ws => {
         if(ws.gameRoom) leaveGame(ws,false);
         ws.gamePlayerId=pid; addChampSocket(c,ws,pid);
         send(ws,{type:'championship-chat-history',championshipId:c.id,messages:c.chat||[]});
-        const current=currentFixtureForPlayer(c,pid);
-        if(current){ensureFixtureRoom(c,current); send(ws,{type:'championship-fixture-ready',championshipId:c.id,fixtureId:current.id,roomCode:current.roomCode,homePlayerId:current.homePlayerId,awayPlayerId:current.awayPlayerId,order:current.order,status:current.status});}
+        const current=firstOpenFixture(c);
+        if(current && current.roomCode && gameRooms.has(current.roomCode)) send(ws,{type:'championship-fixture-ready',championshipId:c.id,fixtureId:current.id,roomCode:current.roomCode,homePlayerId:current.homePlayerId,awayPlayerId:current.awayPlayerId,order:current.order,status:current.status});
       } else if (message.type === 'championship-chat') {
         const cid=clean(message.championshipId,80), pid=clean(message.playerId,80), text=clean(message.text,300), name=clean(message.name,24)||'Jogador';
         const c=championships.find(x=>x.id===cid);
@@ -678,7 +726,7 @@ wss.on('connection', ws => {
     else if (room && room.players[ws.gameSymbol] === ws) {
       const symbol=ws.gameSymbol; room.players[symbol]=null; room.disconnected=symbol; room.lastActivity=Date.now();
       broadcastGame(room,{type:'game-disconnected',symbol,state:publicGame(room)});
-      setTimeout(()=>{ if(gameRooms.get(room.code)===room && room.disconnected===symbol && !room.players[symbol]) { room.disconnected=null; if(room.winner){ broadcastGame(room,{type:'game-left',symbol}); } else { room.ids[symbol]=null; room.names[symbol]=null; if(!room.players.X&&!room.players.O&&!room.spectators?.size){ const f=room.championshipFixture&&championships.find(c=>c.id===room.championshipFixture.championshipId)?.fixtures.find(f=>f.id===room.championshipFixture.fixtureId); if(f&&f.status!=='finished'){f.roomCode=null;f.status='scheduled';savePersistentData();gameRooms.delete(room.code);} } else broadcastGame(room,{type:'game-left',symbol}); } } }, RECONNECT_GRACE_MS);
+      setTimeout(()=>{ if(gameRooms.get(room.code)===room && room.disconnected===symbol && !room.players[symbol]) { room.disconnected=null; if(room.winner){ broadcastGame(room,{type:'game-left',symbol}); } else { room.ids[symbol]=null; room.names[symbol]=null; if(!room.players.X&&!room.players.O&&!room.spectators?.size){ const f=room.championshipFixture&&championships.find(c=>c.id===room.championshipFixture.championshipId)?.fixtures.find(f=>f.id===room.championshipFixture.fixtureId); if(f&&f.status!=='finished'){f.roomCode=null;f.status='ready';savePersistentData();gameRooms.delete(room.code);} } else broadcastGame(room,{type:'game-left',symbol}); } } }, RECONNECT_GRACE_MS);
     }
     removeChampSocket(ws);
     removePlayerSocket(ws);
@@ -699,6 +747,21 @@ wss.on('connection', ws => {
   });
 });
 
+function bootstrapActiveChampionships(){
+  let changed=false;
+  for(const c of championships){
+    if(c.status!=='in_progress')continue;
+    const current=firstOpenFixture(c);
+    if(!current)continue;
+    if(current.status==='locked'||current.status==='scheduled')current.status='ready';
+    if(!current.roomCode || !gameRooms.has(current.roomCode)){
+      if(ensureFixtureRoom(c,current))changed=true;
+    }
+  }
+  if(changed)savePersistentData();
+}
+bootstrapActiveChampionships();
+
 setInterval(() => {
   const now=Date.now();
   for (const room of gameRooms.values()) {
@@ -711,7 +774,11 @@ setInterval(() => {
 setInterval(() => {
   const cutoff = Date.now() - ROOM_TTL_MS;
   for (const [key, room] of streamRooms) if (!room.host && !room.viewer && room.lastActivity < cutoff) streamRooms.delete(key);
-  for (const [key, room] of gameRooms) if (!room.players.X && !room.players.O || room.lastActivity < cutoff) gameRooms.delete(key);
+  for (const [key, room] of gameRooms) {
+    const hasPlayers=!!room.players.X||!!room.players.O;
+    const hasSpectators=!!room.spectators?.size;
+    if((!hasPlayers&&!hasSpectators) || (!hasPlayers&&room.lastActivity<cutoff)) gameRooms.delete(key);
+  }
   for (const ws of wss.clients) {
     if (ws.isAlive === false) { try { ws.terminate(); } catch (_) {} } else { ws.isAlive = false; try { ws.ping(); } catch (_) {} }
   }

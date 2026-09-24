@@ -1,4 +1,4 @@
-# 2 ON Platform 2.1.0
+# 2 ON Platform 2.2.1
 
 Plataforma web de jogos competitivos em tempo real, com partidas rápidas e campeonatos entre duas equipas.
 
@@ -86,3 +86,35 @@ Para partidas e voz entre telemóveis:
 ## Dados
 
 O MVP persiste campeonatos e estatísticas em `data/games.json`. Isso é adequado para uma implantação pequena em armazenamento persistente. Em ambientes como Render com filesystem efémero, os dados não devem ser tratados como armazenamento definitivo.
+
+
+## Correções da 2.2.1
+- Impede abrir partidas futuras antes da partida atual terminar.
+- Mantém salas com espectadores enquanto houver espectadores ativos.
+- Reforça a renegociação de voz quando o segundo jogador entra.
+- A interface identifica partidas futuras como aguardando.
+
+
+## Championship Core 2.2.1
+
+A lógica do campeonato usa uma sequência de estados controlada pelo servidor: a primeira partida não concluída fica `ready`/`playing`; todas as partidas seguintes ficam `locked` até a anterior terminar. O cliente nunca pode desbloquear uma partida futura por abrir a página ou chamar diretamente o endpoint.
+
+- `championship-watch` é somente leitura e não cria salas.
+- O endpoint de sala rejeita partidas futuras com HTTP 409.
+- Jogadores atribuídos recebem `championship-fixture-ready` apenas para a partida atual.
+- O servidor valida novamente a partida atual no WebSocket antes de permitir entrada.
+- Partidas concluídas continuam disponíveis como replay quando o `finalBoard` está persistido.
+- Ao terminar uma partida, a seguinte é desbloqueada e preparada automaticamente.
+- A interface distingue `JOGAR AGORA`, `ASSISTIR AO VIVO`, `REVER` e `AGUARDA`.
+
+### Limite de validação
+
+Os testes estáticos e de sintaxe podem ser executados localmente. O teste E2E de dois clientes WebSocket só é considerado válido quando executado com as dependências instaladas e o servidor realmente iniciado.
+
+
+## Pós-partida do campeonato (2.2.1)
+- Depois de uma partida concluída, a interface consulta o estado real do campeonato.
+- Se existir outra partida ativa/pronta, mostra `Partir para o outro jogo` para o jogador escalado e `Assistir ao outro jogo` para acompanhamento.
+- Quando todas as partidas terminam, mostra explicitamente o nome da equipa vencedora (ou empate).
+- No fim do campeonato, o criador pode `Recomeçar campeonato`; todos os participantes permanecem nas suas equipas e uma nova série é criada.
+- `Encerrar campeonato` fecha a sessão do campeonato no dispositivo sem apagar os dados do campeonato.

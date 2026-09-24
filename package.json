@@ -1,6 +1,6 @@
 {
   "name": "2-on-platform",
-  "version": "2.1.0",
+  "version": "2.2.1",
   "private": true,
   "description": "2 ON — plataforma de jogos competitivos em tempo real, com campeonatos, espectadores, chat e voz.",
   "main": "server.js",
@@ -9,7 +9,8 @@
     "dev": "node --watch server.js",
     "check": "node --check server.js && node --check public/games.js",
     "test": "npm run check && npm run test:static",
-    "test:static": "node scripts/smoke.js"
+    "test:static": "node scripts/smoke.js",
+    "test:e2e": "node scripts/e2e-championship.js"
   },
   "engines": {
     "node": ">=18"
