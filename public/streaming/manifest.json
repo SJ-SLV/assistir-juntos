@@ -1,11 +1,14 @@
 {
-  "name":"Assistir Juntos 2.1",
-  "short_name":"Assistir Juntos",
-  "description":"Vídeos, música e YouTube em sincronia com outra pessoa.",
-  "start_url":"/",
-  "scope":"/",
-  "display":"standalone",
-  "background_color":"#07080b",
-  "theme_color":"#e50914",
-  "icons":[{"src":"public/icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]
+  "name": "2 ON Streaming",
+  "short_name": "2 ON Streaming",
+  "description": "Vídeos, música e YouTube em sincronia com outra pessoa.",
+  "start_url": "/streaming/",
+  "scope": "/streaming/",
+  "display": "standalone",
+  "background_color": "#07080b",
+  "theme_color": "#e50914",
+  "icons": [
+    {"src":"/streaming/icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"},
+    {"src":"/streaming/icon.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}
+  ]
 }

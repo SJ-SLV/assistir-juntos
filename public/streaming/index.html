@@ -491,7 +491,7 @@
       <p class="hint">Escolhe um vídeo do teu telefone e cria uma sessão para a outra pessoa assistir contigo.</p>
       <label class="field-label" for="host-name">Nome que aparecerá na sessão</label>
       <input type="text" id="host-name" maxlength="24" placeholder="Ex.: Tomás" style="text-transform:none; letter-spacing:normal; font-size:15px; font-weight:500;" />
-      <button id="btn-create">Criar sessão</button>
+      <button type="button" id="btn-create">Criar sessão</button>
     </div>
     <div class="divider">— ou —</div>
     <div class="card">
@@ -501,9 +501,9 @@
       <input type="text" id="viewer-name" maxlength="24" placeholder="Ex.: Tomás" style="text-transform:none; letter-spacing:normal; font-size:15px; font-weight:500;" />
       <div class="row">
         <input type="text" id="input-code" maxlength="5" placeholder="CÓDIGO" inputmode="text" autocomplete="off" autocapitalize="characters" />
-        <button id="btn-paste-code" class="secondary" style="flex:0 0 auto; padding: 14px 16px;">Colar</button>
+        <button type="button" id="btn-paste-code" class="secondary" style="flex:0 0 auto; padding: 14px 16px;">Colar</button>
       </div>
-      <button id="btn-join">Entrar</button>
+      <button type="button" id="btn-join">Entrar</button>
       <p class="error-msg" id="home-error"></p>
     </div>
   </section>
@@ -534,10 +534,10 @@
       <p class="hint" style="text-align:center;">Aponta a câmara ao QR, ou usa um dos links abaixo.</p>
 
       <div class="row">
-        <button id="btn-copy-link"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>Copiar link</button>
-        <button id="btn-share-link" class="secondary"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>Partilhar</button>
+        <button type="button" id="btn-copy-link"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>Copiar link</button>
+        <button type="button" id="btn-share-link" class="secondary"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>Partilhar</button>
       </div>
-      <button id="btn-copy-code" class="ghost" style="padding:8px;">Copiar só o código</button>
+      <button type="button" id="btn-copy-code" class="ghost" style="padding:8px;">Copiar só o código</button>
 
       <div class="row" id="call-volume-row" style="align-items:center; gap:8px; display:none;">
         <label for="vol-call-host" style="font-size:12px; color:var(--muted); flex:0 0 auto;">Volume da chamada</label>
@@ -618,9 +618,9 @@
 
     <div class="card" id="content-panel-card" style="display:none;">
       <div class="segmented" style="display:none;">
-        <button id="mode-file-btn" class="mode-btn mode-btn-active">📱 Ao vivo</button>
-        <button id="mode-transfer-btn" class="mode-btn">Enviar</button>
-        <button id="mode-youtube-btn" class="mode-btn">YouTube</button>
+        <button type="button" id="mode-file-btn" class="mode-btn mode-btn-active">📱 Ao vivo</button>
+        <button type="button" id="mode-transfer-btn" class="mode-btn">Enviar</button>
+        <button type="button" id="mode-youtube-btn" class="mode-btn">YouTube</button>
       </div>
 
       <div id="mode-file-panel">
@@ -648,9 +648,9 @@
             <span id="file-time-duration">0:00</span>
           </div>
           <div class="player-controls">
-            <button id="file-prev-btn" title="Anterior">⏮</button>
-            <button id="file-play-pause" class="play-pause" title="Play/Pausa">▶</button>
-            <button id="file-next-btn" title="Seguinte">⏭</button>
+            <button type="button" id="file-prev-btn" title="Anterior">⏮</button>
+            <button type="button" id="file-play-pause" class="play-pause" title="Play/Pausa">▶</button>
+            <button type="button" id="file-next-btn" title="Seguinte">⏭</button>
           </div>
         </div>
 
@@ -674,16 +674,16 @@
         <p class="hint">Cola o link de um vídeo ou música do YouTube e adiciona à fila.</p>
         <div class="row">
           <input type="text" id="yt-url-input" placeholder="Link ou ID do YouTube" style="text-transform:none; letter-spacing:normal; font-size:14px;" />
-          <button id="yt-load-btn" class="secondary" style="flex:0 0 auto;">Adicionar</button>
+          <button type="button" id="yt-load-btn" class="secondary" style="flex:0 0 auto;">Adicionar</button>
         </div>
         <div id="yt-player-host" style="margin-top:10px;"></div>
 
         <div id="yt-player-bar" class="player-bar">
           <div class="player-title" id="yt-track-title">—</div>
           <div class="player-controls">
-            <button id="yt-prev-btn" title="Anterior">⏮</button>
-            <button id="yt-sync-btn" class="secondary" style="width:auto; border-radius:12px; padding:0 14px; height:40px;">🔄 Sincronizar</button>
-            <button id="yt-next-btn" title="Seguinte">⏭</button>
+            <button type="button" id="yt-prev-btn" title="Anterior">⏮</button>
+            <button type="button" id="yt-sync-btn" class="secondary" style="width:auto; border-radius:12px; padding:0 14px; height:40px;">🔄 Sincronizar</button>
+            <button type="button" id="yt-next-btn" title="Seguinte">⏭</button>
           </div>
         </div>
 
@@ -730,9 +730,9 @@
         <label for="vol-call" style="font-size:12px; color:var(--muted); flex:0 0 auto;">Chamada</label>
         <input type="range" id="vol-call" min="0" max="100" value="100" style="flex:1;" />
       </div>
-      <button id="btn-unmute" class="secondary" style="display:none;"><svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>Tocar / Ativar som</button>
-      <button id="yt-sync-btn-viewer" class="secondary" style="display:none;">🔄 Sincronizar agora</button>
-      <button id="btn-leave-viewer" class="ghost"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>Sair</button>
+      <button type="button" id="btn-unmute" class="secondary" style="display:none;"><svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>Tocar / Ativar som</button>
+      <button type="button" id="yt-sync-btn-viewer" class="secondary" style="display:none;">🔄 Sincronizar agora</button>
+      <button type="button" id="btn-leave-viewer" class="ghost"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>Sair</button>
     </div>
 
     <div class="card room-stage-card" id="viewer-stage-card">
@@ -810,24 +810,24 @@
 <audio id="remote-audio" autoplay playsinline></audio>
 <!-- Áudio remoto da música partilhada do telemóvel (separado da chamada de voz) -->
 <audio id="movie-audio" autoplay playsinline></audio>
-<button id="btn-audio-unmute" class="secondary"><svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>Ativar áudio da chamada</button>
+<button type="button" id="btn-audio-unmute" class="secondary"><svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>Ativar áudio da chamada</button>
 
 <!-- Botões flutuantes -->
 <div id="action-bar" class="action-bar" style="display:none !important;">
-  <button id="mic-toggle" class="action-btn" title="Chamada de voz" aria-label="Chamada de voz">🎤</button>
-  <button id="chat-toggle" class="action-btn action-btn-accent" aria-label="Abrir mensagens">💬<span id="chat-badge" class="badge"></span></button>
+  <button type="button" id="mic-toggle" class="action-btn" title="Chamada de voz" aria-label="Chamada de voz">🎤</button>
+  <button type="button" id="chat-toggle" class="action-btn action-btn-accent" aria-label="Abrir mensagens">💬<span id="chat-badge" class="badge"></span></button>
 </div>
 
 <div id="chat-panel">
   <div class="chat-header">
     <div class="chat-head-main"><span class="chat-head-dot"></span><div><span>Mensagens</span><span class="chat-head-sub">Conversa privada da sala</span></div></div>
-    <button id="chat-close" aria-label="Fechar mensagens">✕</button>
+    <button type="button" id="chat-close" aria-label="Fechar mensagens">✕</button>
   </div>
   <div id="chat-messages"><div class="chat-empty" id="chat-empty"><strong>Sem mensagens ainda</strong>Envia uma mensagem para falar com a outra pessoa durante a sessão.</div></div>
   <div class="typing-indicator" id="typing-indicator" style="display:none;">a escrever...</div>
   <div class="chat-input-row">
     <input type="text" id="chat-input" placeholder="Escreve uma mensagem..." maxlength="500" />
-    <button id="chat-send" aria-label="Enviar mensagem">➤</button>
+    <button type="button" id="chat-send" aria-label="Enviar mensagem">➤</button>
   </div>
 </div>
 
@@ -836,6 +836,7 @@
   const wsProtocol = location.protocol === 'https:' ? 'wss://' : 'ws://';
   let ws = new WebSocket(wsProtocol + location.host);
   let wsReconnectDelay = 1000;
+  let pendingSocketAction = null;
 
   const SESSION_KEY = 'assistir_juntos_session_v1';
 
@@ -964,6 +965,12 @@
     catch (e) { return false; }
   }
 
+  function queueSocketAction(payload) {
+    if (socketSend(payload)) return true;
+    pendingSocketAction = payload;
+    return true;
+  }
+
   // ---------- ECRÃ INICIAL ----------
   const inputCode = document.getElementById('input-code');
   inputCode.addEventListener('input', () => {
@@ -989,7 +996,7 @@
     document.getElementById('home-error').textContent = '';
     myName = enteredName;
     try { localStorage.setItem('assistir_juntos_name', myName); } catch (e) {}
-    ws.send(JSON.stringify({ type: 'create-room', name: myName }));
+    queueSocketAction({ type: 'create-room', name: myName });
   });
 
   document.getElementById('btn-paste-code').addEventListener('click', async () => {
@@ -1016,7 +1023,7 @@
     document.getElementById('home-error').textContent = '';
     myName = enteredName;
     try { localStorage.setItem('assistir_juntos_name', myName); } catch (e) {}
-    ws.send(JSON.stringify({ type: 'join-room', code, name: myName }));
+    queueSocketAction({ type: 'join-room', code, name: myName });
   });
 
   document.getElementById('host-name').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('btn-create').click(); });
@@ -1033,7 +1040,7 @@
 
   // ---------- SAIR DA SALA ----------
   function leaveRoom() {
-    ws.send(JSON.stringify({ type: 'leave-room' }));
+    socketSend({ type: 'leave-room' });
   }
   document.getElementById('btn-leave-viewer').addEventListener('click', leaveRoom);
 
@@ -1090,7 +1097,26 @@
 
   function broadcastFileState() {
     const item = filePlaylist[fileCurrentIndex];
-    ws.send(JSON.stringify({ type: 'control', action: 'file-kind', kind: fileKind, title: item ? item.name : '' }));
+    socketSend({ type: 'control', action: 'file-kind', kind: fileKind, title: item ? item.name : '' });
+  }
+
+  function syncCurrentContentToPeer() {
+    if (role !== 'host') return;
+    socketSend({ type: 'control', action: 'mode', mode: currentMode });
+    if (currentMode === 'file') {
+      broadcastFileState();
+      const el = activeHostMediaEl();
+      if (el && el.src) socketSend({ type: 'control', action: 'media-sync', kind: fileKind, time: el.currentTime || 0, playing: !el.paused, index: fileCurrentIndex, title: filePlaylist[fileCurrentIndex]?.name || '' });
+    } else if (currentMode === 'youtube') {
+      const item = ytPlaylist[ytCurrentIndex];
+      if (item) {
+        socketSend({ type: 'control', action: 'yt-load', videoId: item.videoId, title: item.title || item.videoId });
+        if (ytPlayer) socketSend({ type: 'control', action: 'yt-sync', time: ytPlayer.getCurrentTime(), playing: ytPlayer.getPlayerState() === YT.PlayerState.PLAYING, videoId: item.videoId, title: item.title || item.videoId });
+      }
+    } else if (currentMode === 'transfer') {
+      const el = getActiveTransferElement();
+      if (el && el.src) socketSend({ type: 'control', action: 'transfer-heartbeat', time: el.currentTime || 0 });
+    }
   }
 
   function stopMovieTracks() {
@@ -1122,10 +1148,10 @@
           <span class="playlist-kind-label">${item.kind === 'audio' ? 'Música' : 'Vídeo'}</span>
         </div>
         <div class="playlist-actions">
-          <button data-action="play" data-index="${i}" title="Tocar agora">▶</button>
-          <button data-action="up" data-index="${i}" title="Mover para cima">↑</button>
-          <button data-action="down" data-index="${i}" title="Mover para baixo">↓</button>
-          <button data-action="remove" data-index="${i}" title="Remover">✕</button>
+          <button type="button" data-action="play" data-index="${i}" title="Tocar agora">▶</button>
+          <button type="button" data-action="up" data-index="${i}" title="Mover para cima">↑</button>
+          <button type="button" data-action="down" data-index="${i}" title="Mover para baixo">↓</button>
+          <button type="button" data-action="remove" data-index="${i}" title="Remover">✕</button>
         </div>
       </div>`).join('');
   }
@@ -1351,7 +1377,7 @@
     setActiveModeButton('mode-file-btn');
     if (ytPlayer) ytPlayer.pauseVideo();
     pauseTransferPlayback();
-    ws.send(JSON.stringify({ type: 'control', action: 'mode', mode: 'file' }));
+    socketSend({ type: 'control', action: 'mode', mode: 'file' });
   });
 
   document.getElementById('mode-transfer-btn').addEventListener('click', () => {
@@ -1361,7 +1387,7 @@
     hostAudioEl.pause();
     stopMovieTracks();
     if (ytPlayer) ytPlayer.pauseVideo();
-    ws.send(JSON.stringify({ type: 'control', action: 'mode', mode: 'transfer' }));
+    socketSend({ type: 'control', action: 'mode', mode: 'transfer' });
   });
 
   document.getElementById('mode-youtube-btn').addEventListener('click', () => {
@@ -1371,7 +1397,7 @@
     hostAudioEl.pause();
     stopMovieTracks();
     pauseTransferPlayback();
-    ws.send(JSON.stringify({ type: 'control', action: 'mode', mode: 'youtube' }));
+    socketSend({ type: 'control', action: 'mode', mode: 'youtube' });
   });
 
   function pauseTransferPlayback() {
@@ -1397,8 +1423,8 @@
   const btnUnmute = document.getElementById('btn-unmute');
   const remoteAudio = document.getElementById('remote-audio');
   const btnAudioUnmute = document.getElementById('btn-audio-unmute');
-  viewerVideo.addEventListener('play',()=>{ if (role==='viewer' && viewerControlGranted && !transferApplyingRemote) ws.send(JSON.stringify({type:'control',action: currentMode==='file' ? 'media-play' : 'transfer-play',time:viewerVideo.currentTime})); setViewerPlaybackButton(); });
-  viewerVideo.addEventListener('pause',()=>{ if (role==='viewer' && viewerControlGranted && !transferApplyingRemote) ws.send(JSON.stringify({type:'control',action: currentMode==='file' ? 'media-pause' : 'transfer-pause',time:viewerVideo.currentTime})); setViewerPlaybackButton(); });
+  viewerVideo.addEventListener('play',()=>{ if (role==='viewer' && viewerControlGranted && !transferApplyingRemote) socketSend({type:'control',action: currentMode==='file' ? 'media-play' : 'transfer-play',time:viewerVideo.currentTime}); setViewerPlaybackButton(); });
+  viewerVideo.addEventListener('pause',()=>{ if (role==='viewer' && viewerControlGranted && !transferApplyingRemote) socketSend({type:'control',action: currentMode==='file' ? 'media-pause' : 'transfer-pause',time:viewerVideo.currentTime}); setViewerPlaybackButton(); });
 
 
   function updateViewerNowPlaying(text) {
@@ -1457,14 +1483,14 @@
     polite = (role === 'viewer');
 
     pc.onicecandidate = (e) => {
-      if (e.candidate) ws.send(JSON.stringify({ type: 'ice-candidate', candidate: e.candidate }));
+      if (e.candidate) socketSend({ type: 'ice-candidate', candidate: e.candidate });
     };
 
     pc.onnegotiationneeded = async () => {
       try {
         makingOffer = true;
         await pc.setLocalDescription();
-        ws.send(JSON.stringify({ type: 'offer', offer: pc.localDescription }));
+        socketSend({ type: 'offer', offer: pc.localDescription });
       } catch (err) {
         console.error('Erro ao negociar ligação:', err);
       } finally {
@@ -1493,11 +1519,8 @@
       }
     };
 
-    // Canal de dados dedicado à transferência de ficheiros (modo "📤 Enviar")
-    if (role === 'host') {
-      fileChannel = pc.createDataChannel('filetransfer', { ordered: true });
-      setupFileChannel(fileChannel);
-    }
+    // Canal de dados dedicado à transferência de ficheiros. É criado apenas
+    // quando o primeiro envio acontece, por qualquer um dos participantes.
     pc.ondatachannel = (e) => {
       if (e.channel.label === 'filetransfer') {
         fileChannel = e.channel;
@@ -1531,7 +1554,7 @@
     await pc.setRemoteDescription(description);
     if (isOffer) {
       await pc.setLocalDescription();
-      ws.send(JSON.stringify({ type: 'answer', answer: pc.localDescription }));
+      socketSend({ type: 'answer', answer: pc.localDescription });
     }
   }
 
@@ -1620,9 +1643,9 @@
     if (ytApplyingRemote || !ytPlayer || !canControlPlayback()) return;
     const currentTime = ytPlayer.getCurrentTime();
     if (e.data === YT.PlayerState.PLAYING) {
-      ws.send(JSON.stringify({ type: 'control', action: 'yt-play', time: currentTime }));
+      socketSend({ type: 'control', action: 'yt-play', time: currentTime });
     } else if (e.data === YT.PlayerState.PAUSED) {
-      ws.send(JSON.stringify({ type: 'control', action: 'yt-pause', time: currentTime }));
+      socketSend({ type: 'control', action: 'yt-pause', time: currentTime });
     } else if (e.data === YT.PlayerState.ENDED && role === 'host') {
       playNextYoutube();
     }
@@ -1650,7 +1673,7 @@
     if (!ytPlayer || !canControlPlayback()) return;
     const time = ytPlayer.getCurrentTime();
     const playing = ytPlayer.getPlayerState() === YT.PlayerState.PLAYING;
-    ws.send(JSON.stringify({ type: 'control', action: 'yt-sync', time, playing }));
+    socketSend({ type: 'control', action: 'yt-sync', time, playing, videoId: ytPlaylist[ytCurrentIndex]?.videoId || null, title: ytPlaylist[ytCurrentIndex]?.title || '' });
   }
   document.getElementById('yt-sync-btn').addEventListener('click', sendYtSync);
   document.getElementById('yt-sync-btn-viewer').addEventListener('click', sendYtSync);
@@ -1659,7 +1682,7 @@
   setInterval(() => {
     if (ytPlayer && typeof ytPlayer.getPlayerState === 'function' && canControlPlayback() &&
         ytPlayer.getPlayerState() === YT.PlayerState.PLAYING && !ytApplyingRemote) {
-      ws.send(JSON.stringify({ type: 'control', action: 'yt-heartbeat', time: ytPlayer.getCurrentTime() }));
+      socketSend({ type: 'control', action: 'yt-heartbeat', time: ytPlayer.getCurrentTime(), videoId: ytPlaylist[ytCurrentIndex]?.videoId || null });
     }
   }, 4000);
 
@@ -1678,10 +1701,10 @@
           <span class="playlist-kind-label">YouTube</span>
         </div>
         <div class="playlist-actions">
-          <button data-action="play" data-index="${i}" title="Tocar agora">▶</button>
-          <button data-action="up" data-index="${i}" title="Mover para cima">↑</button>
-          <button data-action="down" data-index="${i}" title="Mover para baixo">↓</button>
-          <button data-action="remove" data-index="${i}" title="Remover">✕</button>
+          <button type="button" data-action="play" data-index="${i}" title="Tocar agora">▶</button>
+          <button type="button" data-action="up" data-index="${i}" title="Mover para cima">↑</button>
+          <button type="button" data-action="down" data-index="${i}" title="Mover para baixo">↓</button>
+          <button type="button" data-action="remove" data-index="${i}" title="Remover">✕</button>
         </div>
       </div>`).join('');
   }
@@ -1706,7 +1729,7 @@
     document.getElementById('yt-player-bar').classList.add('show');
     document.getElementById('yt-sync-btn').style.display = 'inline-block';
     renderYtPlaylist();
-    ws.send(JSON.stringify({ type: 'control', action: 'yt-load', videoId: item.videoId, title: item.title }));
+    socketSend({ type: 'control', action: 'yt-load', videoId: item.videoId, title: item.title });
   }
 
   function playNextYoutube() {
@@ -1793,9 +1816,10 @@
       updateViewerNowPlaying('<svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> ' + (msg.title || 'Vídeo do YouTube'));
       await ensureYtPlayer(msg.videoId);
     } else if (msg.action === 'yt-play' || msg.action === 'yt-pause' || msg.action === 'yt-sync') {
+      if (!ytPlayer && msg.videoId) await ensureYtPlayer(msg.videoId);
       if (!ytPlayer) return;
       ytApplyingRemote = true;
-      ytPlayer.seekTo(msg.time, true);
+      ytPlayer.seekTo(Math.max(0, Number(msg.time) || 0), true);
       const shouldPlay = msg.action === 'yt-play' || (msg.action === 'yt-sync' && msg.playing);
       if (shouldPlay) ytPlayer.playVideo(); else ytPlayer.pauseVideo();
       setTimeout(() => { ytApplyingRemote = false; }, 400);
@@ -1807,6 +1831,18 @@
         ytPlayer.seekTo(msg.time, true);
         setTimeout(() => { ytApplyingRemote = false; }, 400);
       }
+    } else if (msg.action === 'media-sync') {
+      if (role !== 'viewer') return;
+      const el = msg.kind === 'audio' ? document.getElementById('movie-audio') : viewerVideo;
+      if (!el) return;
+      applyRemoteMode('file');
+      remoteFileKind = msg.kind || remoteFileKind;
+      const t = Math.max(0, Number(msg.time) || 0);
+      transferApplyingRemote = true;
+      try { el.currentTime = t; } catch {}
+      if (msg.playing) el.play().catch(() => { if (msg.kind === 'audio') btnAudioUnmute.classList.add('show'); else btnUnmute.style.display='block'; });
+      else el.pause();
+      setTimeout(() => { transferApplyingRemote = false; }, 400);
     } else if (msg.action === 'media-play' || msg.action === 'media-pause' || msg.action === 'media-seek') {
       if (role !== 'host') return;
       const el = activeHostMediaEl();
@@ -1849,8 +1885,8 @@
     wireTransferSyncElement(activeEl);
     activeEl.play().catch(()=>{});
     applyRemoteMode('transfer');
-    ws.send(JSON.stringify({type:'control',action:'mode',mode:'transfer'}));
-    ws.send(JSON.stringify({type:'control',action:'file-kind',kind:transferKind,title:file.name}));
+    socketSend({type:'control',action:'mode',mode:'transfer'});
+    socketSend({type:'control',action:'file-kind',kind:transferKind,title:file.name});
     await ensurePeerConnection();
     sendFileViaDataChannel(file);
   });
@@ -1859,6 +1895,7 @@
     channel.binaryType = 'arraybuffer';
     channel.onmessage = handleFileChannelMessage;
     channel.onerror = (err) => console.error('Erro no canal de transferência:', err);
+    channel.onclose = () => { if (fileChannel === channel) fileChannel = null; };
   }
 
   function getActiveTransferElement() {
@@ -1872,10 +1909,10 @@
     if (el.dataset.syncWired) return;
     el.dataset.syncWired = '1';
     el.addEventListener('play', () => {
-      if (!transferApplyingRemote) ws.send(JSON.stringify({ type: 'control', action: 'transfer-play', time: el.currentTime }));
+      if (!transferApplyingRemote) socketSend({ type: 'control', action: 'transfer-play', time: el.currentTime });
     });
     el.addEventListener('pause', () => {
-      if (!transferApplyingRemote) ws.send(JSON.stringify({ type: 'control', action: 'transfer-pause', time: el.currentTime }));
+      if (!transferApplyingRemote) socketSend({ type: 'control', action: 'transfer-pause', time: el.currentTime });
     });
   }
 
@@ -1883,7 +1920,7 @@
   setInterval(() => {
     const el = getActiveTransferElement();
     if (el && !el.paused && el.src && !transferApplyingRemote) {
-      ws.send(JSON.stringify({ type: 'control', action: 'transfer-heartbeat', time: el.currentTime }));
+      socketSend({ type: 'control', action: 'transfer-heartbeat', time: el.currentTime });
     }
   }, 4000);
 
@@ -1928,16 +1965,32 @@
   }
 
   async function sendFileViaDataChannel(file) {
-    if (!fileChannel || fileChannel.readyState !== 'open') {
-      const waitUI=getTransferSendUI();
-      waitUI.label.textContent = 'A aguardar a ligação da outra pessoa...';
-      waitUI.progress.style.display = 'block';
-      await new Promise((resolve) => {
-        const check = setInterval(() => {
-          if (fileChannel && fileChannel.readyState === 'open') { clearInterval(check); resolve(); }
-        }, 500);
-      });
+    const MAX_TRANSFER_BYTES = 512 * 1024 * 1024;
+    if (!file || file.size > MAX_TRANSFER_BYTES) {
+      const ui=getTransferSendUI();
+      ui.label.textContent='Ficheiro demasiado grande. O limite é 512 MB.';
+      ui.progress.style.display='block';
+      setTimeout(()=>ui.progress.style.display='none',3000);
+      return;
     }
+
+    await ensurePeerConnection();
+    if (!fileChannel || fileChannel.readyState === 'closed') {
+      fileChannel = pc.createDataChannel('filetransfer', { ordered: true });
+      setupFileChannel(fileChannel);
+    }
+    const waitStart=Date.now();
+    while (fileChannel && fileChannel.readyState !== 'open') {
+      if (Date.now()-waitStart > 30000) {
+        const ui=getTransferSendUI();
+        ui.label.textContent='Não foi possível abrir o canal de transferência.';
+        ui.progress.style.display='block';
+        setTimeout(()=>ui.progress.style.display='none',3000);
+        return;
+      }
+      await new Promise(r=>setTimeout(r,100));
+    }
+    if (!fileChannel || fileChannel.readyState !== 'open') return;
 
     const {progress, fill, label} = getTransferSendUI();
     progress.style.display = 'block';
@@ -1950,11 +2003,10 @@
 
     let offset = 0;
     while (offset < file.size) {
-      if (fileChannel.readyState !== 'open') { label.textContent = 'A transferência foi interrompida (ligação perdida).'; return; }
-      if (fileChannel.bufferedAmount > LOW_THRESHOLD) {
-        await new Promise((resolve) => {
-          fileChannel.onbufferedamountlow = () => { fileChannel.onbufferedamountlow = null; resolve(); };
-        });
+      if (!fileChannel || fileChannel.readyState !== 'open') { label.textContent = 'A transferência foi interrompida (ligação perdida).'; return; }
+      while (fileChannel.bufferedAmount > LOW_THRESHOLD) {
+        await new Promise(resolve => setTimeout(resolve, 50));
+        if (!fileChannel || fileChannel.readyState !== 'open') { label.textContent = 'A transferência foi interrompida (ligação perdida).'; return; }
       }
       const end = Math.min(offset + CHUNK_SIZE, file.size);
       const buf = await file.slice(offset, end).arrayBuffer();
@@ -2023,6 +2075,8 @@
       document.getElementById('content-panel-card').style.display='flex';
       document.getElementById('mode-transfer-panel').style.display='block';
     }
+    incomingMeta = null;
+    incomingReceived = 0;
     setTimeout(() => { document.getElementById('transfer-receive-progress').style.display = 'none'; }, 1500);
   }
 
@@ -2090,7 +2144,7 @@
   function sendChat() {
     const text = chatInput.value.trim();
     if (!text) return;
-    ws.send(JSON.stringify({ type: 'chat', text }));
+    if (!socketSend({ type: 'chat', text })) return;
     addMessage(text, 'me');
     chatInput.value = '';
   }
@@ -2170,7 +2224,12 @@
 
   function socketSend(payload) {
     if (!ws || ws.readyState !== WebSocket.OPEN) return false;
-    try { ws.send(JSON.stringify(payload)); return true; } catch (e) { return false; }
+    try {
+      ws.send(JSON.stringify(payload));
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 
   function requestViewerControl() {
@@ -2229,8 +2288,32 @@
   document.getElementById('viewer-content-volume-quick')?.addEventListener('input',e=>{ const v=Number(e.target.value); viewerVideo.volume=v/100; document.getElementById('movie-audio').volume=v/100; document.getElementById('vol-content').value=v; document.getElementById('viewer-content-volume-output').textContent=v+'%'; });
   document.getElementById('viewer-call-volume-quick')?.addEventListener('input',e=>{ const v=Number(e.target.value); remoteAudio.volume=v/100; document.getElementById('vol-call').value=v; document.getElementById('viewer-call-volume-output').textContent=v+'%'; });
   document.getElementById('viewer-unmute-quick')?.addEventListener('click',()=>{ btnUnmute.click(); btnAudioUnmute.click(); });
-  document.getElementById('viewer-sync-quick')?.addEventListener('click',()=>{ if (viewerControlGranted) document.getElementById('yt-sync-btn-viewer').click(); });
-  document.getElementById('host-sync-quick')?.addEventListener('click',()=>{ if(currentMode==='youtube') sendYtSync(); else if(role==='host'){ const el=getActiveTransferElement(); if(el && el.src) ws.send(JSON.stringify({type:'control',action:'transfer-heartbeat',time:el.currentTime})); else if(hostVideo.src) ws.send(JSON.stringify({type:'control',action:'media-sync',kind:fileKind,time:hostVideo.currentTime,playing:!hostVideo.paused,index:fileCurrentIndex,title:filePlaylist[fileCurrentIndex]?.name||''})); } });
+  document.getElementById('viewer-sync-quick')?.addEventListener('click',()=>{
+    if (!viewerControlGranted) return;
+    if (currentMode === 'youtube' && ytPlayer && typeof ytPlayer.getCurrentTime === 'function') {
+      sendYtSync();
+      return;
+    }
+    const transferVideo=document.getElementById('transfer-viewer-video');
+    const transferAudio=document.getElementById('transfer-viewer-audio');
+    const media=currentMode==='transfer'
+      ? ((transferVideo && transferVideo.src) ? transferVideo : ((transferAudio && transferAudio.src) ? transferAudio : viewerVideo))
+      : viewerVideo;
+    if (!media) return;
+    const time=Number.isFinite(media.currentTime) ? media.currentTime : 0;
+    const playing=!media.paused;
+    socketSend({
+      type:'control',
+      action:currentMode==='transfer' ? 'transfer-heartbeat' : 'media-sync',
+      time,
+      playing,
+      kind:fileKind,
+      index:fileCurrentIndex,
+      title:filePlaylist[fileCurrentIndex]?.name||''
+    });
+    setStatus(viewerStatus,'connecting','Sincronização enviada.');
+  });
+  document.getElementById('host-sync-quick')?.addEventListener('click',()=>{ if(currentMode==='youtube') sendYtSync(); else if(role==='host'){ const el=getActiveTransferElement(); if(el && el.src) socketSend({type:'control',action:'transfer-heartbeat',time:el.currentTime}); else if(hostVideo.src || hostAudioEl.src) socketSend({type:'control',action:'media-sync',kind:fileKind,time:activeHostMediaEl().currentTime,playing:!activeHostMediaEl().paused,index:fileCurrentIndex,title:filePlaylist[fileCurrentIndex]?.name||''}); } });
   document.getElementById('host-install-quick')?.addEventListener('click',handleInstallRequest);
   document.getElementById('host-control-allow')?.addEventListener('click',()=>{
     if (!socketSend({type:'control-granted'})) return;
@@ -2265,7 +2348,7 @@
       if (!btn) return;
       const emoji = btn.dataset.emoji;
       showReaction(emoji);
-      ws.send(JSON.stringify({ type: 'reaction', emoji }));
+      socketSend({ type: 'reaction', emoji });
     });
   });
 
@@ -2273,7 +2356,7 @@
   setInterval(() => {
     if (roomCode && role && ws.readyState === WebSocket.OPEN) {
       lastPingSent = performance.now();
-      ws.send(JSON.stringify({ type: 'app-ping', t: lastPingSent }));
+      socketSend({ type: 'app-ping', t: lastPingSent });
     }
   }, 5000);
   function updateLatency(ms) {
@@ -2293,7 +2376,7 @@
     const now = Date.now();
     if (now - typingSentAt > 1500) {
       typingSentAt = now;
-      ws.send(JSON.stringify({ type: 'typing' }));
+      socketSend({ type: 'typing' });
     }
   });
   function showTypingIndicator() {
@@ -2345,6 +2428,16 @@
       if (socket.readyState !== WebSocket.OPEN) return false;
       try { nativeSend(data); return true; } catch (e) { return false; }
     };
+    socket.addEventListener('open', () => {
+      wsReconnectDelay = 1000;
+      if (roomCode && role) {
+        socket.send(JSON.stringify({ type: 'rejoin-room', code: roomCode, role, name: myName }));
+      } else if (pendingSocketAction) {
+        const action = pendingSocketAction;
+        pendingSocketAction = null;
+        socket.send(JSON.stringify(action));
+      }
+    });
     socket.onmessage = async (event) => {
       let msg;
       try { msg = JSON.parse(event.data); } catch (e) { return; }
@@ -2416,6 +2509,7 @@
               if (filePlaylist.length) addMovieTracksIfNeeded();
               else pendingPeer = true;
             }
+            setTimeout(syncCurrentContentToPeer, 250);
           } else {
             setStatus(viewerStatus, 'connecting', 'O anfitrião reconectou-se. A aguardar conteúdo...');
           }
@@ -2537,10 +2631,6 @@
   function reconnectSocket() {
     ws = new WebSocket(wsProtocol + location.host);
     wireSocket(ws);
-    ws.addEventListener('open', () => {
-      wsReconnectDelay = 1000;
-      if (roomCode && role) ws.send(JSON.stringify({ type: 'rejoin-room', code: roomCode, role, name: myName }));
-    });
   }
 
   wireSocket(ws);
@@ -2568,9 +2658,7 @@
     if (urlRoom && urlRole) {
       roomCode = urlRoom.toUpperCase();
       role = urlRole;
-      const tryRejoin = () => ws.send(JSON.stringify({ type: 'rejoin-room', code: roomCode, role, name: myName }));
-      if (ws.readyState === WebSocket.OPEN) tryRejoin();
-      else ws.addEventListener('open', tryRejoin, { once: true });
+      if (ws.readyState === WebSocket.OPEN) socketSend({ type: 'rejoin-room', code: roomCode, role, name: myName });
     }
   });
 })();
