@@ -7,7 +7,7 @@ const fs = require('fs');
 const WebSocket = require('ws');
 
 const APP_NAME = '2 ON Platform';
-const APP_VERSION = '2.4.1';
+const APP_VERSION = '2.6.0';
 const PORT = Number(process.env.PORT || 3000);
 const HOST = process.env.HOST || '0.0.0.0';
 const ROOM_TTL_MS = 6 * 60 * 60 * 1000;
@@ -52,6 +52,8 @@ const stats = new Map();
 let championships = [];
 const championshipSockets = new Map();
 const playerSockets = new Map();
+const globalChatSockets = new Set();
+let globalChat = [];
 const chatRate = new Map();
 const chatRecent = new Map();
 const streamChatRate = new Map();
@@ -107,6 +109,11 @@ function normalizePersistentData(data){
   stats.clear();
   for(const raw of Array.isArray(data?.stats)?data.stats:[]){const item=normalizeStatsRecord(raw);if(item)stats.set(item.playerId,item)}
   championships=(Array.isArray(data?.championships)?data.championships:[]).map(normalizeChampionship).filter(Boolean);
+  globalChat=(Array.isArray(data?.globalChat)?data.globalChat:[]).slice(-200).map(m=>({
+    id:cleanBasic(m?.id,80)||`msg_${crypto.randomBytes(8).toString('hex')}`,
+    playerId:cleanBasic(m?.playerId,80), name:cleanBasic(m?.name,24)||'Jogador',
+    text:cleanBasic(m?.text,300), scope:'general', at:Number(m?.at)||Date.now()
+  })).filter(m=>m.text);
 }
 function loadPersistentData(){
   try {
@@ -120,7 +127,7 @@ function savePersistentData(){
   try {
     fs.mkdirSync(DATA_DIR,{recursive:true});
     const tmp=DATA_FILE+'.tmp';
-    fs.writeFileSync(tmp, JSON.stringify({version:1,stats:[...stats.values()],championships},null,2));
+    fs.writeFileSync(tmp, JSON.stringify({version:2,stats:[...stats.values()],championships,globalChat},null,2));
     fs.renameSync(tmp,DATA_FILE);
   } catch(e){ console.error('Falha ao guardar dados:', e.message); }
 }
@@ -223,7 +230,7 @@ function rejoinGameRoom(ws, message) {
   if (ws.gameRoom && ws.gameRoom !== code) leaveGame(ws, false);
   const old = room.players[symbol];
   if (old && old !== ws) { old.gameRoom = null; old.gameSymbol = null; old.gamePlayerId = null; try { old.close(); } catch (_) {} }
-  if(room.championshipFixture){const c=championships.find(x=>x.id===room.championshipFixture.championshipId);if(c)addChampSocket(c,ws,playerId);}
+  if(room.championshipFixture){const c=championships.find(x=>x.id===room.championshipFixture.championshipId);if(c){addChampSocket(c,ws,playerId);send(ws,{type:'team-chat-history',championshipId:c.id,messages:visibleTeamChat(c,playerId)});}}
   room.players[symbol] = ws;
   room.names[symbol] = clean(message.name, 24) || room.names[symbol] || 'Jogador';
   room.lastActivity = Date.now(); room.disconnected = null;
@@ -250,14 +257,14 @@ function joinGameRoom(ws, message) {
     addChampSocket(c,ws,playerId);
     if(playerId!==allowed.homePlayerId && playerId!==allowed.awayPlayerId){
       room.spectators.add(ws); ws.gameRoom=code; ws.gameSymbol=null; ws.gamePlayerId=playerId; ws.gameSpectator=true; room.lastActivity=Date.now();
-      send(ws,{type:'game-joined',roomCode:code,symbol:null,spectator:true,state:publicGame(room),championship:publicChampionship(c,playerId)}); broadcastGame(room,{type:'game-state',state:publicGame(room)}); return;
+      send(ws,{type:'game-joined',roomCode:code,symbol:null,spectator:true,state:publicGame(room),championship:publicChampionship(c,playerId)}); send(ws,{type:'team-chat-history',championshipId:c.id,messages:visibleTeamChat(c,playerId)}); broadcastGame(room,{type:'game-state',state:publicGame(room)}); return;
     }
     const forced = playerId===allowed.homePlayerId ? 'X' : 'O';
     if(room.players[forced]) return send(ws,{type:'game-error',message:'Este jogador já está conectado à partida.'});
     room.players[forced] = ws; room.names[forced] = forced==='X'?allowed.homePlayerName:allowed.awayPlayerName; room.ids[forced]=playerId; room.teams[forced]=clean(message.teamName,40)||room.teams[forced]; ws.gameRoom=code; ws.gameSymbol=forced; ws.gamePlayerId=playerId; ws.gameSpectator=false; room.lastActivity=Date.now();
     if(!isReplay && fixture.status==='ready')fixture.status='playing';
     savePersistentData();
-    send(ws,{type:'game-joined',roomCode:code,symbol:forced,state:publicGame(room),championship:publicChampionship(c,playerId)}); broadcastGame(room,{type:'game-state',state:publicGame(room)}); if(room.players.X&&room.players.O)broadcastGame(room,{type:'game-voice-ready',from:forced}); return;
+    send(ws,{type:'game-joined',roomCode:code,symbol:forced,state:publicGame(room),championship:publicChampionship(c,playerId)}); send(ws,{type:'team-chat-history',championshipId:c.id,messages:visibleTeamChat(c,playerId)}); broadcastGame(room,{type:'game-state',state:publicGame(room)}); if(room.players.X&&room.players.O)broadcastGame(room,{type:'game-voice-ready',from:forced}); return;
   }
   if (room.disconnected && !room.players[room.disconnected]) return send(ws, { type:'game-error', message:'O teu adversário está a tentar reconectar. Aguarda um momento.' });
   const symbol = !room.players.X ? 'X' : !room.players.O ? 'O' : null;
@@ -544,6 +551,26 @@ function chatAllowed(playerId, clientMessageId=''){
   if(chatRecent.size>2000){for(const [k,t] of chatRecent)if(now-t>60000)chatRecent.delete(k)}
   return true;
 }
+function visibleTeamChat(c, playerId='') {
+  const memberTeam=c?.teams?.find(t=>t.players.some(p=>p.playerId===playerId));
+  const teamId=memberTeam?.id||null;
+  if(!teamId)return [];
+  return (c.chat||[]).filter(m=>m.scope==='team'&&m.teamId===teamId).slice(-200);
+}
+function broadcastGlobalChat(payload){
+  for(const target of globalChatSockets) send(target,payload);
+}
+function pushGlobalChat(playerId,name,text,clientMessageId=''){
+  if(!chatAllowed(playerId,clientMessageId))return null;
+  const msg={id:makeId('msg'),clientMessageId:clean(clientMessageId,80)||null,playerId:clean(playerId,80),name:clean(name,24)||'Jogador',text:clean(text,300),scope:'general',at:Date.now()};
+  if(!msg.playerId||!msg.text)return null;
+  globalChat=globalChat.slice(-199);
+  globalChat.push(msg);
+  savePersistentData();
+  broadcastGlobalChat({type:'global-chat',message:msg});
+  return msg;
+}
+
 function streamChatAllowed(ws){
   const key=ws.streamChatKey||(ws.streamChatKey=crypto.randomUUID());
   const now=Date.now(), bucket=(streamChatRate.get(key)||[]).filter(t=>now-t<10000);
@@ -607,8 +634,21 @@ app.delete('/api/games/championships/:id', (req,res)=>{
   if(i<0)return res.status(404).json({error:'Campeonato não encontrado.'});
   const c=championships[i]; const pid=clean(req.query?.playerId || req.body?.playerId,80);
   if(pid!==c.ownerPlayerId)return res.status(403).json({error:'Apenas o criador pode eliminar este campeonato.'});
-  if(c.status==='in_progress')return res.status(409).json({error:'Um campeonato em andamento não pode ser eliminado.'});
-  championships.splice(i,1); savePersistentData(); res.json({ok:true,message:'Campeonato eliminado.'});
+
+  // Eliminar encerra também as salas voláteis das partidas deste campeonato.
+  for(const [code,room] of gameRooms){
+    if(room.championshipFixture?.championshipId!==c.id)continue;
+    broadcastGame(room,{type:'championship-deleted',championshipId:c.id,message:'O criador eliminou este campeonato.'});
+    for(const target of Object.values(room.players)){
+      if(target){target.gameRoom=null;target.gameSymbol=null;target.gamePlayerId=null;target.gameSpectator=false;removeChampSocket(target);}
+    }
+    if(room.spectators)for(const target of room.spectators){target.gameRoom=null;target.gameSymbol=null;target.gamePlayerId=null;target.gameSpectator=false;removeChampSocket(target);}
+    gameRooms.delete(code);
+  }
+  broadcastChampionship(c,{type:'championship-deleted',championshipId:c.id,message:'O criador eliminou este campeonato.'});
+  championships.splice(i,1);
+  savePersistentData();
+  res.json({ok:true,message:'Campeonato eliminado.'});
 });
 
 // ---------------- Streaming ----------------
@@ -738,7 +778,19 @@ wss.on('connection', ws => {
     try { message = JSON.parse(raw.toString()); } catch (_) { return send(ws, { type: 'error', message: 'Mensagem inválida.' }); }
     if (!message || typeof message.type !== 'string' || message.type.length > 40) return;
     try {
-      if (message.type === 'championship-watch') {
+      if (message.type === 'global-chat-join') {
+        const pid=clean(message.playerId,80), name=clean(message.name,24)||'Jogador';
+        if(!pid)return send(ws,{type:'game-error',message:'Identidade do jogador inválida.'});
+        ws.globalPlayerId=pid; ws.globalName=name; globalChatSockets.add(ws);
+        send(ws,{type:'global-chat-history',messages:globalChat.slice(-200)});
+      } else if (message.type === 'global-chat') {
+        const pid=clean(ws.globalPlayerId||ws.gamePlayerId||message.playerId,80);
+        const name=clean(ws.globalName||message.name,24)||'Jogador';
+        const text=clean(message.text,300), clientMessageId=clean(message.clientMessageId,80);
+        if(!pid||!text)return send(ws,{type:'game-error',message:'Não foi possível enviar a mensagem.'});
+        if(!globalChatSockets.has(ws))globalChatSockets.add(ws);
+        if(!pushGlobalChat(pid,name,text,clientMessageId))return send(ws,{type:'game-chat-error',message:'Aguarda um momento antes de enviar outra mensagem.'});
+      } else if (message.type === 'championship-watch') {
         const cid=clean(message.championshipId,80), pid=clean(message.playerId,80);
         const c=championships.find(x=>x.id===cid);
         if(!c||!isChampionshipMember(c,pid)) return send(ws,{type:'game-error',message:'Não tens acesso a este campeonato.'});
@@ -746,6 +798,7 @@ wss.on('connection', ws => {
         // Nunca abandona a partida atual nem altera ws.gameRoom/ws.gamePlayerId.
         addChampSocket(c,ws,pid);
         send(ws,{type:'championship-chat-history',championshipId:c.id,messages:visibleChampChat(c,pid)});
+        send(ws,{type:'team-chat-history',championshipId:c.id,messages:visibleTeamChat(c,pid)});
         const current=firstOpenFixture(c);
         if(current && current.roomCode && gameRooms.has(current.roomCode)) send(ws,{type:'championship-fixture-ready',championshipId:c.id,fixtureId:current.id,roomCode:current.roomCode,homePlayerId:current.homePlayerId,awayPlayerId:current.awayPlayerId,order:current.order,status:current.status});
       } else if (message.type === 'championship-chat') {
@@ -753,8 +806,21 @@ wss.on('connection', ws => {
         const c=championships.find(x=>x.id===cid);
         if(!pid || (requestedPid && requestedPid!==pid))return send(ws,{type:'game-error',message:'Identidade do jogador inválida.'});
         if(!c||!isChampionshipMember(c,pid)||!text)return send(ws,{type:'game-error',message:'Não foi possível enviar a mensagem.'});
-        if(!chatAllowed(pid,clientMessageId))return send(ws,{type:'game-chat-error',message:'Aguarda um momento antes de enviar outra mensagem.'});
-        addChampSocket(c,ws,pid); const member=c.teams.flatMap(t=>t.players).find(p=>p.playerId===pid); const msg={id:makeId('msg'),clientMessageId:clientMessageId||null,playerId:pid,name:member?.name||'Jogador',text,scope:'general',at:Date.now()}; c.chat=(c.chat||[]).slice(-199); c.chat.push(msg); savePersistentData(); broadcastChampionship(c,{type:'championship-chat',message:msg});
+        addChampSocket(c,ws,pid);
+        const member=c.teams.flatMap(t=>t.players).find(p=>p.playerId===pid);
+        if(message.scope==='team'){
+          const teamId=c.teams.find(t=>t.players.some(p=>p.playerId===pid))?.id;
+          if(!teamId)return send(ws,{type:'game-error',message:'Equipa indisponível.'});
+          if(!chatAllowed(pid,clientMessageId))return send(ws,{type:'game-chat-error',message:'Aguarda um momento antes de enviar outra mensagem.'});
+          const msg={id:makeId('msg'),clientMessageId:clientMessageId||null,playerId:pid,name:member?.name||'Jogador',text,scope:'team',teamId,at:Date.now()};
+          c.chat=(c.chat||[]).slice(-199); c.chat.push(msg); savePersistentData();
+          const set=championshipSockets.get(c.id)||new Set();
+          for(const target of set){const targetPid=target.gamePlayerId||target.identityPlayerId; if(c.teams.find(t=>t.id===teamId)?.players.some(p=>p.playerId===targetPid))send(target,{type:'team-chat',message:msg});}
+        }else{
+          const msg=pushGlobalChat(pid,member?.name||'Jogador',text,clientMessageId);
+          if(!msg)return send(ws,{type:'game-chat-error',message:'Aguarda um momento antes de enviar outra mensagem.'});
+          broadcastChampionship(c,{type:'championship-chat',message:msg});
+        }
       } else if (message.type.startsWith('game-')) {
         if (message.type === 'game-create') createGameRoom(ws, message);
         else if (message.type === 'game-join') joinGameRoom(ws, message);
@@ -768,7 +834,6 @@ wss.on('connection', ws => {
         else if (message.type === 'game-chat') {
           const room = gameRooms.get(ws.gameRoom); if (!room) return;
           const text = clean(message.text, 300); if (!text) return;
-          if(!chatAllowed(ws.gamePlayerId || room.ids[ws.gameSymbol] || 'anonymous',message.clientMessageId))return send(ws,{type:'game-chat-error',message:'Aguarda um momento antes de enviar outra mensagem.'});
           const name=ws.gameSpectator?'Espectador':(room.names[ws.gameSymbol]||'Jogador');
           if(room.championshipFixture){
             const c=championships.find(x=>x.id===room.championshipFixture.championshipId);
@@ -776,16 +841,19 @@ wss.on('connection', ws => {
               const pid=ws.gamePlayerId||room.ids[ws.gameSymbol];
               if(message.scope==='team' && !ws.gameSpectator){
                 const teamId=c.teams.find(t=>t.players.some(p=>p.playerId===pid))?.id; if(!teamId)return send(ws,{type:'game-error',message:'Equipa indisponível.'});
-                const msg={id:makeId('msg'),clientMessageId:clean(message.clientMessageId,80)||null,playerId:pid,name,text,scope:'team',teamId,at:Date.now()}; c.chat=(c.chat||[]).slice(-199); c.chat.push(msg); savePersistentData(); const set=championshipSockets.get(c.id)||new Set(); for(const target of set){const targetPid=target.gamePlayerId; if(c.teams.find(t=>t.id===teamId)?.players.some(p=>p.playerId===targetPid))send(target,{type:'championship-chat',message:msg,scope:'team'});}
+                if(!chatAllowed(pid,message.clientMessageId))return send(ws,{type:'game-chat-error',message:'Aguarda um momento antes de enviar outra mensagem.'});
+                const msg={id:makeId('msg'),clientMessageId:clean(message.clientMessageId,80)||null,playerId:pid,name,text,scope:'team',teamId,at:Date.now()}; c.chat=(c.chat||[]).slice(-199); c.chat.push(msg); savePersistentData();
+                const set=championshipSockets.get(c.id)||new Set(); for(const target of set){const targetPid=target.gamePlayerId||target.identityPlayerId; if(c.teams.find(t=>t.id===teamId)?.players.some(p=>p.playerId===targetPid))send(target,{type:'team-chat',message:msg});}
               } else {
-                const msg={id:makeId('msg'),clientMessageId:clean(message.clientMessageId,80)||null,playerId:pid,name,text,scope:'general',at:Date.now()}; c.chat=(c.chat||[]).slice(-199); c.chat.push(msg); savePersistentData(); broadcastChampionship(c,{type:'championship-chat',message:msg});
+                const msg=pushGlobalChat(pid,name,text,message.clientMessageId);
+                if(!msg)return send(ws,{type:'game-chat-error',message:'Aguarda um momento antes de enviar outra mensagem.'});
+                broadcastChampionship(c,{type:'championship-chat',message:msg});
               }
               return;
             }
           }
-          const chatId=makeId('msg');
-          if(message.scope==='team' && !ws.gameSpectator){ const team=room.teams[ws.gameSymbol]; if(!team) return send(ws,{type:'game-error',message:'Ainda não estás associado a uma equipa.'}); Object.entries(room.players).forEach(([sym,target])=>{if(target&&room.teams[sym]===team) send(target,{type:'game-chat',messageId:chatId,name,text,from:ws.gameSymbol,scope:'team',at:Date.now()});}); }
-          else broadcastGame(room, { type:'game-chat', messageId:chatId,name,text,from:ws.gameSymbol,scope:'general',at:Date.now() });
+          if(message.scope==='team' && !ws.gameSpectator){ const team=room.teams[ws.gameSymbol]; if(!team) return send(ws,{type:'game-error',message:'Ainda não estás associado a uma equipa.'}); if(!chatAllowed(ws.gamePlayerId || room.ids[ws.gameSymbol] || 'anonymous',message.clientMessageId))return send(ws,{type:'game-chat-error',message:'Aguarda um momento antes de enviar outra mensagem.'}); const chatId=makeId('msg'); Object.entries(room.players).forEach(([sym,target])=>{if(target&&room.teams[sym]===team) send(target,{type:'game-chat',messageId:chatId,name,text,from:ws.gameSymbol,scope:'team',at:Date.now()});}); }
+          else { const msg=pushGlobalChat(ws.gamePlayerId || room.ids[ws.gameSymbol] || 'anonymous',name,text,message.clientMessageId); if(!msg)return send(ws,{type:'game-chat-error',message:'Aguarda um momento antes de enviar outra mensagem.'}); }
         } else if (message.type === 'game-leave') leaveGame(ws, true);
       } else handleStream(ws, message);
     } catch (error) { console.error('WS handler:', error); send(ws, { type: 'error', message: 'Ocorreu um erro ao processar a ação.' }); }
@@ -800,6 +868,7 @@ wss.on('connection', ws => {
     }
     removeChampSocket(ws);
     removePlayerSocket(ws);
+    globalChatSockets.delete(ws);
 
     const stream = streamRooms.get(ws.streamRoom);
     if (!stream || stream[ws.streamRole] !== ws) return;

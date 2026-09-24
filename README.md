@@ -1,6 +1,16 @@
-# 2 ON Platform 2.4.0
+# 2 ON Platform 2.6.0
 
 Plataforma web de jogos competitivos em tempo real, com partidas rápidas e campeonatos entre duas equipas.
+
+## 2.6.0 — Lobby profissional integrado
+
+- A página inicial de jogos foi adaptada para o novo visual fornecido, sem remover o motor multiplayer existente.
+- O nome da área foi padronizado para **2 ON STREAMING GAMES**.
+- O Jogo do Galo continua ligado ao fluxo real de criação/entrada de salas, chat, voz, espectadores e campeonatos.
+- Os restantes quatro cards estão visíveis como **Em preparação**, evitando prometer funcionalidades multiplayer que ainda não foram implementadas no servidor.
+- Campeonatos, Ranking e Conversação continuam acessíveis pelo lobby.
+- Os campos de nome/equipa foram integrados ao novo layout e continuam a usar a persistência local existente.
+
 
 ## O que foi corrigido nesta versão
 
@@ -182,13 +192,23 @@ Foram reforçados os seguintes pontos:
 A voz não é considerada garantida apenas por testes estáticos: deve ser validada em dois dispositivos/browser diferentes numa rede móvel/Wi-Fi real.
 
 
-## v2.4.1 — auditoria de botões e streaming
+## v2.5.0 — conversação global, equipa e gestão do campeonato
 
 - Corrigido um erro crítico no `socketSend()` do Streaming que fazia a função chamar a si própria em vez de enviar a mensagem pelo WebSocket.
 - Corrigida a ação **Sincronizar** rápida do convidado para funcionar nos modos YouTube, ficheiro e transferência.
 - Todos os botões HTML passaram a declarar explicitamente `type="button"`, evitando submissões acidentais.
 - O smoke test passou a verificar a interatividade estrutural dos botões e a impedir o regresso da recursão em `socketSend()`.
 - Sintaxe de servidor, games e JavaScript inline do Streaming validada.
+
+### v2.5.0 — conversação e gestão
+
+- O **Geral** passou a ser uma conversação global em tempo real: mensagens enviadas dentro de uma partida são distribuídas para todos os clientes online, incluindo utilizadores que estão fora de jogos.
+- O histórico global é persistido e carregado quando o utilizador entra.
+- O chat de **Equipa** continua isolado: apenas membros da mesma equipa recebem essas mensagens.
+- A aba **Equipa** apresenta um indicador vermelho de mensagem não lida.
+- Foi adicionado um painel global de conversação fora da partida, mantendo o mesmo fluxo do Geral.
+- O criador pode **eliminar o campeonato em qualquer estado**, inclusive antes do início, durante as partidas ou depois de concluído. A eliminação encerra as salas ativas desse campeonato e notifica os participantes.
+- O nome da área foi corrigido de **Streng Games** para **Streaming GAMES**.
 
 ### Nota de validação
 
