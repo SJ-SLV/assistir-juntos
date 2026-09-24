@@ -1,4 +1,4 @@
-# 2 ON Platform 2.2.1
+# 2 ON Platform 2.2.2
 
 Plataforma web de jogos competitivos em tempo real, com partidas rápidas e campeonatos entre duas equipas.
 
@@ -88,14 +88,14 @@ Para partidas e voz entre telemóveis:
 O MVP persiste campeonatos e estatísticas em `data/games.json`. Isso é adequado para uma implantação pequena em armazenamento persistente. Em ambientes como Render com filesystem efémero, os dados não devem ser tratados como armazenamento definitivo.
 
 
-## Correções da 2.2.1
+## Correções da 2.2.2
 - Impede abrir partidas futuras antes da partida atual terminar.
 - Mantém salas com espectadores enquanto houver espectadores ativos.
 - Reforça a renegociação de voz quando o segundo jogador entra.
 - A interface identifica partidas futuras como aguardando.
 
 
-## Championship Core 2.2.1
+## Championship Core 2.2.2
 
 A lógica do campeonato usa uma sequência de estados controlada pelo servidor: a primeira partida não concluída fica `ready`/`playing`; todas as partidas seguintes ficam `locked` até a anterior terminar. O cliente nunca pode desbloquear uma partida futura por abrir a página ou chamar diretamente o endpoint.
 
@@ -112,9 +112,16 @@ A lógica do campeonato usa uma sequência de estados controlada pelo servidor: 
 Os testes estáticos e de sintaxe podem ser executados localmente. O teste E2E de dois clientes WebSocket só é considerado válido quando executado com as dependências instaladas e o servidor realmente iniciado.
 
 
-## Pós-partida do campeonato (2.2.1)
+## Pós-partida do campeonato (2.2.2)
 - Depois de uma partida concluída, a interface consulta o estado real do campeonato.
 - Se existir outra partida ativa/pronta, mostra `Partir para o outro jogo` para o jogador escalado e `Assistir ao outro jogo` para acompanhamento.
 - Quando todas as partidas terminam, mostra explicitamente o nome da equipa vencedora (ou empate).
 - No fim do campeonato, o criador pode `Recomeçar campeonato`; todos os participantes permanecem nas suas equipas e uma nova série é criada.
 - `Encerrar campeonato` fecha a sessão do campeonato no dispositivo sem apagar os dados do campeonato.
+
+
+## 2.2.2 — Entrada de partida e espectador
+- `championship-watch` é somente leitura e nunca abandona a partida atual.
+- A abertura de uma partida muda imediatamente para a tela de jogo após a preparação do room.
+- Erros de entrada limpam a ação pendente para impedir reentrada automática incorreta.
+- Atualizações do campeonato durante uma partida usam refresh silencioso e não derrubam o jogador/espectador da sala.

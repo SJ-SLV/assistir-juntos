@@ -7,7 +7,7 @@ const fs = require('fs');
 const WebSocket = require('ws');
 
 const APP_NAME = '2 ON Platform';
-const APP_VERSION = '2.2.1';
+const APP_VERSION = '2.2.2';
 const PORT = Number(process.env.PORT || 3000);
 const HOST = process.env.HOST || '0.0.0.0';
 const ROOM_TTL_MS = 6 * 60 * 60 * 1000;
@@ -685,8 +685,9 @@ wss.on('connection', ws => {
         const cid=clean(message.championshipId,80), pid=clean(message.playerId,80);
         const c=championships.find(x=>x.id===cid);
         if(!c||!isChampionshipMember(c,pid)) return send(ws,{type:'game-error',message:'Não tens acesso a este campeonato.'});
-        if(ws.gameRoom) leaveGame(ws,false);
-        ws.gamePlayerId=pid; addChampSocket(c,ws,pid);
+        // Subscrever ao campeonato é uma operação somente de leitura.
+        // Nunca abandona a partida atual nem altera ws.gameRoom/ws.gamePlayerId.
+        addChampSocket(c,ws,pid);
         send(ws,{type:'championship-chat-history',championshipId:c.id,messages:c.chat||[]});
         const current=firstOpenFixture(c);
         if(current && current.roomCode && gameRooms.has(current.roomCode)) send(ws,{type:'championship-fixture-ready',championshipId:c.id,fixtureId:current.id,roomCode:current.roomCode,homePlayerId:current.homePlayerId,awayPlayerId:current.awayPlayerId,order:current.order,status:current.status});
