@@ -18,11 +18,12 @@ syntax('server.js');
 syntax('public/games.js');
 
 const streamHtml=read('public/streaming/index.html');
-const streamScripts=[...streamHtml.matchAll(/<script(?:\s[^>]*)?>(.*?)<\/script>/gs)].map(m=>m[1]).filter(x=>x.trim());
-check(streamScripts.length===1,'O streaming deve ter exatamente um bloco JavaScript inline principal.');
-const tmp=path.join(require('os').tmpdir(),`2on-stream-${process.pid}.js`);
-fs.writeFileSync(tmp,streamScripts[0]);
-try{const r=cp.spawnSync(process.execPath,['--check',tmp],{encoding:'utf8'});check(r.status===0,`Sintaxe inválida em public/streaming/index.html: ${r.stderr||r.stdout}`)}finally{try{fs.unlinkSync(tmp)}catch{}}
+check(fs.existsSync(path.join(root,'public/streaming/streaming.js')),'Streaming JS externo ausente.');
+check(fs.existsSync(path.join(root,'public/streaming/streaming.css')),'Streaming CSS externo ausente.');
+syntax('public/streaming/streaming.js');
+check(streamHtml.includes('src="streaming.js"'),'Streaming não referencia streaming.js externo.');
+check(streamHtml.includes('href="streaming.css"'),'Streaming não referencia streaming.css externo.');
+check(!/<script>\s*[\s\S]*?<\/script>/.test(streamHtml),'Streaming ainda contém JavaScript inline principal.');
 
 const html=read('public/games.html');
 const ids=[...html.matchAll(/id=["']([^"']+)["']/g)].map(m=>m[1]);
@@ -47,13 +48,14 @@ check(!js.includes("$('chat').classList") || ids.includes('chat'),'games.js refe
 const gameButtons=[...html.matchAll(/<button\b([^>]*)>(.*?)<\/button>/gs)].map(m=>m[1]);
 check(gameButtons.every(attrs=>/\btype=[\"']button[\"']/.test(attrs)), 'Existe botão de games.html sem type=button.');
 const stream=read('public/streaming/index.html');
+const streamJs=read('public/streaming/streaming.js');
 const streamButtons=[...stream.matchAll(/<button\b([^>]*)>(.*?)<\/button>/gs)].map(m=>m[1]);
 check(streamButtons.every(attrs=>/\btype=[\"']button[\"']/.test(attrs)), 'Existe botão do streaming sem type=button.');
-check(!/function socketSend\(payload\)\s*\{[\s\S]{0,250}?socketSend\(payload\)/.test(stream), 'socketSend entrou em recursão e não envia para o WebSocket.');
-check(stream.includes('ws.send(JSON.stringify(payload))'), 'socketSend não usa ws.send().');
+check(!/function socketSend\(payload\)\s*\{[\s\S]{0,250}?socketSend\(payload\)/.test(streamJs), 'socketSend entrou em recursão e não envia para o WebSocket.');
+check(streamJs.includes('ws.send(JSON.stringify(payload))'), 'socketSend não usa ws.send().');
 check(stream.includes("id='viewer-sync-quick'") || stream.includes('id="viewer-sync-quick"'), 'Botão de sincronização rápida do viewer desapareceu.');
-check(stream.includes("currentMode === 'youtube'"), 'Sincronização rápida do viewer não trata YouTube.');
-check(stream.includes("action:currentMode==='transfer' ? 'transfer-heartbeat' : 'media-sync'"), 'Sincronização rápida do viewer não trata ficheiro/transferência.');
+check(streamJs.includes("currentMode === 'youtube'"), 'Sincronização rápida do viewer não trata YouTube.');
+check(streamJs.includes("action:currentMode==='transfer' ? 'transfer-heartbeat' : 'media-sync'"), 'Sincronização rápida do viewer não trata ficheiro/transferência.');
 
 const server=read('server.js');
 for(const token of [
@@ -62,7 +64,7 @@ for(const token of [
   'game-voice-ready','game-voice-state','chatAllowed','streamChatAllowed','globalChatSockets','globalChat','visibleTeamChat','championships/:id/start','championships/:id/fixtures/:fixtureId/room','championships/:id/restart','championships/:id','/vendor/qrcode.min.js',
   'status===\'locked\'','status===\'ready\'','Esta partida está bloqueada','media-sync','allowedActions'
 ])check(server.includes(token),`Servidor incompleto: ${token}`);
-check(server.includes("const APP_VERSION = '2.8.3';"),'Versão do servidor não está em 2.8.3.');
+check(server.includes("const APP_VERSION = '2.8.4';"),'Versão do servidor não está em 2.8.4.');
 for(const token of ['gameType','rpsOutcome','rpsMove','rpsChoices','rpsResult','choice','paper','scissors'])check(server.includes(token),`RPS ausente no servidor: ${token}`);
 check(server.includes('const pairs=[];'),'Scheduler de confrontos não está a gerar todas as combinações.');
 check(server.includes('ws.globalPlayerId=pid; ws.globalName=name; globalChatSockets.add(ws); addPlayerSocket(ws,pid);') || server.includes('ws.globalPlayerId=pid; ws.globalName=name; globalChatSockets.add(ws); addPlayerSocket(ws,pid);'),'Identidade do chat global não está vinculada ao socket.');
@@ -72,11 +74,11 @@ check(!server.includes('requestedPid=clean(message.playerId,80)'),'championship-
 check(server.includes('ws.championshipId!==c.id'),'Subscrição de campeonato antiga não é limpa ao trocar de campeonato.');
 
 const pkg=JSON.parse(read('package.json'));
-check(pkg.version==='2.8.3','package.json não está na versão 2.8.3.');
+check(pkg.version==='2.8.4','package.json não está na versão 2.8.4.');
 check(!pkg.scripts?.['test-championship.py']&&!pkg.scripts?.['test-championship-advanced.py'],'Scripts de teste antigos continuam no package.json.');
 
 const data=JSON.parse(read('data/games.json'));
 check(Array.isArray(data.stats)&&Array.isArray(data.championships),'Estrutura de dados inválida.');
 
 check(!server.match(/ownerPlayerId\s*:\s*c\.ownerPlayerId/) || !server.includes('ownerPlayerId:c.ownerPlayerId'),'ownerPlayerId ainda está exposto na resposta pública.');
-console.log('STATIC SMOKE 2.8.3 PASSED');
+console.log('STATIC SMOKE 2.8.4 PASSED');

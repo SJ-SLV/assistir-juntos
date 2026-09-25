@@ -16,4 +16,4 @@ assert(server.includes("messages:globalChat.slice(-200).map(m=>publicChatMessage
 assert(server.includes("if(!guardRate(req,res,'session',10))return;"), 'Rate limit da sessão ausente');
 assert(fs.existsSync(path.join(root,'public','games.html')), 'games.html ausente');
 assert(fs.existsSync(path.join(root,'public','streaming','index.html')), 'streaming index ausente');
-console.log('PRIVACY/QR SMOKE 2.8.3 PASSED');
+console.log('PRIVACY/QR SMOKE 2.8.4 PASSED');

@@ -4,6 +4,7 @@ const root=path.join(__dirname,'..');
 const server=fs.readFileSync(path.join(root,'server.js'),'utf8');
 const games=fs.readFileSync(path.join(root,'public','games.js'),'utf8');
 const stream=fs.readFileSync(path.join(root,'public','streaming','index.html'),'utf8');
+const streamJs=fs.readFileSync(path.join(root,'public','streaming','streaming.js'),'utf8');
 function check(v,m){if(!v)throw new Error(m)}
 check(server.includes("app.post('/api/session'"),'Endpoint de sessão ausente.');
 check(server.includes('function requireSession(req,res)'),'Guard de sessão HTTP ausente.');
@@ -23,6 +24,6 @@ check(games.includes("localStorage.getItem('2on_session_token')"),'Games não re
 check(games.includes("type:'session-auth'"),'Games não autentica o WebSocket.');
 check(games.includes('function apiFetch('),'Games não injeta Bearer nas requisições HTTP.');
 check(games.includes('pendingActions.push(copy)'),'Games não enfileira ações durante reconexão.');
-check(stream.includes("localStorage.getItem(AUTH_KEY)"),'Streaming não reutiliza sessão.');
-check(stream.includes("type:'session-auth'"),'Streaming não autentica o WebSocket.');
-console.log('SECURITY SMOKE 2.8.3 PASSED');
+check(streamJs.includes("localStorage.getItem(AUTH_KEY)"),'Streaming não reutiliza sessão.');
+check(streamJs.includes("type:'session-auth'"),'Streaming não autentica o WebSocket.');
+console.log('SECURITY SMOKE 2.8.4 PASSED');
