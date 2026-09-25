@@ -1,8 +1,8 @@
-# 2 ON Platform 2.8.3
+# 2 ON Platform 2.8.4
 
 Plataforma web de jogos competitivos em tempo real, com partidas rápidas e campeonatos entre duas equipas.
 
-## 2.8.3 — Security & Functional Patch
+## 2.8.4 — Security & Functional Patch
 
 - Corrigida a entrada em campeonatos: o endpoint de adesão agora exige uma sessão autenticada antes de usar a identidade do jogador.
 - Corrigida a reconexão do Streaming: anfitrião e convidado ficam vinculados ao `playerId` emitido pelo servidor; o papel enviado pelo cliente não é suficiente para assumir a sessão.
@@ -16,14 +16,14 @@ Plataforma web de jogos competitivos em tempo real, com partidas rápidas e camp
 
 - `node --check server.js` — OK
 - `node --check public/games.js` — OK
-- `STATIC SMOKE 2.8.3 PASSED`
+- `STATIC SMOKE 2.8.4 PASSED`
 - `RPS LOGIC SMOKE PASSED`
 - `SCHEDULER SMOKE PASSED`
-- `SECURITY SMOKE 2.8.3 PASSED`
+- `SECURITY SMOKE 2.8.4 PASSED`
 
 Nota: o teste E2E com servidor real e WebSocket não foi concluído nesta execução porque a instalação das dependências npm excedeu o tempo disponível. Também não foi realizado teste físico em dois telemóveis nem teste real de TURN/WebRTC.
 
-## 2.8.3 — Lobby integrado + Pedra, Papel e Tesoura
+## 2.8.4 — Lobby integrado + Pedra, Papel e Tesoura
 
 - A página inicial de jogos foi adaptada para o novo visual fornecido, sem remover o motor multiplayer existente.
 - O nome da área foi padronizado para **2 ON STREAMING GAMES**.
@@ -242,21 +242,21 @@ A funcionalidade WebRTC/P2P depende de dois navegadores/dispositivos reais, HTTP
 - Saída centralizada das partidas ao voltar ao painel/campeonato.
 - Scheduler de confrontos baseado no conjunto completo de combinações A × B antes de repetir pares.
 
-## 2.8.3 — Privacy, QR & Final Hardening
+## 2.8.4 — Privacy, QR & Final Hardening
 
 Esta versão incorpora as correções finais da auditoria da 2.8.1:
 - IDs internos de jogadores não são expostos no chat público.
 - Mensagens públicas usam `isMe` por destinatário.
 - QR Codes são gerados localmente, sem `api.qrserver.com`.
 - Rate limiting de sessão/perfil é mantido.
-- Auditoria final está em `AUDIT-2.8.3.md`.
+- Auditoria final está em `AUDIT-2.8.4.md`.
 
 ### Validação
 
-`STATIC SMOKE 2.8.3 PASSED`, `RPS LOGIC SMOKE PASSED`, `SCHEDULER SMOKE PASSED`, `SECURITY SMOKE 2.8.3 PASSED` e `PRIVACY/QR SMOKE 2.8.3 PASSED`.
+`STATIC SMOKE 2.8.4 PASSED`, `RPS LOGIC SMOKE PASSED`, `SCHEDULER SMOKE PASSED`, `SECURITY SMOKE 2.8.4 PASSED` e `PRIVACY/QR SMOKE 2.8.4 PASSED`.
 
 
-## 2.8.3 — Correção crítica do lobby
+## 2.8.4 — Correção crítica do lobby
 
 Corrigido o fluxo em que os botões **Jogar agora** / **Criar partida** não conseguiam enviar `game-create`.
 
@@ -270,6 +270,6 @@ O cliente utilizava `wsAuthenticated` em `send()`, `flushQueuedActions()` e `flu
 - O fluxo `Jogar agora → Criar partida → game-create` foi coberto por teste estático dedicado.
 
 ### Teste adicional
-`LOBBY SMOKE 2.8.3 PASSED`
+`LOBBY SMOKE 2.8.4 PASSED`
 
-Relatório desta correção: `AUDIT-2.8.3.md`.
+Relatório desta correção: `AUDIT-2.8.4.md`.
