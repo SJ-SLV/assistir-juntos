@@ -37,7 +37,7 @@
     </section>
 
     <section class="lobby-entry" id="lobbyEntry" hidden aria-label="Dados do jogador">
-      <div class="lobby-entry__head"><div><b>Preparar partida</b><small>Indica o teu nome antes de entrar.</small></div><button type="button" id="closeLobbyEntry" class="lobby-close">×</button></div>
+      <div class="lobby-entry__head"><div><b>Preparar partida</b><small>Jogo selecionado: <strong id="selectedGameLabel">Jogo do Galo</strong></small></div><button type="button" id="closeLobbyEntry" class="lobby-close">×</button></div>
       <div class="lobby-entry__grid">
         <label>O teu nome<input id="playerName" maxlength="24" placeholder="Ex.: André" autocomplete="name"></label>
         <label>Equipa <span>(opcional)</span><input id="teamName" maxlength="40" placeholder="Ex.: 2 ON Alpha"></label>
@@ -46,7 +46,7 @@
     </section>
 
     <section aria-labelledby="games-title">
-      <div class="lobby-games-header"><div><h2 id="games-title">Jogos disponíveis</h2><span>O motor multiplayer atual está ativo no Jogo do Galo.</span></div><button type="button" id="openChampionshipFromLobby" class="lobby-link-button">Ver campeonatos →</button></div>
+      <div class="lobby-games-header"><div><h2 id="games-title">Jogos disponíveis</h2><span>Jogo do Galo e Pedra, Papel e Tesoura estão disponíveis agora.</span></div><button type="button" id="openChampionshipFromLobby" class="lobby-link-button">Ver campeonatos →</button></div>
 
       <div class="lobby-games-grid">
         <article class="lobby-game-card lobby-game-card--active">
@@ -59,10 +59,10 @@
 
         <article class="lobby-game-card">
           <div class="lobby-game-card__top"><span>02</span><div class="lobby-game-icon">✊</div></div>
-          <div class="lobby-status soon"><i></i> Em preparação</div>
+          <div class="lobby-status live"><i></i> Disponível agora</div>
           <h3>Pedra, Papel e Tesoura</h3>
           <p>Duelo simultâneo com escolhas ocultas e resultado validado pelo servidor.</p>
-          <div class="lobby-game-card__footer"><button class="lobby-game-button" type="button" data-game="rps">Em breve</button></div>
+          <div class="lobby-game-card__footer"><button class="lobby-game-button" type="button" data-game="rps">Jogar agora</button></div>
         </article>
 
         <article class="lobby-game-card">
@@ -99,9 +99,9 @@
   </div>
 </section>
 <section id="play" class="page">
-  <div class="game-head"><div><div class="eyebrow">PARTIDA · <span id="roomTitle">SALA</span></div><h2 id="gameStatus">A preparar…</h2><div class="turn-meta"><span id="turnClock">—</span><span id="connectionState" class="status-dot online">Ligado</span></div></div><div class="head-actions"><button type="button" id="backChamp" hidden>Campeonato</button><button type="button" id="copyCode">Copiar código</button><button type="button" id="shareCode">🔗 Partilhar</button><button type="button" id="leaveGame" class="danger">Sair</button></div></div>
+  <div class="game-head"><div><div class="eyebrow">PARTIDA · <span id="roomTitle">SALA</span></div><h2 id="gameStatus">A preparar…</h2><div class="turn-meta"><span id="turnClock">—</span><span id="connectionState" class="status-dot online">Ligado</span></div></div><div class="head-actions"><button type="button" id="backHome">← Painel</button><button type="button" id="backChamp" hidden>Campeonato</button><button type="button" id="copyCode">Copiar código</button><button type="button" id="shareCode">🔗 Partilhar</button><button type="button" id="leaveGame" class="danger">Sair</button></div></div>
   <div class="match-info"><div class="player-card me"><div id="meAvatar" class="avatar">X</div><div><b id="meName">Tu</b><small id="meTeam">Sem equipa</small></div><span id="meSymbol" class="symbol">X</span></div><div class="score"><small>PARTIDA <b id="matchNumber">1</b></small><strong id="scoreValue">0 — 0</strong></div><div class="player-card opponent"><div class="avatar" id="opAvatar">O</div><div><b id="opponentName">A aguardar</b><small id="opTeam">A aguardar</small></div><span id="opSymbol" class="symbol">O</span></div></div>
-  <div class="board-wrap"><div id="board" class="board"></div><div id="resultBanner" class="result-banner"></div></div>
+  <div class="board-wrap"><div id="board" class="board"></div><div id="rpsChoices" class="rps-choices" hidden></div><div id="resultBanner" class="result-banner"></div></div>
   <div id="champResultActions" class="champ-result-actions" hidden></div><div class="game-actions"><button type="button" id="rematchBtn" class="primary">Revanche</button><button type="button" id="voiceBtn">🎙 Voz</button></div>
   <div id="chat" class="chat"><div class="chat-header"><div><b>Conversação</b><small>Fala com os competidores</small></div><div class="chat-tabs"><button type="button" data-scope="general" class="active">Geral</button><button type="button" data-scope="team">Equipa <span id="teamChatBadge" class="chat-badge" hidden></span></button></div></div><div id="messages" class="messages"></div><div class="chat-row"><input id="chatInput" maxlength="300" placeholder="Escreve uma mensagem…"><button type="button" id="chatSend">Enviar</button></div></div>
   <audio id="remoteAudio" autoplay playsinline></audio>
@@ -112,6 +112,7 @@
     <div class="step-label"><span>01</span> Dados do campeonato</div>
     <div class="form-grid">
       <label>Nome do campeonato<input id="cupName" maxlength="70" placeholder="Ex.: 2 ON Luanda Cup"></label>
+      <label>Jogo<select id="cupGameType"><option value="tictactoe">⭕ Jogo do Galo</option><option value="rps">✊ Pedra, Papel e Tesoura</option></select></label>
       <label>Jogadores no total<select id="cupParticipants"><option value="2">2 — 1 × 1</option><option value="4">4 — 2 × 2</option><option value="6">6 — 3 × 3</option><option value="8">8 — 4 × 4</option><option value="10">10 — 5 × 5</option><option value="12">12 — 6 × 6</option><option value="16">16 — 8 × 8</option><option value="20">20 — 10 × 10</option><option value="24">24 — 12 × 12</option><option value="32">32 — 16 × 16</option></select></label>
       <label>Partidas até à final<select id="cupMatches"><option value="1">1 partida</option><option value="3">3 partidas</option><option value="5" selected>5 partidas</option><option value="7">7 partidas</option><option value="9">9 partidas</option><option value="11">11 partidas</option><option value="13">13 partidas</option><option value="15">15 partidas</option></select></label>
       <label>Equipa A<input id="teamAName" maxlength="50" placeholder="Ex.: 2 ON Alpha"></label>
