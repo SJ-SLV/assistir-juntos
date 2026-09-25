@@ -432,7 +432,7 @@
   #viewer-stage-card .room-quickbar > button { min-height: 74px; }
 }
 </style>
-</head>
+<script src="/vendor/qrcode.min.js"></script></head>
 <body>
 
 <header>
@@ -834,11 +834,22 @@
 <script>
 (function () {
   const wsProtocol = location.protocol === 'https:' ? 'wss://' : 'ws://';
-  let ws = new WebSocket(wsProtocol + location.host);
+  let ws = null;
+  let wsAuthenticated = false;
   let wsReconnectDelay = 1000;
   let pendingSocketAction = null;
 
   const SESSION_KEY = 'assistir_juntos_session_v1';
+  const AUTH_KEY = '2on_session_token';
+  let authToken = localStorage.getItem(AUTH_KEY) || '';
+  async function initAuth() {
+    const headers = {'content-type':'application/json'};
+    if (authToken) headers.Authorization = 'Bearer ' + authToken;
+    const res = await fetch('/api/session', {method:'POST', headers, body:JSON.stringify({name:'Jogador'})});
+    const data = await res.json();
+    if (!res.ok || !data.playerId) throw new Error(data.error || 'Sessão indisponível.');
+    if (data.token) { authToken = data.token; localStorage.setItem(AUTH_KEY, authToken); }
+  }
 
   const FALLBACK_ICE_SERVERS = [
     { urls: 'stun:stun.l.google.com:19302' },
@@ -2223,7 +2234,7 @@
   }
 
   function socketSend(payload) {
-    if (!ws || ws.readyState !== WebSocket.OPEN) return false;
+    if (!ws || ws.readyState !== WebSocket.OPEN || !wsAuthenticated) return false;
     try {
       ws.send(JSON.stringify(payload));
       return true;
@@ -2430,17 +2441,22 @@
     };
     socket.addEventListener('open', () => {
       wsReconnectDelay = 1000;
-      if (roomCode && role) {
-        socket.send(JSON.stringify({ type: 'rejoin-room', code: roomCode, role, name: myName }));
-      } else if (pendingSocketAction) {
-        const action = pendingSocketAction;
-        pendingSocketAction = null;
-        socket.send(JSON.stringify(action));
-      }
+      wsAuthenticated = false;
+      socket.send(JSON.stringify({type:'session-auth',token:authToken}));
     });
     socket.onmessage = async (event) => {
       let msg;
       try { msg = JSON.parse(event.data); } catch (e) { return; }
+
+      if (msg.type === 'session-ready') {
+        wsAuthenticated = true;
+        if (roomCode && role) {
+          socket.send(JSON.stringify({ type: 'rejoin-room', code: roomCode, role, name: myName }));
+        } else if (pendingSocketAction) {
+          const action = pendingSocketAction; pendingSocketAction = null; socket.send(JSON.stringify(action));
+        }
+        return;
+      }
 
       switch (msg.type) {
         case 'room-created':
@@ -2449,7 +2465,7 @@
           updateRolePanels();
           roomCode = msg.code;
           document.getElementById('room-code').textContent = msg.code;
-          document.getElementById('qr-code').src = 'https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=' + encodeURIComponent(shareLink());
+          if(window.QRCode){QRCode.toDataURL(shareLink(),{errorCorrectionLevel:'M',width:160,margin:2,color:{dark:'#101827',light:'#ffffff'}}).then(url=>{document.getElementById('qr-code').src=url}).catch(()=>{document.getElementById('qr-code').removeAttribute('src')});}else{document.getElementById('qr-code').removeAttribute('src');}
           updateUrl();
           saveLocalSession();
           showScreen('host');
@@ -2629,11 +2645,14 @@
   }
 
   function reconnectSocket() {
+    if (!authToken) return;
     ws = new WebSocket(wsProtocol + location.host);
     wireSocket(ws);
   }
 
-  wireSocket(ws);
+  initAuth().then(() => { reconnectSocket(); }).catch(() => {
+    setTimeout(() => initAuth().then(reconnectSocket).catch(() => {}), 1500);
+  });
 
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(() => {});
