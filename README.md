@@ -1,8 +1,29 @@
-# 2 ON Platform 2.6.0
+# 2 ON Platform 2.8.2
 
 Plataforma web de jogos competitivos em tempo real, com partidas rápidas e campeonatos entre duas equipas.
 
-## 2.6.0 — Lobby profissional integrado
+## 2.8.2 — Security & Functional Patch
+
+- Corrigida a entrada em campeonatos: o endpoint de adesão agora exige uma sessão autenticada antes de usar a identidade do jogador.
+- Corrigida a reconexão do Streaming: anfitrião e convidado ficam vinculados ao `playerId` emitido pelo servidor; o papel enviado pelo cliente não é suficiente para assumir a sessão.
+- Removidos `playerId`, `homePlayerId` e `awayPlayerId` das respostas públicas do campeonato; o frontend usa flags `isMe`, `homeIsMe` e `awayIsMe`.
+- O perfil passou para `/api/games/profile/me`, evitando consulta arbitrária por ID interno.
+- Adicionado rate limiting básico para sessão e operações sensíveis de campeonatos.
+- Adicionados cabeçalhos CSP, HSTS em HTTPS/produção e políticas de segurança adicionais.
+- Atualizados os testes estáticos para validar estas proteções.
+
+### Validação desta entrega
+
+- `node --check server.js` — OK
+- `node --check public/games.js` — OK
+- `STATIC SMOKE 2.8.2 PASSED`
+- `RPS LOGIC SMOKE PASSED`
+- `SCHEDULER SMOKE PASSED`
+- `SECURITY SMOKE 2.8.2 PASSED`
+
+Nota: o teste E2E com servidor real e WebSocket não foi concluído nesta execução porque a instalação das dependências npm excedeu o tempo disponível. Também não foi realizado teste físico em dois telemóveis nem teste real de TURN/WebRTC.
+
+## 2.8.2 — Lobby integrado + Pedra, Papel e Tesoura
 
 - A página inicial de jogos foi adaptada para o novo visual fornecido, sem remover o motor multiplayer existente.
 - O nome da área foi padronizado para **2 ON STREAMING GAMES**.
@@ -45,7 +66,7 @@ Plataforma web de jogos competitivos em tempo real, com partidas rápidas e camp
 4. Cada participante usa apenas o código da sua equipa.
 5. Quando todas as vagas estiverem preenchidas, o criador inicia o campeonato.
 6. O servidor cria a primeira sala e envia o evento `championship-fixture-ready` aos jogadores daquela partida.
-7. Os dois jogadores entram automaticamente na sala X/O.
+7. Os jogadores entram automaticamente na sala da partida.
 8. O primeiro toque válido define quem começa.
 9. O resultado é guardado no campeonato.
 10. Se ainda houver partidas, a próxima sala é criada e anunciada automaticamente.
@@ -208,8 +229,28 @@ A voz não é considerada garantida apenas por testes estáticos: deve ser valid
 - A aba **Equipa** apresenta um indicador vermelho de mensagem não lida.
 - Foi adicionado um painel global de conversação fora da partida, mantendo o mesmo fluxo do Geral.
 - O criador pode **eliminar o campeonato em qualquer estado**, inclusive antes do início, durante as partidas ou depois de concluído. A eliminação encerra as salas ativas desse campeonato e notifica os participantes.
-- O nome da área foi corrigido de **Streng Games** para **Streaming GAMES**.
+- O nome da área é **2 ON STREAMING GAMES**.
 
 ### Nota de validação
 
 A funcionalidade WebRTC/P2P depende de dois navegadores/dispositivos reais, HTTPS/WSS e, para redes NAT restritivas, TURN. O pacote não declara esse teste físico como concluído sem uma execução real entre dois dispositivos.
+
+
+## Histórico da auditoria anterior
+- Vinculação do playerId ao WebSocket para evitar troca de identidade no `championship-watch`.
+- Limpeza de subscrições antigas de campeonatos no mesmo WebSocket.
+- Saída centralizada das partidas ao voltar ao painel/campeonato.
+- Scheduler de confrontos baseado no conjunto completo de combinações A × B antes de repetir pares.
+
+## 2.8.2 — Privacy, QR & Final Hardening
+
+Esta versão incorpora as correções finais da auditoria da 2.8.1:
+- IDs internos de jogadores não são expostos no chat público.
+- Mensagens públicas usam `isMe` por destinatário.
+- QR Codes são gerados localmente, sem `api.qrserver.com`.
+- Rate limiting de sessão/perfil é mantido.
+- Auditoria final está em `AUDIT-2.8.2.md`.
+
+### Validação
+
+`STATIC SMOKE 2.8.2 PASSED`, `RPS LOGIC SMOKE PASSED`, `SCHEDULER SMOKE PASSED`, `SECURITY SMOKE 2.8.2 PASSED` e `PRIVACY/QR SMOKE 2.8.2 PASSED`.
