@@ -1,0 +1,28 @@
+'use strict';
+const fs=require('fs'),path=require('path');
+const root=path.join(__dirname,'..');
+const server=fs.readFileSync(path.join(root,'server.js'),'utf8');
+const games=fs.readFileSync(path.join(root,'public','games.js'),'utf8');
+const stream=fs.readFileSync(path.join(root,'public','streaming','index.html'),'utf8');
+function check(v,m){if(!v)throw new Error(m)}
+check(server.includes("app.post('/api/session'"),'Endpoint de sessão ausente.');
+check(server.includes('function requireSession(req,res)'),'Guard de sessão HTTP ausente.');
+check(server.includes("app.post('/api/games/championships/join', (req,res)=>{\n  if(!guardRate(req,res,'championship-join',20))return;\n  const session=requireSession(req,res); if(!session)return;"),'Join do campeonato não está protegido por sessão.');
+check(server.includes("const pid=session.playerId"),'Identidade privilegiada não deriva da sessão.');
+check(server.includes("message.type !== 'session-auth'"),'WebSocket não bloqueia mensagens antes da autenticação.');
+check(server.includes('const pid=ws.identityPlayerId'),'Chat não deriva a identidade do socket autenticado.');
+check(server.includes('isOwner:playerId===c.ownerPlayerId'),'API pública não expõe isOwner.');
+check(!server.includes("ownerPlayerId:c.ownerPlayerId,ownerName:c.ownerName"),'ownerPlayerId ainda está na resposta pública.');
+check(server.includes('homeIsMe')&&server.includes('awayIsMe'),'Fixtures públicas ainda não usam flags isMe.');
+check(!server.includes("app.get('/api/games/profile/:playerId'"),'Endpoint de perfil arbitrário ainda permite enumeração por playerId.');
+check(server.includes('hostPlayerId: ws.identityPlayerId')&&server.includes('viewerPlayerId: null'),'Sala Streaming não fixa a identidade dos papéis.');
+check(server.includes("const expected=role==='host'?room.hostPlayerId:room.viewerPlayerId;"),'Reconexão Streaming não valida o papel contra a sessão.');
+check(server.includes('Content-Security-Policy'),'CSP ausente.');
+check(server.includes('function guardRate(req,res'),'Rate limiting HTTP ausente.');
+check(games.includes("localStorage.getItem('2on_session_token')"),'Games não restaura token de sessão.');
+check(games.includes("type:'session-auth'"),'Games não autentica o WebSocket.');
+check(games.includes('function apiFetch('),'Games não injeta Bearer nas requisições HTTP.');
+check(games.includes('pendingActions.push(copy)'),'Games não enfileira ações durante reconexão.');
+check(stream.includes("localStorage.getItem(AUTH_KEY)"),'Streaming não reutiliza sessão.');
+check(stream.includes("type:'session-auth'"),'Streaming não autentica o WebSocket.');
+console.log('SECURITY SMOKE 2.8.3 PASSED');

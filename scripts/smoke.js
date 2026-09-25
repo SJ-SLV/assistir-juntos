@@ -18,7 +18,7 @@ syntax('server.js');
 syntax('public/games.js');
 
 const streamHtml=read('public/streaming/index.html');
-const streamScripts=[...streamHtml.matchAll(/<script(?:\s[^>]*)?>(.*?)<\/script>/gs)].map(m=>m[1]);
+const streamScripts=[...streamHtml.matchAll(/<script(?:\s[^>]*)?>(.*?)<\/script>/gs)].map(m=>m[1]).filter(x=>x.trim());
 check(streamScripts.length===1,'O streaming deve ter exatamente um bloco JavaScript inline principal.');
 const tmp=path.join(require('os').tmpdir(),`2on-stream-${process.pid}.js`);
 fs.writeFileSync(tmp,streamScripts[0]);
@@ -29,14 +29,17 @@ const ids=[...html.matchAll(/id=["']([^"']+)["']/g)].map(m=>m[1]);
 const dup=ids.filter((x,i)=>ids.indexOf(x)!==i);
 check(!dup.length,`IDs duplicados: ${[...new Set(dup)].join(', ')}`);
 for(const id of ['shareCode','chat','teamChatBadge','globalChatDock','globalChatPanel','globalMessages','globalChatInput','globalChatSend','qrModal','qrCanvas','qrImage','qrShare','qrDownload','champResultActions','voiceBtn'])check(ids.includes(id),`Elemento crítico ausente em games.html: ${id}`);
-for(const id of ['openGameEntry','openJoinEntry','lobbyEntry','playerName','teamName','lobbyCreateBtn','lobbyJoinBtn','closeLobbyEntry','openChampionshipFromLobby'])check(ids.includes(id),`Elemento do novo lobby ausente em games.html: ${id}`);
+for(const id of ['cupGameType','openGameEntry','openJoinEntry','lobbyEntry','playerName','teamName','lobbyCreateBtn','lobbyJoinBtn','closeLobbyEntry','openChampionshipFromLobby'])check(ids.includes(id),`Elemento do novo lobby ausente em games.html: ${id}`);
 check((html.match(/class=\"lobby-game-button\"/g)||[]).length===5,'O lobby deve apresentar exatamente cinco cards de jogos.');
+for(const id of ['backHome','rpsChoices','selectedGameLabel'])check(ids.includes(id),`Elemento RPS/painel ausente em games.html: ${id}`);
 check(html.includes('data-game=\"tictactoe\"'),'O card do Jogo do Galo não está ligado ao motor atual.');
+check(html.includes('data-game=\"rps\"'),'O card RPS não está ligado ao lobby.');
+check(html.includes('2 ON STREAMING GAMES'),'A marca do lobby não foi padronizada para Streaming Games.');
 check(html.includes('2 ON STREAMING GAMES'),'A marca do lobby não foi padronizada para Streaming Games.');
 
 
 const js=read('public/games.js');
-for(const token of ['championship-fixture-ready','openFixture','toggleVoice','game-voice-ready','game-voice-state','activeFixtureId','showQr','shareAccess','joinRoomCode','championshipId:currentCupId,playerId,text','global-chat','global-chat-history','team-chat','team-chat-history','deleteChampionship'])check(js.includes(token),`Fluxo ausente: ${token}`);
+for(const token of ['championship-fixture-ready','selectedGameType','renderRps','rpsChoices','gameType:selectedGameType','openFixture','toggleVoice','game-voice-ready','game-voice-state','activeFixtureId','showQr','shareAccess','joinRoomCode','championshipId:currentCupId,text','global-chat','global-chat-history','team-chat','team-chat-history','deleteChampionship'])check(js.includes(token),`Fluxo ausente: ${token}`);
 check(!js.includes("$('shareCode').onclick") || ids.includes('shareCode'),'games.js referencia shareCode sem elemento HTML.');
 check(!js.includes("$('chat').classList") || ids.includes('chat'),'games.js referencia chat sem elemento HTML.');
 
@@ -59,14 +62,21 @@ for(const token of [
   'game-voice-ready','game-voice-state','chatAllowed','streamChatAllowed','globalChatSockets','globalChat','visibleTeamChat','championships/:id/start','championships/:id/fixtures/:fixtureId/room','championships/:id/restart','championships/:id','/vendor/qrcode.min.js',
   'status===\'locked\'','status===\'ready\'','Esta partida está bloqueada','media-sync','allowedActions'
 ])check(server.includes(token),`Servidor incompleto: ${token}`);
-check(server.includes("const APP_VERSION = '2.6.0';"),'Versão do servidor não foi atualizada.');
-check(server.includes('const cycle=Math.floor(i / aPlayers.length);'),'Scheduler de confrontos não está na versão rotativa.');
+check(server.includes("const APP_VERSION = '2.8.3';"),'Versão do servidor não está em 2.8.3.');
+for(const token of ['gameType','rpsOutcome','rpsMove','rpsChoices','rpsResult','choice','paper','scissors'])check(server.includes(token),`RPS ausente no servidor: ${token}`);
+check(server.includes('const pairs=[];'),'Scheduler de confrontos não está a gerar todas as combinações.');
+check(server.includes('ws.globalPlayerId=pid; ws.globalName=name; globalChatSockets.add(ws); addPlayerSocket(ws,pid);') || server.includes('ws.globalPlayerId=pid; ws.globalName=name; globalChatSockets.add(ws); addPlayerSocket(ws,pid);'),'Identidade do chat global não está vinculada ao socket.');
+check(server.includes("message.type !== 'session-auth'"),'WebSocket não exige autenticação de sessão.');
+check(server.includes('session.recentActions.has(aid)'),'Deduplicação de ações não está ativa no servidor.');
+check(!server.includes('requestedPid=clean(message.playerId,80)'),'championship-watch ainda aceita identidade do payload.');
+check(server.includes('ws.championshipId!==c.id'),'Subscrição de campeonato antiga não é limpa ao trocar de campeonato.');
 
 const pkg=JSON.parse(read('package.json'));
-check(pkg.version==='2.6.0','package.json não está na versão 2.6.0.');
+check(pkg.version==='2.8.3','package.json não está na versão 2.8.3.');
 check(!pkg.scripts?.['test-championship.py']&&!pkg.scripts?.['test-championship-advanced.py'],'Scripts de teste antigos continuam no package.json.');
 
 const data=JSON.parse(read('data/games.json'));
 check(Array.isArray(data.stats)&&Array.isArray(data.championships),'Estrutura de dados inválida.');
 
-console.log('STATIC SMOKE 2.6.0 PASSED');
+check(!server.match(/ownerPlayerId\s*:\s*c\.ownerPlayerId/) || !server.includes('ownerPlayerId:c.ownerPlayerId'),'ownerPlayerId ainda está exposto na resposta pública.');
+console.log('STATIC SMOKE 2.8.3 PASSED');
