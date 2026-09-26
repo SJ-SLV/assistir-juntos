@@ -80,7 +80,9 @@ function render(){
   $('resultBanner').textContent=winner?(winner==='draw'?(isRps?'🤝 As escolhas foram iguais':'🤝 Partida empatada'):`🏁 Partida terminada · ${state.names?.[winner]||winner}`):isSpectator?'👀 Estás a assistir — não podes jogar':'';
   $('board').hidden=isRps;
   $('rpsChoices').hidden=!isRps;
-  if(isRps) renderRps(connected,winner); else renderTicTacToe(connected,winner);
+  $('board').setAttribute('aria-hidden', String(isRps));
+  $('rpsChoices').setAttribute('aria-hidden', String(!isRps));
+  if(isRps){ $('board').replaceChildren(); renderRps(connected,winner); } else { $('rpsChoices').replaceChildren(); renderTicTacToe(connected,winner); }
   $('rematchBtn').disabled=!winner||!!state.championshipFixture||isSpectator;
   $('rematchBtn').hidden=!!state.championshipFixture;
   $('rematchBtn').textContent='🔁 Revanche';
@@ -304,7 +306,7 @@ async function makeVoiceOffer(){if(!voiceOn||isSpectator)return;await setupVoice
 async function handleVoiceSignal(m){if(!m.signal||isSpectator||!voiceOn)return;try{if(m.signal.type==='offer'){await setupVoicePeer();await pc.setRemoteDescription(m.signal.sdp);for(const c of pendingIce){try{await pc.addIceCandidate(c)}catch{}}pendingIce=[];const answer=await pc.createAnswer();await pc.setLocalDescription(answer);send({type:'game-voice',signal:{type:'answer',sdp:answer}})}else if(m.signal.type==='answer'&&pc){await pc.setRemoteDescription(m.signal.sdp);for(const c of pendingIce){try{await pc.addIceCandidate(c)}catch{}}pendingIce=[]}else if(m.signal.type==='ice'&&m.signal.candidate){if(pc?.remoteDescription)await pc.addIceCandidate(m.signal.candidate);else pendingIce.push(m.signal.candidate)}}catch(e){toast('📡 Não foi possível estabelecer a voz.')}}
 function resetRemoteVoice(){pendingIce=[];if(pc){pc.close();pc=null}if($('remoteAudio'))$('remoteAudio').srcObject=null}
 function stopVoice(){if(socketOpen()&&roomCode&&!isSpectator)send({type:'game-voice-state',enabled:false});voiceOn=false;voiceNegotiating=false;pendingIce=[];if(localStream){localStream.getTracks().forEach(t=>t.stop());localStream=null}resetRemoteVoice();if(state)render()}
-function exitCurrentGame(){stopVoice();if(roomCode&&socketOpen())send({type:'game-leave'});roomCode=null;mySymbol=null;state=null;activeFixtureId=null;isSpectator=false;clearSession();}
+function exitCurrentGame(){stopVoice();if(roomCode&&socketOpen())send({type:'game-leave'});roomCode=null;mySymbol=null;state=null;activeFixtureId=null;isSpectator=false;clearSession();$('board').replaceChildren();$('rpsChoices').replaceChildren();$('board').hidden=false;$('rpsChoices').hidden=true;$('board').removeAttribute('aria-hidden');$('rpsChoices').setAttribute('aria-hidden','true');clearInterval(clockTimer);clockTimer=null;}
 window.goToHomePanel=()=>{
   if($('play')?.classList.contains('active')&&roomCode&&!state?.winner){
     openConfirm('Voltar ao painel?','A ligação à partida será encerrada neste dispositivo.',()=>{exitCurrentGame();page('home')});
@@ -321,13 +323,12 @@ $('backChamp').onclick=async()=>{const cid=state?.championshipFixture?.champions
 function openLobbyEntry(mode='create',gameType=selectedGameType){
   const box=$('lobbyEntry'); if(!box)return;
   selectedGameType=gameType==='rps'?'rps':'tictactoe';
-  const label=$('selectedGameLabel'); if(label)label.textContent=selectedGameType==='rps'?'Pedra, Papel e Tesoura':'Jogo do Galo';
+  const label=$('selectedGameLabel'); if(label)label.textContent=selectedGameType==='rps'?'Pedra, Papel e Tesoura':'X Vs O';
   box.hidden=false;
   if(mode==='create') $('lobbyCreateBtn').focus(); else $('lobbyJoinBtn').focus();
   box.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
-$('openGameEntry').onclick=()=>openLobbyEntry('create','tictactoe');
-$('openJoinEntry').onclick=()=>openLobbyEntry('join');
+$('connectGame').onclick=()=>openLobbyEntry('create','tictactoe');
 $('closeLobbyEntry').onclick=()=>{$('lobbyEntry').hidden=true};
 $('lobbyCreateBtn').onclick=()=>create();
 $('lobbyJoinBtn').onclick=()=>join();

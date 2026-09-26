@@ -17,6 +17,7 @@
         <span class="topbar-brand__copy"><b>2 ON STREAMING GAMES</b><small>Jogue. Compita. Evolua.</small></span>
       </a>
       <nav aria-label="Navegação principal">
+        <a class="topbar-home-link" href="/" aria-label="Voltar ao painel principal">⌂ Painel</a>
         <button type="button" data-page="home" class="active">Jogos</button>
         <button type="button" data-page="championships">Campeonatos</button>
         <button type="button" data-page="ranking">Ranking</button>
@@ -30,21 +31,9 @@
     <section id="home" class="page active">
       <div class="lobby-main">
 
-        <section class="lobby-intro" aria-labelledby="page-title">
-          <div>
-            <div class="lobby-eyebrow"><span></span> PLATAFORMA DE JOGOS EM TEMPO REAL</div>
-            <h1 id="page-title">Escolha o seu jogo.</h1>
-            <p>Entre numa partida, convide um adversário e acompanhe a competição em tempo real. O motor multiplayer já ativo do 2 ON continua ligado a esta nova interface.</p>
-          </div>
-          <div class="lobby-intro__actions">
-            <button class="lobby-button lobby-button--primary" type="button" id="openGameEntry">Criar partida</button>
-            <button class="lobby-button" type="button" id="openJoinEntry">Entrar com código</button>
-          </div>
-        </section>
-
         <section class="lobby-entry" id="lobbyEntry" hidden aria-label="Dados do jogador">
           <div class="lobby-entry__head">
-            <div><b>Preparar partida</b><small>Jogo selecionado: <strong id="selectedGameLabel">Jogo do Galo</strong></small></div>
+            <div><b>Preparar partida</b><small>Jogo selecionado: <strong id="selectedGameLabel">X Vs O</strong></small></div>
             <button type="button" id="closeLobbyEntry" class="lobby-close">×</button>
           </div>
           <div class="lobby-entry__grid">
@@ -57,26 +46,31 @@
           </div>
         </section>
 
-        <section aria-labelledby="games-title">
-          <div class="lobby-games-header">
-            <div><h2 id="games-title">Jogos disponíveis</h2><span>Jogo do Galo e Pedra, Papel e Tesoura estão disponíveis agora.</span></div>
-            <button type="button" id="openChampionshipFromLobby" class="lobby-link-button">Ver campeonatos →</button>
+        <section class="games-discovery" aria-labelledby="games-title">
+          <div class="games-discovery__hero">
+            <div class="lobby-eyebrow"><span></span> 2 ON STREAMING GAMES</div>
+            <h2 id="games-title">Escolha o seu jogo.</h2>
+            <p>Escolha um desafio e conecte-se com alguém no Streaming Games. Cria uma sala ou entra numa partida através de um código.</p>
+            <div class="games-discovery__actions">
+              <button class="lobby-button lobby-button--primary" type="button" id="connectGame">🎮 Conectar a uma partida</button>
+              <button type="button" id="openChampionshipFromLobby" class="lobby-link-button">Ver campeonatos →</button>
+            </div>
           </div>
 
           <div class="lobby-games-grid">
             <article class="lobby-game-card lobby-game-card--active">
-              <div class="lobby-game-card__top"><span>01</span><div class="lobby-game-icon">⭕</div></div>
+              <div class="lobby-game-card__top"><span>01</span><div class="lobby-game-icon">✕◯</div></div>
               <div class="lobby-status live"><i></i> Disponível agora</div>
-              <h3>Jogo do Galo</h3>
-              <p>O clássico duelo de X/O com salas, reconexão, espectadores, chat, voz e campeonatos.</p>
-              <div class="lobby-game-card__footer"><button class="lobby-game-button" type="button" data-game="tictactoe">Jogar agora</button></div>
+              <h3>X Vs O</h3>
+              <p>O duelo clássico em salas privadas, com reconexão, espectadores, chat, voz e campeonatos.</p>
+              <div class="lobby-game-card__footer"><button class="lobby-game-button" type="button" data-game="tictactoe">Jogar X Vs O</button></div>
             </article>
 
             <article class="lobby-game-card">
               <div class="lobby-game-card__top"><span>02</span><div class="lobby-game-icon">✊</div></div>
               <div class="lobby-status live"><i></i> Disponível agora</div>
               <h3>Pedra, Papel e Tesoura</h3>
-              <p>Duelo simultâneo com escolhas ocultas e resultado validado pelo servidor.</p>
+              <p>Escolhas simultâneas, ocultas até os dois jogadores decidirem, com resultado validado pelo servidor.</p>
               <div class="lobby-game-card__footer"><button class="lobby-game-button" type="button" data-game="rps">Jogar agora</button></div>
             </article>
 
@@ -103,6 +97,11 @@
               <p>Controle o tabuleiro, capture peças e conquiste a maior pontuação.</p>
               <div class="lobby-game-card__footer"><button class="lobby-game-button" type="button" data-game="reversi">Em breve</button></div>
             </article>
+          </div>
+
+          <div class="games-connect-note">
+            <span class="games-connect-note__icon">⌁</span>
+            <div><b>Conecte-se com alguém no Streaming Games</b><small>Escolha um jogo para abrir a ligação. O outro jogador pode entrar pela sala ou pelo código partilhado.</small></div>
           </div>
         </section>
 
@@ -193,7 +192,7 @@
           <label>Nome do campeonato<input id="cupName" maxlength="70" placeholder="Ex.: 2 ON Luanda Cup"></label>
           <label>Jogo
             <select id="cupGameType">
-              <option value="tictactoe">⭕ Jogo do Galo</option>
+              <option value="tictactoe">✕◯ X Vs O</option>
               <option value="rps">✊ Pedra, Papel e Tesoura</option>
             </select>
           </label>
