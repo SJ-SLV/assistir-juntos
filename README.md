@@ -27,7 +27,7 @@ Nota: o teste E2E com servidor real e WebSocket não foi concluído nesta execu�
 
 - A página inicial de jogos foi adaptada para o novo visual fornecido, sem remover o motor multiplayer existente.
 - O nome da área foi padronizado para **2 ON STREAMING GAMES**.
-- O Jogo do Galo continua ligado ao fluxo real de criação/entrada de salas, chat, voz, espectadores e campeonatos.
+- O X Vs O continua ligado ao fluxo real de criação/entrada de salas, chat, voz, espectadores e campeonatos.
 - Os restantes quatro cards estão visíveis como **Em preparação**, evitando prometer funcionalidades multiplayer que ainda não foram implementadas no servidor.
 - Campeonatos, Ranking e Conversação continuam acessíveis pelo lobby.
 - Os campos de nome/equipa foram integrados ao novo layout e continuam a usar a persistência local existente.
