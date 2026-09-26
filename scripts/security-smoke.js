@@ -26,4 +26,4 @@ check(games.includes('function apiFetch('),'Games não injeta Bearer nas requisi
 check(games.includes('pendingActions.push(copy)'),'Games não enfileira ações durante reconexão.');
 check(streamJs.includes("localStorage.getItem(AUTH_KEY)"),'Streaming não reutiliza sessão.');
 check(streamJs.includes("type:'session-auth'"),'Streaming não autentica o WebSocket.');
-console.log('SECURITY SMOKE 2.8.4 PASSED');
+console.log('SECURITY SMOKE 2.8.7 PASSED');
