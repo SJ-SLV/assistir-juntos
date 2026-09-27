@@ -31,21 +31,6 @@
     <section id="home" class="page active">
       <div class="lobby-main">
 
-        <section class="lobby-entry" id="lobbyEntry" hidden aria-label="Dados do jogador">
-          <div class="lobby-entry__head">
-            <div><b>Preparar partida</b><small>Jogo selecionado: <strong id="selectedGameLabel">X Vs O</strong></small></div>
-            <button type="button" id="closeLobbyEntry" class="lobby-close">×</button>
-          </div>
-          <div class="lobby-entry__grid">
-            <label>O teu nome<input id="playerName" maxlength="24" placeholder="Ex.: André" autocomplete="name"></label>
-            <label>Equipa <span>(opcional)</span><input id="teamName" maxlength="40" placeholder="Ex.: 2 ON Alpha"></label>
-          </div>
-          <div class="lobby-entry__actions">
-            <button type="button" id="lobbyCreateBtn" class="lobby-button lobby-button--primary">Criar partida</button>
-            <button type="button" id="lobbyJoinBtn" class="lobby-button">Entrar com código</button>
-          </div>
-        </section>
-
         <section class="games-discovery" aria-labelledby="games-title">
           <div class="games-discovery__hero">
             <div class="lobby-eyebrow"><span></span> 2 ON STREAMING GAMES</div>
@@ -55,6 +40,26 @@
               <button class="lobby-button lobby-button--primary" type="button" id="connectGame">🎮 Conectar a uma partida</button>
               <button type="button" id="openChampionshipFromLobby" class="lobby-link-button">Ver campeonatos →</button>
             </div>
+          </div>
+
+          <section class="lobby-entry" id="lobbyEntry" hidden aria-label="Dados do jogador">
+            <div class="lobby-entry__head">
+              <div><b>Preparar partida</b><small>Jogo selecionado: <strong id="selectedGameLabel">X Vs O</strong></small></div>
+              <button type="button" id="closeLobbyEntry" class="lobby-close" aria-label="Fechar preparação">×</button>
+            </div>
+            <div class="lobby-entry__grid">
+              <label>O teu nome<input id="playerName" maxlength="24" placeholder="Ex.: André" autocomplete="name"></label>
+              <label>Equipa <span>(opcional)</span><input id="teamName" maxlength="40" placeholder="Ex.: 2 ON Alpha"></label>
+            </div>
+            <div class="lobby-entry__actions">
+              <button type="button" id="lobbyCreateBtn" class="lobby-button lobby-button--primary">Criar partida</button>
+              <button type="button" id="lobbyJoinBtn" class="lobby-button">Entrar com código</button>
+            </div>
+            <small id="lobbyStatus" class="lobby-entry__status" role="status" aria-live="polite"></small>
+          </section>
+
+          <div class="lobby-games-section-head">
+            <div><span class="eyebrow">CATÁLOGO</span><h3>Jogos disponíveis</h3><p>Escolhe um jogo e cria ou entra numa sala.</p></div>
           </div>
 
           <div class="lobby-games-grid">

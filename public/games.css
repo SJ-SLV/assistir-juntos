@@ -715,3 +715,53 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   .player-card b{font-size:12px}
   .player-card small{font-size:9px}
 }
+
+
+/* v2.9.2 — hierarchy, density and mobile framing */
+.lobby-entry{position:relative;margin:0 0 18px;padding:16px 17px}
+.lobby-entry__status{display:block;min-height:16px;margin-top:9px;color:#8fa0b4;font-size:11px;line-height:1.45}
+.lobby-games-section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin:4px 0 10px}
+.lobby-games-section-head h3{margin:3px 0 2px;font-size:18px;letter-spacing:-.02em}
+.lobby-games-section-head p{margin:0;color:var(--muted);font-size:11px}
+.games-discovery__hero{max-width:100%;padding:30px clamp(20px,3vw,34px)}
+.games-discovery__hero h2{max-width:760px;font-size:clamp(34px,4.1vw,48px)}
+.games-discovery__hero p{max-width:700px}
+.lobby-games-grid{gap:12px}
+.lobby-game-card{min-height:210px;padding:18px;border-radius:17px}
+.lobby-game-card h3{font-size:18px}
+.lobby-game-card p{font-size:12px}
+.lobby-features{margin-bottom:70px}
+@media (min-width:901px){
+  .lobby-main{max-width:1120px;margin:0 auto}
+  .lobby-games-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .games-discovery__hero{border-radius:20px}
+}
+@media (max-width:700px){
+  .app{width:calc(100% - 16px);padding-bottom:88px}
+  .games-discovery__hero{padding:19px 16px;border-radius:16px}
+  .games-discovery__hero h2{font-size:30px;line-height:1.06}
+  .games-discovery__hero p{font-size:12.5px}
+  .games-discovery__actions{margin-top:13px}
+  .lobby-entry{margin:10px 0 13px;padding:13px;border-radius:14px}
+  .lobby-entry__head b{font-size:14px}
+  .lobby-entry__head small{font-size:10px}
+  .lobby-entry__grid{margin-top:9px}
+  .lobby-entry__grid label{font-size:10px}
+  .lobby-entry__grid input{min-height:40px;font-size:13px}
+  .lobby-entry__actions .lobby-button{min-height:42px}
+  .lobby-entry__status{font-size:10px}
+  .lobby-games-section-head{margin:2px 2px 8px}
+  .lobby-games-section-head h3{font-size:16px}
+  .lobby-games-section-head p{font-size:10px}
+  .lobby-game-card{min-height:165px;padding:14px}
+  .lobby-game-card__footer{padding-top:10px}
+  .lobby-features{margin-bottom:80px}
+  .global-chat-dock{bottom:5px}
+}
+@media (max-width:420px){
+  .games-discovery__hero h2{font-size:28px}
+  .games-discovery__hero p{font-size:12px}
+  .lobby-game-card{min-height:150px;padding:12px}
+  .lobby-game-card h3{font-size:16px}
+  .lobby-game-card p{font-size:10.5px}
+}
