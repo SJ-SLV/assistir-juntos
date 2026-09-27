@@ -1,12 +1,16 @@
 (() => {
 'use strict';
 const $=id=>document.getElementById(id), pages=[...document.querySelectorAll('.page')];
-let ws=null,reconnectTimer=null,reconnectDelay=800,roomCode=null,mySymbol=null,myName='',myTeam='',playerId='',state=null,intentionalClose=false,chatScope='general',clockTimer=null,rematchAsked=false,pendingAction=null,selectedGameType='tictactoe';
+let ws=null,reconnectTimer=null,reconnectDelay=800,roomCode=null,mySymbol=null,myName='',myTeam='',playerId='',state=null,intentionalClose=false,chatScope='general',clockTimer=null,pendingAction=null,selectedGameType='tictactoe';
 let sessionToken=localStorage.getItem('2on_session_token')||'',sessionReady=false,wsAuthenticated=false,pendingActions=[];
-let pc=null,localStream=null,voiceOn=false,isSpectator=false,currentChampChat=[],teamMessages=[],globalMessages=[],globalUnread=0,teamUnread=0,globalChatOpen=false,pendingIce=[],voiceNegotiating=false,activeFixtureId=null,resultActionToken=0,lastChatSentAt=0;
+let pc=null,localStream=null,voiceOn=false,isSpectator=false,currentChampChat=[],teamMessages=[],globalMessages=[],globalUnread=0,teamUnread=0,globalChatOpen=false,pendingIce=[],activeFixtureId=null,resultActionToken=0,lastChatSentAt=0;
 const seen=new Set();
+let actionBusy=false,createWatchdog=null,sessionRecovery=false;
+let saved=null;
+try{saved=JSON.parse(localStorage.getItem('2on_game_session')||'null')}catch{localStorage.removeItem('2on_game_session')}
 playerId=localStorage.getItem('2on_player_id')||'';
 myName=localStorage.getItem('2on_player_name')||'';myTeam=localStorage.getItem('2on_player_team')||'';
+if(saved?.roomCode&&saved?.mySymbol){roomCode=String(saved.roomCode).toUpperCase();mySymbol=saved.mySymbol;myName=saved.myName||myName;myTeam=saved.myTeam||myTeam;}
 $('playerName').value=myName;$('teamName').value=myTeam;
 function apiFetch(url,options={}){const headers=new Headers(options.headers||{});if(sessionToken)headers.set('Authorization','Bearer '+sessionToken);return fetch(url,{...options,headers});}
 async function initSession(){
@@ -18,9 +22,9 @@ function closeConfirm(){$('confirm').classList.remove('open');$('confirm').setAt
 function socketOpen(){return ws&&ws.readyState===WebSocket.OPEN}
 function send(payload){const copy={...payload};if(!copy.actionId&&copy.type!=='session-auth')copy.actionId=crypto.randomUUID();if(!sessionReady||!wsAuthenticated||!socketOpen()){pendingActions.push(copy);if(pendingActions.length>30)pendingActions.shift();connect();return false}try{ws.send(JSON.stringify(copy));return true}catch{pendingActions.push(copy);toast('Não foi possível concluir a ação.');return false}}
 function flushQueuedActions(){if(!wsAuthenticated||!socketOpen())return;const actions=pendingActions.splice(0);for(const action of actions)ws.send(JSON.stringify(action));}
-function flushSocketState(){if(!sessionReady||!wsAuthenticated||!socketOpen())return;ws.send(JSON.stringify({type:'global-chat-join'}));if(currentCupId)ws.send(JSON.stringify({type:'championship-watch',championshipId:currentCupId}));if(roomCode&&mySymbol){ws.send(JSON.stringify({type:'game-rejoin',roomCode,name:myName||'Jogador'}));return}if(pendingAction){pendingActions.unshift(pendingAction);pendingAction=null}flushQueuedActions()}
+function flushSocketState(){if(!sessionReady||!wsAuthenticated||!socketOpen())return;ws.send(JSON.stringify({type:'global-chat-join'}));if(currentCupId)ws.send(JSON.stringify({type:'championship-watch',championshipId:currentCupId}));if(roomCode&&mySymbol)ws.send(JSON.stringify({type:'game-rejoin',roomCode,name:myName||'Jogador'}));if(pendingAction){pendingActions.unshift(pendingAction);pendingAction=null}flushQueuedActions()}
 function connect(){if(!sessionReady)return;if(ws&&(ws.readyState===1||ws.readyState===0))return;clearTimeout(reconnectTimer);const proto=location.protocol==='https:'?'wss:':'ws:';ws=new WebSocket(proto+'//'+location.host);ws.onopen=()=>{reconnectDelay=800;$('connectionState').textContent='Ligado';$('connectionState').className='status-dot online';ws.send(JSON.stringify({type:'session-auth',token:sessionToken}))};ws.onmessage=e=>{let m;try{m=JSON.parse(e.data)}catch{return}handle(m)};ws.onclose=()=>{wsAuthenticated=false;if(actionBusy&&!createWatchdog){setActionBusy(false);const s=$('lobbyStatus');if(s)s.textContent='Ligação ao servidor interrompida. A tentar novamente…'}if(intentionalClose)return;$('connectionState').textContent='Reconectando…';$('connectionState').className='status-dot offline';clearTimeout(reconnectTimer);reconnectTimer=setTimeout(connect,reconnectDelay);reconnectDelay=Math.min(reconnectDelay*2,8000)};ws.onerror=()=>{wsAuthenticated=false}}
-function handle(m){switch(m.type){case'session-required':case'session-error':{wsAuthenticated=false;sessionReady=false;try{ws?.close()}catch{};ws=null;if(!sessionRecovery){sessionRecovery=true;initSession().then(ok=>{sessionRecovery=false;if(ok){connect();}else{setActionBusy(false)}}).catch(()=>{sessionRecovery=false;setActionBusy(false)})}break;}case'session-ready':sessionReady=true;wsAuthenticated=true;playerId=m.playerId||playerId;myName=m.name||myName;localStorage.setItem('2on_player_id',playerId);localStorage.setItem('2on_player_name',myName);flushSocketState();break;case'global-chat-history':globalMessages=Array.isArray(m.messages)?m.messages.slice(-200):[];globalMessages.forEach(x=>x?.id&&seen.add(x.id));renderGlobalMessages();renderGlobalDock();break;case'global-chat':{const msg=m.message;if(!msg?.id||seen.has(msg.id))break;seen.add(msg.id);globalMessages.push(msg);if(globalMessages.length>200)globalMessages.shift();if(chatScope==='general'&&$('play')?.classList.contains('active'))renderChat();else{globalUnread++;renderGlobalDock()}renderGlobalMessages();break;}case'team-chat-history':teamMessages=Array.isArray(m.messages)?m.messages.slice(-200):[];teamMessages.forEach(x=>x?.id&&seen.add(x.id));if(chatScope==='team')renderChat();break;case'team-chat':{const msg=m.message;if(!msg?.id||seen.has(msg.id))break;seen.add(msg.id);teamMessages.push(msg);if(teamMessages.length>200)teamMessages.shift();if(chatScope==='team'&&$('play')?.classList.contains('active'))renderChat();else teamUnread++;updateTeamBadge();break;}case'game-created':case'game-joined':case'game-rejoined':setActionBusy(false);selectedCheckers=null;roomCode=m.roomCode;mySymbol=m.symbol;isSpectator=!!m.spectator;state=m.state;activeFixtureId=state?.championshipFixture?.fixtureId||null;saveSession();render();page('play');if(voiceOn&&!isSpectator&&state?.players?.X&&state?.players?.O){if(mySymbol==='X')makeVoiceOffer().catch(()=>{});else send({type:'game-voice-ready'});}flushQueuedActions();break;case'game-state':state=m.state;render();break;case'game-timeout':state=m.state;render();toast('⏱️ Tempo esgotado. A vez passou para o adversário.');break;case'game-disconnected':state=m.state;render();toast('📡 O adversário perdeu a ligação. Aguardando reconexão…');break;case'game-left':if(state){state.players[m.symbol]=false;state.names[m.symbol]=null;state.disconnected=null;render()}toast('👋 O adversário saiu da partida.');break;case'game-info':toast(m.message||'');break;case'game-error':setActionBusy(false);pendingAction=null;if($('lobbyStatus')&&$('lobbyEntry')&&!$('lobbyEntry').hidden)$('lobbyStatus').textContent=m.message||'Não foi possível concluir a operação.';toast(m.message||'Não foi possível concluir.');break;case'game-chat-error':actionBusy=false;toast(m.message||'Aguarda um momento antes de enviar outra mensagem.');break;case'game-chat':if(m.messageId&&seen.has(m.messageId))break;if(m.messageId){seen.add(m.messageId);if(seen.size>300)seen.delete(seen.values().next().value)}if(!m.scope||m.scope===chatScope)addMsg(m.name,m.text,m.from===mySymbol,m.scope,m.at);break;case'championship-chat-history':currentChampChat=m.messages||[];if($('cupMessages')){$('cupMessages').innerHTML='';currentChampChat.forEach(x=>addChampMsg(x.name,x.text,x.isMe===true,x.scope||'general',x.at))}break;case'championship-chat':if(m.message?.id&&seen.has(m.message.id))break;if(m.message?.id)seen.add(m.message.id);currentChampChat.push(m.message);if(currentChampChat.length>200)currentChampChat.shift();if(m.message?.scope==='team'){teamMessages.push(m.message);if(teamMessages.length>200)teamMessages.shift();if(chatScope==='team'&&$('play')?.classList.contains('active'))renderChat();else{teamUnread++;updateTeamBadge()}}addChampMsg(m.message.name,m.message.text,m.message.isMe===true,m.message.scope||m.scope,m.message.at);break;case'championship-deleted':if(currentCupId===m.championshipId||state?.championshipFixture?.championshipId===m.championshipId){stopVoice();roomCode=null;mySymbol=null;state=null;activeFixtureId=null;clearSession();currentCupId=null;hideCupPanels();page('championships');loadCups(false);toast('🗑️ O campeonato foi eliminado pelo criador.')}break;case'championship-updated':if(currentCupId===m.championshipId){if(roomCode&&state?.championshipFixture)fetchChampionshipSilently(m.championshipId);else openChampionship(m.championshipId)}break;case'championship-fixture-ready':{
+function handle(m){switch(m.type){case'session-required':case'session-error':{wsAuthenticated=false;sessionReady=false;try{ws?.close()}catch{};ws=null;if(!sessionRecovery){sessionRecovery=true;initSession().then(ok=>{sessionRecovery=false;if(ok){connect();}else{setActionBusy(false)}}).catch(()=>{sessionRecovery=false;setActionBusy(false)})}break;}case'session-ready':sessionReady=true;wsAuthenticated=true;playerId=m.playerId||playerId;myName=m.name||myName;localStorage.setItem('2on_player_id',playerId);localStorage.setItem('2on_player_name',myName);flushSocketState();break;case'global-chat-history':globalMessages=Array.isArray(m.messages)?m.messages.slice(-200):[];globalMessages.forEach(x=>x?.id&&seen.add(x.id));renderGlobalMessages();renderGlobalDock();break;case'global-chat':{const msg=m.message;if(!msg?.id||seen.has(msg.id))break;seen.add(msg.id);globalMessages.push(msg);if(globalMessages.length>200)globalMessages.shift();if(chatScope==='general'&&$('play')?.classList.contains('active'))renderChat();else{globalUnread++;renderGlobalDock()}renderGlobalMessages();break;}case'team-chat-history':teamMessages=Array.isArray(m.messages)?m.messages.slice(-200):[];teamMessages.forEach(x=>x?.id&&seen.add(x.id));if(chatScope==='team')renderChat();break;case'team-chat':{const msg=m.message;if(!msg?.id||seen.has(msg.id))break;seen.add(msg.id);teamMessages.push(msg);if(teamMessages.length>200)teamMessages.shift();if(chatScope==='team'&&$('play')?.classList.contains('active'))renderChat();else teamUnread++;updateTeamBadge();break;}case'game-created':case'game-joined':case'game-rejoined':setActionBusy(false);selectedCheckers=null;roomCode=m.roomCode;mySymbol=m.symbol;isSpectator=!!m.spectator;state=m.state;activeFixtureId=state?.championshipFixture?.fixtureId||null;saveSession();render();page('play');if(voiceOn&&!isSpectator&&state?.players?.X&&state?.players?.O){if(mySymbol==='X')makeVoiceOffer().catch(()=>{});else send({type:'game-voice-ready'});}flushQueuedActions();break;case'game-state':state=m.state;render();break;case'game-timeout':state=m.state;render();toast('⏱️ Tempo esgotado. A vez passou para o adversário.');break;case'game-disconnected':state=m.state;render();toast('📡 O adversário perdeu a ligação. Aguardando reconexão…');break;case'game-left':if(state){state.players[m.symbol]=false;state.names[m.symbol]=null;state.disconnected=null;render()}toast('👋 O adversário saiu da partida.');break;case'game-info':toast(m.message||'');break;case'game-error':setActionBusy(false);pendingAction=null;if($('lobbyStatus')&&$('lobbyEntry')&&!$('lobbyEntry').hidden)$('lobbyStatus').textContent=m.message||'Não foi possível concluir a operação.';toast(m.message||'Não foi possível concluir.');break;case'game-chat-error':actionBusy=false;toast(m.message||'Aguarda um momento antes de enviar outra mensagem.');break;case'game-chat':if(m.messageId&&seen.has(m.messageId))break;if(m.messageId){seen.add(m.messageId);if(seen.size>300)seen.delete(seen.values().next().value)}if(!m.scope||m.scope===chatScope)addMsg(m.name,m.text,m.from===mySymbol,m.scope,m.at);break;case'championship-chat-history':currentChampChat=m.messages||[];if($('cupMessages')){$('cupMessages').innerHTML='';currentChampChat.forEach(x=>addChampMsg(x.name,x.text,x.isMe===true,x.scope||'general',x.at))}break;case'championship-chat':if(m.message?.id&&seen.has(m.message.id))break;if(m.message?.id)seen.add(m.message.id);currentChampChat.push(m.message);if(currentChampChat.length>200)currentChampChat.shift();if(m.message?.scope==='team'){teamMessages.push(m.message);if(teamMessages.length>200)teamMessages.shift();if(chatScope==='team'&&$('play')?.classList.contains('active'))renderChat();else{teamUnread++;updateTeamBadge()}}addChampMsg(m.message.name,m.message.text,m.message.isMe===true,m.message.scope||m.scope,m.message.at);break;case'championship-deleted':if(currentCupId===m.championshipId||state?.championshipFixture?.championshipId===m.championshipId){stopVoice();roomCode=null;mySymbol=null;state=null;activeFixtureId=null;clearSession();currentCupId=null;hideCupPanels();page('championships');loadCups(false);toast('🗑️ O campeonato foi eliminado pelo criador.')}break;case'championship-updated':if(currentCupId===m.championshipId){if(roomCode&&state?.championshipFixture)fetchChampionshipSilently(m.championshipId);else openChampionship(m.championshipId)}break;case'championship-finished':if(state?.championshipFixture?.championshipId===m.championshipId){updateChampionshipResultActions(m.championshipId,state.championshipFixture.fixtureId)}else if(currentCupId===m.championshipId){openChampionship(m.championshipId)}break;case'championship-fixture-ready':{
   const isPlayer=!!m.homeIsMe||!!m.awayIsMe;
   if(!isPlayer)break;
   currentCupId=m.championshipId;
@@ -40,13 +44,12 @@ function handle(m){switch(m.type){case'session-required':case'session-error':{ws
   toast(`🎮 Jogo ${m.order} pronto. A entrar…`);
   break;
 }
-case'championship-next':if(!!m.homeIsMe||!!m.awayIsMe){toast('🎮 Próxima partida pronta! A entrar…');openFixture(m.championshipId,m.fixtureId)}else{toast('👀 A próxima partida começou. Podes assistir.')}break;case'game-rematch-declined':rematchAsked=false;toast('A revanche foi recusada.');break;case'game-voice-ready':if(mySymbol==='X'&&voiceOn&&state?.players?.O){makeVoiceOffer().catch(()=>{})}break;case'game-voice-state':if(m.enabled===false)resetRemoteVoice();break;
+case'championship-next':if(!!m.homeIsMe||!!m.awayIsMe){toast('🎮 Próxima partida pronta! A entrar…');openFixture(m.championshipId,m.fixtureId)}else{toast('👀 A próxima partida começou. Podes assistir.')}break;case'game-rematch-declined':toast('A revanche foi recusada.');break;case'game-voice-ready':if(mySymbol==='X'&&voiceOn&&state?.players?.O){makeVoiceOffer().catch(()=>{})}break;case'game-voice-state':if(m.enabled===false)resetRemoteVoice();break;
 case'game-voice':handleVoiceSignal(m);break}}
 function saveSession(){if(roomCode&&mySymbol)localStorage.setItem('2on_game_session',JSON.stringify({roomCode,mySymbol,myName,myTeam,playerId}))}
 function clearSession(){localStorage.removeItem('2on_game_session')}
 function startWithData(){myName=$('playerName').value.trim().slice(0,24)||'Jogador';myTeam=$('teamName').value.trim().slice(0,40);localStorage.setItem('2on_player_name',myName);localStorage.setItem('2on_player_team',myTeam);return true}
-let actionBusy=false,createWatchdog=null,sessionRecovery=false;
-function setActionBusy(v,kind='create'){actionBusy=!!v;clearTimeout(createWatchdog);createWatchdog=null;const cb=$('lobbyCreateBtn'),jb=$('lobbyJoinBtn');if(cb){cb.disabled=actionBusy;cb.textContent=actionBusy&&kind==='create'?'A criar…':'Criar partida'}if(jb){jb.disabled=actionBusy;jb.textContent=actionBusy&&kind==='join'?'A entrar…':'Entrar com código'}const s=$('lobbyStatus');if(!actionBusy&&s&&!s.textContent.startsWith('Partida'))s.textContent=''}
+function setActionBusy(v){actionBusy=!!v;clearTimeout(createWatchdog);createWatchdog=null;const b=$('lobbyCreateBtn');if(b){b.disabled=actionBusy;b.textContent=actionBusy?'A criar…':'Criar partida'}const s=$('lobbyStatus');if(!actionBusy&&s&&!s.textContent.startsWith('Partida'))s.textContent=''}
 async function create(){
   if(actionBusy)return;
   startWithData();
@@ -86,49 +89,7 @@ async function create(){
   }
 }
 
-async function join(){
-  if(actionBusy)return;
-  const input=$('joinRoomCode');
-  const code=(input?.value||'').trim().toUpperCase();
-  if(!code)return toast('Escreve o código da sala.');
-  if(!/^[A-Z2-9]{5,10}$/.test(code))return toast('Código inválido.');
-  startWithData();
-  activeFixtureId=null;
-  roomCode=code; mySymbol=null;
-  const action={type:'game-join',roomCode:code,name:myName,teamName:myTeam};
-  setActionBusy(true,'join');
-  const status=$('lobbyStatus');
-  if(status)status.textContent='A ligar ao servidor…';
-  try{
-    if(!sessionReady){
-      const ok=await initSession();
-      if(!ok)throw new Error('Não foi possível iniciar a sessão.');
-    }
-    if(!socketOpen()||!wsAuthenticated){
-      pendingAction=action;
-      if(status)status.textContent='A ligar ao servidor…';
-      connect();
-    }else{
-      pendingAction=null;
-      if(status)status.textContent='A entrar na sala…';
-      if(!send(action))throw new Error('A ligação ao servidor ainda não está pronta.');
-    }
-    clearTimeout(createWatchdog);
-    createWatchdog=setTimeout(()=>{
-      if(actionBusy){
-        setActionBusy(false);
-        pendingAction=null;
-        if(status)status.textContent='O servidor não respondeu. Verifica a ligação e tenta novamente.';
-        toast('⚠️ Não foi possível entrar na sala.');
-      }
-    },15000);
-  }catch(e){
-    setActionBusy(false);
-    pendingAction=null;
-    if(status)status.textContent=e?.message||'Não foi possível entrar na sala.';
-    toast(e?.message||'Não foi possível entrar na sala.');
-  }
-}
+function join(){const code=prompt('Código da sala:')?.trim().toUpperCase();if(!code)return;if(!/^[A-Z2-9]{5,10}$/.test(code))return toast('Código inválido.');startWithData();activeFixtureId=null;roomCode=code;mySymbol=null;const action={type:'game-join',roomCode:code,name:myName,teamName:myTeam};if(!socketOpen()){pendingAction=action;toast('A ligar ao servidor…');connect();return}send(action)}
 function leave(){openConfirm('Sair da partida?','A partida será encerrada para ti e o adversário será informado.',()=>{send({type:'game-leave'});roomCode=null;mySymbol=null;state=null;activeFixtureId=null;clearSession();stopVoice();page('home')})}
 function initials(name){return(name||'?').trim().split(/\s+/).slice(0,2).map(x=>x[0]).join('').toUpperCase().slice(0,2)}
 function render(){
@@ -205,8 +166,7 @@ let selectedCheckers=null;
 function clickCheckers(r,c){
   if(!state||state.gameType==='rps'||state.winner||isSpectator)return;
   const myColor=mySymbol==='X'?1:2;
-  const op=mySymbol==='X'?'O':'X';
-  if(state.turn!==myColor||!state.players?.[op])return;
+  if(state.turn!==myColor||!state.players?.[mySymbol])return;
   if(state.disconnected){toast('📡 Aguarda a reconexão do adversário.');return;}
   const piece=state.board?.[r]?.[c];
   if(piece?.color===myColor){
@@ -424,8 +384,8 @@ async function getIceServers(){try{const r=await fetch('/ice-servers',{cache:'no
 async function makeVoiceOffer(){if(!voiceOn||isSpectator)return;await setupVoicePeer();const offer=await pc.createOffer({offerToReceiveAudio:true});await pc.setLocalDescription(offer);send({type:'game-voice',signal:{type:'offer',sdp:offer}})}
 async function handleVoiceSignal(m){if(!m.signal||isSpectator||!voiceOn)return;try{if(m.signal.type==='offer'){await setupVoicePeer();await pc.setRemoteDescription(m.signal.sdp);for(const c of pendingIce){try{await pc.addIceCandidate(c)}catch{}}pendingIce=[];const answer=await pc.createAnswer();await pc.setLocalDescription(answer);send({type:'game-voice',signal:{type:'answer',sdp:answer}})}else if(m.signal.type==='answer'&&pc){await pc.setRemoteDescription(m.signal.sdp);for(const c of pendingIce){try{await pc.addIceCandidate(c)}catch{}}pendingIce=[]}else if(m.signal.type==='ice'&&m.signal.candidate){if(pc?.remoteDescription)await pc.addIceCandidate(m.signal.candidate);else pendingIce.push(m.signal.candidate)}}catch(e){toast('📡 Não foi possível estabelecer a voz.')}}
 function resetRemoteVoice(){pendingIce=[];if(pc){pc.close();pc=null}if($('remoteAudio'))$('remoteAudio').srcObject=null}
-function stopVoice(){if(socketOpen()&&roomCode&&!isSpectator)send({type:'game-voice-state',enabled:false});voiceOn=false;voiceNegotiating=false;pendingIce=[];if(localStream){localStream.getTracks().forEach(t=>t.stop());localStream=null}resetRemoteVoice();if(state)render()}
-function exitCurrentGame(){stopVoice();if(roomCode&&socketOpen())send({type:'game-leave'});roomCode=null;mySymbol=null;state=null;activeFixtureId=null;isSpectator=false;clearSession();$('board').replaceChildren();$('rpsChoices').replaceChildren();$('board').hidden=false;$('rpsChoices').hidden=true;$('board').removeAttribute('aria-hidden');$('rpsChoices').setAttribute('aria-hidden','true');clearInterval(clockTimer);clockTimer=null;}
+function stopVoice(){if(socketOpen()&&roomCode&&!isSpectator)send({type:'game-voice-state',enabled:false});voiceOn=false;pendingIce=[];if(localStream){localStream.getTracks().forEach(t=>t.stop());localStream=null}resetRemoteVoice();if(state)render()}
+function exitCurrentGame(){stopVoice();if(roomCode&&socketOpen())send({type:'game-leave'});teamMessages=[];teamUnread=0;updateTeamBadge();currentChampChat=[];roomCode=null;mySymbol=null;state=null;activeFixtureId=null;isSpectator=false;clearSession();$('board').replaceChildren();$('rpsChoices').replaceChildren();$('board').hidden=false;$('rpsChoices').hidden=true;$('board').removeAttribute('aria-hidden');$('rpsChoices').setAttribute('aria-hidden','true');clearInterval(clockTimer);clockTimer=null;}
 window.goToHomePanel=()=>{
   if($('play')?.classList.contains('active')&&roomCode&&!state?.winner){
     openConfirm('Voltar ao painel?','A ligação à partida será encerrada neste dispositivo.',()=>{exitCurrentGame();page('home')});
@@ -434,6 +394,7 @@ window.goToHomePanel=()=>{
   if($('play')?.classList.contains('active')&&roomCode)exitCurrentGame();
   page('home');
 };
+$('topbarBrand').onclick=e=>{e.preventDefault();goToHomePanel()};
 $('backHome').onclick=()=>{
   if(state&&!state.winner){openConfirm('Voltar ao painel?','A ligação à partida será encerrada neste dispositivo.',()=>{exitCurrentGame();page('home')});}
   else{exitCurrentGame();page('home');}
@@ -443,17 +404,14 @@ function openLobbyEntry(mode='create',gameType=selectedGameType){
   const box=$('lobbyEntry'); if(!box)return;
   selectedGameType=['rps','checkers','tictactoe'].includes(gameType)?gameType:'tictactoe';
   const label=$('selectedGameLabel'); if(label)label.textContent=selectedGameType==='rps'?'Pedra, Papel e Tesoura':selectedGameType==='checkers'?'Damas':'X Vs O';
-  const title=$('lobbyEntryTitle'); if(title)title.textContent='Preparar partida';
   box.hidden=false;
-  if(mode==='join'){const codeInput=$('joinRoomCode');if(codeInput){codeInput.value='';codeInput.focus()}}
-  else $('lobbyCreateBtn').focus();
+  if(mode==='create') $('lobbyCreateBtn').focus(); else $('lobbyJoinBtn').focus();
   box.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 $('connectGame').onclick=()=>openLobbyEntry('create','tictactoe');
 $('closeLobbyEntry').onclick=()=>{$('lobbyEntry').hidden=true};
 $('lobbyCreateBtn').onclick=()=>create();
 $('lobbyJoinBtn').onclick=()=>join();
-$('joinRoomCode').onkeydown=e=>{if(e.key==='Enter')join()};
 $('openChampionshipFromLobby').onclick=()=>page('championships');
 document.querySelectorAll('.lobby-game-button').forEach(b=>b.onclick=()=>{
   const game=b.dataset.game;
@@ -463,6 +421,5 @@ document.querySelectorAll('.lobby-game-button').forEach(b=>b.onclick=()=>{
 $('copyCode').onclick=async()=>{try{await navigator.clipboard.writeText(roomCode);toast('Código copiado.')}catch{toast('Código: '+roomCode)}};$('shareCode').onclick=shareRoomCode;$('leaveGame').onclick=leave;$('rematchBtn').onclick=()=>{if(!state?.winner)return;if(send({type:'game-reset'}))toast('Revanche iniciada.');};$('voiceBtn').onclick=toggleVoice;$('chatSend').onclick=sendChat;$('chatInput').onkeydown=e=>{if(e.key==='Enter')sendChat()};document.querySelectorAll('.chat-tabs button').forEach(b=>b.onclick=()=>{chatScope=b.dataset.scope;document.querySelectorAll('.chat-tabs button').forEach(x=>x.classList.toggle('active',x===b));if(chatScope==='team'&&!state?.championshipFixture){toast('👥 O chat da equipa está disponível nos campeonatos.');chatScope='general';document.querySelectorAll('.chat-tabs button').forEach(x=>x.classList.toggle('active',x.dataset.scope==='general'));return}if(chatScope==='team')teamUnread=0;renderChat()});$('globalChatToggle').onclick=()=>{$('globalChatPanel').hidden=!$('globalChatPanel').hidden;globalChatOpen=!$('globalChatPanel').hidden;if(globalChatOpen){globalUnread=0;renderGlobalDock();setTimeout(()=>$('globalChatInput')?.focus(),30)}};$('globalChatClose').onclick=()=>{$('globalChatPanel').hidden=true;globalChatOpen=false};$('globalChatSend').onclick=sendGlobalChat;$('globalChatInput').onkeydown=e=>{if(e.key==='Enter')sendGlobalChat()};document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>page(b.dataset.page));$('createCup').onclick=()=>{$('cupCreate').hidden=false;$('cupJoin').hidden=true;$('cupAccess').hidden=true};$('cupCancel').onclick=()=>{$('cupCreate').hidden=true};$('joinCup').onclick=()=>{$('cupJoin').hidden=false;$('cupCreate').hidden=true;$('cupAccess').hidden=true;$('cupJoinName').value=myName};$('cupJoinCancel').onclick=()=>{$('cupJoin').hidden=true};$('cupCreateSubmit').onclick=createChampionship;$('cupJoinSubmit').onclick=joinChampionship;$('cupChatSend').onclick=sendChampionshipChat;$('cupChatInput').onkeydown=e=>{if(e.key==='Enter')sendChampionshipChat()};$('qrClose').onclick=closeQr;$('qrModal').onclick=e=>{if(e.target===$('qrModal'))closeQr()};$('qrShare').onclick=async()=>{const url=$('qrLink').href;if(navigator.share){try{await navigator.share({title:$('qrTitle').textContent,url});return}catch(e){if(e?.name==='AbortError')return}}try{await navigator.clipboard.writeText(url);toast('🔗 Link copiado.')}catch{toast(url)}};$('qrDownload').onclick=()=>{const canvas=$('qrCanvas');if(!canvas.hidden){const a=document.createElement('a');a.download='2-on-acesso-qr.png';a.href=canvas.toDataURL('image/png');a.click()}else window.open($('qrImage').src,'_blank','noopener');};
 function handleDeepLink(){const q=new URLSearchParams(location.search);const join=q.get('join'),room=q.get('room');if(join){page('championships');$('cupJoin').hidden=false;$('cupCreate').hidden=true;$('cupAccess').hidden=true;$('cupJoinCode').value=join.toUpperCase().trim();$('cupJoinName').value=myName;toast('🔗 Código de equipa carregado. Confirma o teu nome para entrar.')}else if(room){const code=room.toUpperCase().trim();if(/^[A-Z2-9]{5,10}$/.test(code)){page('home');setTimeout(()=>joinRoomCode(code),120)}}}
 function joinRoomCode(code){if(!startWithData())return;roomCode=code;mySymbol=null;activeFixtureId=null;const action={type:'game-join',roomCode:code,name:myName,teamName:myTeam};pendingAction=action;if(!socketOpen()){toast('🔄 A ligar à partida…');connect();return}pendingAction=null;send(action)}
-let saved=null;try{saved=JSON.parse(localStorage.getItem('2on_game_session')||'null')}catch{localStorage.removeItem('2on_game_session')}if(saved?.roomCode&&saved?.mySymbol){roomCode=String(saved.roomCode).toUpperCase();mySymbol=saved.mySymbol;myName=saved.myName||myName;myTeam=saved.myTeam||myTeam;}
 window.addEventListener('beforeunload',()=>{intentionalClose=true;stopVoice()});initSession().then(ok=>{if(ok){connect();handleDeepLink()}});
 })();

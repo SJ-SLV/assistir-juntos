@@ -1,97 +1,80 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="pt">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>2 ON — Painel</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>2 ON — Painel principal</title>
+<meta name="description" content="Painel principal da 2 ON: acede ao Streaming e ao Streaming Games num único lugar.">
 <meta name="theme-color" content="#07101a">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230d1825'/%3E%3Ctext x='32' y='40' font-family='Arial,sans-serif' font-weight='800' font-size='22' fill='%2335e0a1' text-anchor='middle'%3E2·ON%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/home.css">
+<link rel="stylesheet" href="home.css">
+<script src="home.js" defer></script>
 </head>
 <body>
-
 <header class="site-header">
   <div class="shell site-header__inner">
-    <div class="brand">
-      <span class="brand-mark">2·ON</span>
-      <span class="brand-name">PLATAFORMA</span>
-    </div>
-    <div class="server-status" id="serverStatus">
-      <span class="server-status__dot"></span>
-      <span id="serverStatusText">A verificar servidor…</span>
+    <a class="brand" href="/" aria-label="2 ON — Painel principal">
+      <span class="brand-mark">2·ON</span><span class="brand-name">PLATAFORMA</span>
+    </a>
+    <div class="server-status" id="serverStatus" aria-live="polite">
+      <span class="server-status__dot"></span><span id="serverStatusText">A verificar servidor…</span>
     </div>
   </div>
 </header>
 
-<main class="dashboard">
-  <div class="shell">
-    <section class="hero">
-      <div class="hero__eyebrow">JOGOS E STREAMING EM TEMPO REAL</div>
-      <h1>Joga, compete e vê conteúdo com quem quiseres, ao vivo.</h1>
-      <p class="hero__lede">Escolhe um dos módulos abaixo para começares. Os jogos correm em salas privadas com chat e voz; o streaming sincroniza vídeo, ficheiros e YouTube entre dois dispositivos.</p>
-    </section>
+<main class="shell dashboard">
+  <section class="hero">
+    <div class="hero__eyebrow">PAINEL PRINCIPAL</div>
+    <h1>Escolhe como queres usar a 2 ON.</h1>
+    <p class="hero__lede">Um único ponto de entrada para assistir em conjunto ou competir em tempo real. Escolhe uma área para começar.</p>
+  </section>
 
-    <section class="modules">
-      <a class="module-card module-card--games" href="/games.html">
-        <div class="module-card__icon">🎮</div>
-        <div class="module-card__meta">MÓDULO</div>
-        <h2>2 ON Streaming Games</h2>
-        <p>Partidas rápidas de X Vs O, Pedra Papel e Tesoura e Damas, além de campeonatos entre duas equipas.</p>
-        <ul class="module-card__list">
-          <li>Salas privadas por código, link ou QR Code</li>
-          <li>Chat geral, de equipa e voz por WebRTC</li>
-          <li>Campeonatos com escalonamento automático</li>
-        </ul>
-        <div class="module-card__cta"><span>Entrar</span><b>→</b></div>
-      </a>
+  <section class="modules" aria-label="Áreas principais da plataforma">
+    <a class="module-card module-card--streaming" href="/streaming/">
+      <div class="module-card__icon" aria-hidden="true">▶</div>
+      <div class="module-card__meta">ÁREA 01 · EXPERIÊNCIA SOCIAL</div>
+      <h2>2 ON Streaming</h2>
+      <p>Cria uma sessão privada e assiste ao mesmo conteúdo com outra pessoa, em telefones diferentes.</p>
+      <ul class="module-card__list">
+        <li>Vídeos locais e YouTube</li>
+        <li>Transmissão e sincronização</li>
+        <li>Chat e chamada de voz</li>
+      </ul>
+      <span class="module-card__cta">Entrar no Streaming <b>→</b></span>
+    </a>
 
-      <a class="module-card" href="/streaming/">
-        <div class="module-card__icon">📺</div>
-        <div class="module-card__meta">MÓDULO</div>
-        <h2>2 ON Streaming</h2>
-        <p>Vê vídeos, ficheiros locais ou YouTube em sincronia com outra pessoa, com chat e voz na mesma sala.</p>
-        <ul class="module-card__list">
-          <li>Reprodução sincronizada em tempo real</li>
-          <li>Partilha de ficheiros ponto a ponto</li>
-          <li>Instalável como app (PWA)</li>
-        </ul>
-        <div class="module-card__cta"><span>Entrar</span><b>→</b></div>
-      </a>
-    </section>
+    <a class="module-card module-card--games" href="/games.html">
+      <div class="module-card__icon" aria-hidden="true">✦</div>
+      <div class="module-card__meta">ÁREA 02 · COMPETIÇÃO</div>
+      <h2>2 ON Streaming Games</h2>
+      <p>Entra em partidas multiplayer, cria salas e acompanha competições em tempo real.</p>
+      <ul class="module-card__list">
+        <li>X Vs O e RPS</li>
+        <li>Salas, espectadores e voz</li>
+        <li>Campeonatos e ranking</li>
+      </ul>
+      <span class="module-card__cta">Entrar nos Games <b>→</b></span>
+    </a>
+  </section>
 
-    <section class="how">
-      <div class="section-heading">
-        <div>
-          <div class="brand-name">COMO FUNCIONA</div>
-          <h2>Três passos para começar</h2>
-        </div>
-        <span class="section-badge">Sem instalação obrigatória</span>
-      </div>
-      <div class="how__grid">
-        <div>
-          <span class="how__index">01</span>
-          <strong>Escolhe um módulo</strong>
-          <p>Jogos para partidas e campeonatos, ou Streaming para ver conteúdo em conjunto.</p>
-        </div>
-        <div>
-          <span class="how__index">02</span>
-          <strong>Cria ou entra numa sala</strong>
-          <p>Usa um código, um link direto ou um QR Code para convidar a outra pessoa.</p>
-        </div>
-        <div>
-          <span class="how__index">03</span>
-          <strong>Joga ou assiste ao vivo</strong>
-          <p>Chat e voz ficam disponíveis dentro da sala em todos os módulos.</p>
-        </div>
-      </div>
-    </section>
-  </div>
+  <section class="how" aria-labelledby="how-title">
+    <div class="section-heading">
+      <div><span class="hero__eyebrow">NAVEGAÇÃO</span><h2 id="how-title">Tudo começa aqui</h2></div>
+      <span class="section-badge">2 áreas · 1 plataforma</span>
+    </div>
+    <div class="how__grid">
+      <div><span class="how__index">01</span><strong>Escolhe uma área</strong><p>Streaming para assistir em conjunto ou Streaming Games para jogar.</p></div>
+      <div><span class="how__index">02</span><strong>Cria ou entra</strong><p>Dentro da área escolhida, cria uma sessão ou usa o código recebido.</p></div>
+      <div><span class="how__index">03</span><strong>Partilha o momento</strong><p>Usa os recursos de sincronização, chat, voz e multiplayer disponíveis.</p></div>
+    </div>
+  </section>
 </main>
 
-<footer class="site-footer">2 ON Platform</footer>
-
-<script src="/home.js"></script>
+<footer class="site-footer shell">
+  <p>2 ON Platform · <strong>2-On Tecnolong</strong></p>
+</footer>
 </body>
 </html>

@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#07101a">
+  <meta name="description" content="2 ON Streaming Games: jogos multiplayer, Damas, X Vs O, Pedra, Papel e Tesoura e campeonatos em tempo real.">
   <title>2 ON Streaming Games</title>
   <link rel="stylesheet" href="/games.css">
 </head>
@@ -12,7 +13,7 @@
 
   <header class="topbar">
     <div class="topbar__inner">
-      <a class="topbar-brand" href="#" onclick="goToHomePanel();return false" aria-label="2 ON Streaming Games — início">
+      <a class="topbar-brand" href="#" id="topbarBrand" aria-label="2 ON Streaming Games — início">
         <span class="topbar-brand__mark">2O</span>
         <span class="topbar-brand__copy"><b>2 ON STREAMING GAMES</b><small>Jogue. Compita. Evolua.</small></span>
       </a>
@@ -50,7 +51,6 @@
             <div class="lobby-entry__grid">
               <label>O teu nome<input id="playerName" maxlength="24" placeholder="Ex.: André" autocomplete="name"></label>
               <label>Equipa <span>(opcional)</span><input id="teamName" maxlength="40" placeholder="Ex.: 2 ON Alpha"></label>
-              <label>Código da sala <span>(para entrar numa partida)</span><input id="joinRoomCode" maxlength="10" placeholder="Ex.: 7K3PQ" autocomplete="off" autocapitalize="characters" style="text-transform:uppercase"></label>
             </div>
             <div class="lobby-entry__actions">
               <button type="button" id="lobbyCreateBtn" class="lobby-button lobby-button--primary">Criar partida</button>
@@ -297,9 +297,9 @@
     </div>
   </div>
 
-  <div id="toast"></div>
+  <div id="toast" role="status" aria-live="polite"></div>
 
-  <div id="confirm" class="modal" aria-hidden="true">
+  <div id="confirm" class="modal" role="dialog" aria-modal="true" aria-hidden="true">
     <div class="modal-card">
       <div class="eyebrow">CONFIRMAR</div>
       <h3 id="confirmTitle">Sair da partida?</h3>
