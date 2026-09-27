@@ -273,3 +273,14 @@ O cliente utilizava `wsAuthenticated` em `send()`, `flushQueuedActions()` e `flu
 `LOBBY SMOKE 2.8.4 PASSED`
 
 Relatório desta correção: `AUDIT-2.8.4.md`.
+
+## Damas — integração 2.9.0
+
+O Streaming Games inclui agora o jogo **Damas** (`gameType: checkers`) usando o mesmo transporte WebSocket, sessões, salas, reconexão, espectadores, chat e sistema de estatísticas da plataforma.
+
+- Motor de regras isolado em `checkers.js`.
+- Tabuleiro 8×8, captura obrigatória, múltiplas capturas e promoção a dama.
+- Servidor valida todas as jogadas.
+- Cliente usa o mesmo fluxo de `game-create`, `game-join`, `game-rejoin`, `game-move` e `game-leave`.
+- Damas não foi habilitado nos campeonatos nesta versão; a integração inicial é para partidas normais do Streaming Games.
+- E2E real disponível em `scripts/e2e-checkers.js` e requer `npm install` antes de executar.
