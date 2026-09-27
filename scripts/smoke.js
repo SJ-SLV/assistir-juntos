@@ -64,7 +64,7 @@ for(const token of [
   'game-voice-ready','game-voice-state','chatAllowed','streamChatAllowed','globalChatSockets','globalChat','visibleTeamChat','championships/:id/start','championships/:id/fixtures/:fixtureId/room','championships/:id/restart','championships/:id','/vendor/qrcode.min.js',
   'status===\'locked\'','status===\'ready\'','Esta partida está bloqueada','media-sync','allowedActions'
 ])check(server.includes(token),`Servidor incompleto: ${token}`);
-check(server.includes("const APP_VERSION = '2.8.7';"),'Versão do servidor não está em 2.8.4.');
+check(server.includes("const APP_VERSION = '2.9.0';"),'Versão do servidor não está em 2.8.4.');
 for(const token of ['gameType','rpsOutcome','rpsMove','rpsChoices','rpsResult','choice','paper','scissors'])check(server.includes(token),`RPS ausente no servidor: ${token}`);
 check(server.includes('const pairs=[];'),'Scheduler de confrontos não está a gerar todas as combinações.');
 check(server.includes('ws.globalPlayerId=pid; ws.globalName=name; globalChatSockets.add(ws); addPlayerSocket(ws,pid);') || server.includes('ws.globalPlayerId=pid; ws.globalName=name; globalChatSockets.add(ws); addPlayerSocket(ws,pid);'),'Identidade do chat global não está vinculada ao socket.');
@@ -74,11 +74,11 @@ check(!server.includes('requestedPid=clean(message.playerId,80)'),'championship-
 check(server.includes('ws.championshipId!==c.id'),'Subscrição de campeonato antiga não é limpa ao trocar de campeonato.');
 
 const pkg=JSON.parse(read('package.json'));
-check(pkg.version==='2.8.7','package.json não está na versão 2.8.4.');
+check(pkg.version==='2.9.0','package.json não está na versão 2.8.4.');
 check(!pkg.scripts?.['test-championship.py']&&!pkg.scripts?.['test-championship-advanced.py'],'Scripts de teste antigos continuam no package.json.');
 
 const data=JSON.parse(read('data/games.json'));
 check(Array.isArray(data.stats)&&Array.isArray(data.championships),'Estrutura de dados inválida.');
 
 check(!server.match(/ownerPlayerId\s*:\s*c\.ownerPlayerId/) || !server.includes('ownerPlayerId:c.ownerPlayerId'),'ownerPlayerId ainda está exposto na resposta pública.');
-console.log('STATIC SMOKE 2.8.7 PASSED');
+console.log('STATIC SMOKE 2.9.0 PASSED');

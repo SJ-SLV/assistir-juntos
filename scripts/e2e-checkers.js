@@ -1,0 +1,13 @@
+#!/usr/bin/env node
+'use strict';
+const {spawn}=require('child_process');
+const path=require('path');
+try{require.resolve('express');require.resolve('ws')}catch{console.log('CHECKERS E2E SKIPPED: dependências express/ws não estão instaladas.');process.exit(0)}
+const WebSocket=require('ws');
+const port=3427,root=path.resolve(__dirname,'..');
+const child=spawn(process.execPath,['server.js'],{cwd:root,env:{...process.env,PORT:String(port),NODE_ENV:'test'},stdio:['ignore','pipe','pipe']});
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+function wait(ws,pred,timeout=5000){return new Promise((resolve,reject)=>{const t=setTimeout(()=>{ws.off('message',on);reject(new Error('timeout'))},timeout);function on(raw){let m;try{m=JSON.parse(raw)}catch{return}if(pred(m)){clearTimeout(t);ws.off('message',on);resolve(m)}}ws.on('message',on)})}
+async function session(name){const r=await fetch(`http://127.0.0.1:${port}/api/session`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({name})});const d=await r.json();if(!r.ok)throw new Error(d.error||'session');return d}
+async function client(s){const ws=new WebSocket(`ws://127.0.0.1:${port}`);await new Promise((res,rej)=>{ws.once('open',res);ws.once('error',rej)});ws.send(JSON.stringify({type:'session-auth',token:s.token}));await wait(ws,m=>m.type==='session-ready');return ws}
+(async()=>{let a,b;try{await sleep(500);const sa=await session('Damas A'),sb=await session('Damas B');a=await client(sa);b=await client(sb);a.send(JSON.stringify({type:'game-create',gameType:'checkers',name:'Damas A'}));const created=await wait(a,m=>m.type==='game-created');if(created.state.gameType!=='checkers')throw new Error('tipo incorreto');const code=created.roomCode;b.send(JSON.stringify({type:'game-join',roomCode:code,name:'Damas B'}));const joined=await wait(b,m=>m.type==='game-joined');if(joined.state.gameType!=='checkers'||!joined.state.players.X||!joined.state.players.O)throw new Error('sala não iniciou');a.send(JSON.stringify({type:'game-move',from:{r:5,c:0},to:{r:4,c:1}}));const moved=await wait(b,m=>m.type==='game-state'&&m.state.checkers?.moves===1);if(moved.state.board[4][1]?.color!==1)throw new Error('movimento não aplicado');a.send(JSON.stringify({type:'game-leave'}));const left=await wait(b,m=>m.type==='game-left');if(left.symbol!=='X')throw new Error('saída não propagada');console.log('CHECKERS E2E PASSED: sessão, sala, entrada, jogada e saída.');a.close();b.close();}catch(e){console.error('CHECKERS E2E FAILED:',e.message);process.exitCode=1}finally{if(a)try{a.close()}catch{}if(b)try{b.close()}catch{}child.kill('SIGTERM');await sleep(150)}})();
