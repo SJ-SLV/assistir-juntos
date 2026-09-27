@@ -5,10 +5,9 @@ const path = require('path');
 const crypto = require('crypto');
 const fs = require('fs');
 const WebSocket = require('ws');
-const Checkers = require('./checkers');
 
 const APP_NAME = '2 ON Platform';
-const APP_VERSION = '2.9.0';
+const APP_VERSION = '2.9.1';
 const PORT = Number(process.env.PORT || 3000);
 const HOST = process.env.HOST || '0.0.0.0';
 const ROOM_TTL_MS = 6 * 60 * 60 * 1000;
@@ -249,7 +248,7 @@ function publicGame(room, viewerSymbol=null) {
     code: room.code,
     gameType: room.gameType || 'tictactoe',
     board: isRps ? [] : room.board,
-    turn: isRps ? null : (isCheckers ? (room.checkersState?.turn===Checkers.WHITE?'X':'O') : room.turn),
+    turn: isRps ? null : room.turn,
     winner: room.winner,
     winningLine: isRps ? [] : room.winningLine,
     names: { X: room.names.X || null, O: room.names.O || null },
@@ -257,12 +256,12 @@ function publicGame(room, viewerSymbol=null) {
     score: room.score,
     matchNumber: room.matchNumber || 1,
     turnStartedAt: isRps ? null : (room.turnStartedAt || null),
-    turnSeconds: isCheckers ? null : TURN_SECONDS,
-    checkers: isCheckers ? {legalTargets: room.checkersState && viewerSymbol ? Checkers.legalTargets(room.checkersState, viewerSymbol==='X'?Checkers.WHITE:Checkers.BLACK) : [], pieces:{X:Checkers.countPieces(room.checkersState.board,Checkers.WHITE),O:Checkers.countPieces(room.checkersState.board,Checkers.BLACK)}, mustContinue:room.checkersState?.mustContinue||null, halfMoves:room.checkersState?.halfMoves||0, moves:room.checkersState?.moves||0, draw:!!room.checkersState?.draw} : null,
+    turnSeconds: TURN_SECONDS,
     disconnected: room.disconnected || null,
     teams: room.teams || {X:null,O:null},
     championshipFixture: room.championshipFixture ? {championshipId:room.championshipFixture.championshipId,fixtureId:room.championshipFixture.fixtureId} : null,
     spectatorCount: room.spectators?.size || 0,
+    checkers: isCheckers ? { legalTargets: viewerSymbol==='X'?checkers.legalTargets(room.checkers,checkers.WHITE):viewerSymbol==='O'?checkers.legalTargets(room.checkers,checkers.BLACK):[], pieces:{white:checkers.countPieces(room.checkers.board,checkers.WHITE),black:checkers.countPieces(room.checkers.board,checkers.BLACK)}, history:room.checkersHistory||[], mustContinue:room.checkers.mustContinue||null, halfMoves:room.checkers.halfMoves||0 } : null,
     rps: isRps ? {
       choices: {X:!!rpsChoices.X,O:!!rpsChoices.O},
       myChoice: viewerSymbol && (viewerSymbol==='X'||viewerSymbol==='O') ? (rpsChoices[viewerSymbol] || null) : null,
@@ -300,10 +299,11 @@ function createGameRoom(ws, message) {
   const name = clean(message.name, 24) || 'Jogador';
   const playerId = ws.identityPlayerId;
   if(!playerId)return send(ws,{type:'game-error',message:'Sessão não autenticada.'});
-  const gameType = message.gameType === 'rps' ? 'rps' : (message.gameType === 'checkers' ? 'checkers' : 'tictactoe');
+  const gameType = message.gameType === 'checkers' ? 'checkers' : (message.gameType === 'rps' ? 'rps' : 'tictactoe');
   const room = {
     code, gameType, players: { X: ws, O: null }, names: { X: name, O: null }, ids: { X: playerId, O: null },
-    board: gameType==='rps' ? [] : (gameType==='checkers' ? Checkers.initialState().board : Array(9).fill(null)), turn: gameType==='checkers' ? 'X' : null, winner: null, winningLine: [], turnStartedAt: gameType==='checkers' ? Date.now() : null, checkersState: gameType==='checkers' ? Checkers.initialState() : null,
+    board: gameType==='rps' ? [] : (gameType==='checkers' ? checkers.initialState().board : Array(9).fill(null)), turn: gameType==='checkers' ? checkers.WHITE : null, winner: null, winningLine: [], turnStartedAt: null,
+    checkers: gameType==='checkers' ? checkers.initialState() : null, checkersHistory: [], endReason:null,
     rpsChoices:{X:null,O:null}, rpsResult:null, lastActivity: Date.now(), score: { X: 0, O: 0 }, matchNumber: 1, disconnected: null,
     teams:{X: clean(message.teamName,40) || null, O:null}, spectators:new Set(), championshipFixture:null
   };
@@ -366,7 +366,6 @@ function joinGameRoom(ws, message) {
   if (ws.gameRoom) leaveGame(ws, false);
   room.players[symbol] = ws; room.names[symbol] = name; room.ids[symbol] = playerId; room.teams[symbol] = clean(message.teamName,40) || null;
   room.lastActivity = Date.now(); ws.gameRoom = code; ws.gameSymbol = symbol; ws.gamePlayerId = playerId; ws.gameSpectator=false;
-  if(room.gameType==='checkers' && room.players.X && room.players.O){ room.checkersState.status='playing'; room.checkersState.turn=Checkers.WHITE; room.board=room.checkersState.board; room.turnStartedAt=Date.now(); }
   send(ws, { type: 'game-joined', roomCode: code, symbol, state: publicGame(room, ws.gameSymbol) });
   broadcastGame(room, { type: 'game-state', state: publicGame(room, ws.gameSymbol) });
   if(room.players.X&&room.players.O)broadcastGame(room,{type:'game-voice-ready',from:symbol});
@@ -425,27 +424,29 @@ function rpsMove(ws,message){
 
 function checkersMove(ws,message){
   const room=gameRooms.get(ws.gameRoom);
-  if(!room||room.gameType!=='checkers'||ws.gameSpectator)return send(ws,{type:'game-error',message:'Esta ação não está disponível.'});
+  if(!room||room.gameType!=='checkers'||room.winner||ws.gameSpectator)return send(ws,{type:'game-error',message:'Esta ação não está disponível.'});
   if(!room.players.X||!room.players.O)return send(ws,{type:'game-error',message:'Aguarda o segundo jogador.'});
-  const color=ws.gameSymbol==='X'?Checkers.WHITE:Checkers.BLACK;
-  if(room.checkersState.status!=='playing')return send(ws,{type:'game-error',message:'A partida já terminou.'});
-  if(room.checkersState.turn!==color)return send(ws,{type:'game-error',message:'Espera pela tua vez.'});
-  const from=message?.from,to=message?.to;
-  const result=Checkers.validateAndApply(room.checkersState,from,to);
+  const color=ws.gameSymbol==='X'?checkers.WHITE:checkers.BLACK;
+  if(room.checkers.turn!==color)return send(ws,{type:'game-error',message:'Espera pela tua vez.'});
+  const from=message.from,to=message.to;
+  const result=checkers.validateAndApply(room.checkers,from,to);
   if(!result.ok)return send(ws,{type:'game-error',message:result.error});
-  room.checkersState=result.state; room.board=room.checkersState.board; room.turn=room.checkersState.turn===Checkers.WHITE?'X':'O'; room.turnStartedAt=room.checkersState.status==='playing'?Date.now():null; room.lastActivity=Date.now();
-  if(room.checkersState.status==='finished'){
-    room.winner=room.checkersState.draw?'draw':(room.checkersState.winner===Checkers.WHITE?'X':'O');
-    room.winningLine=[];
-    if(room.winner==='X'||room.winner==='O'){const loser=room.winner==='X'?'O':'X';updateStats(room.ids[room.winner],room.names[room.winner],'win');updateStats(room.ids[loser],room.names[loser],'loss');}
-    else {updateStats(room.ids.X,room.names.X,'draw');updateStats(room.ids.O,room.names.O,'draw');}
+  room.checkers=result.state;
+  room.board=room.checkers.board; room.turn=room.checkers.turn; room.winner=room.checkers.winner===checkers.WHITE?'X':room.checkers.winner===checkers.BLACK?'O':room.checkers.draw?'draw':null;
+  room.turnStartedAt=null; room.lastActivity=Date.now();
+  room.checkersHistory.push({n:room.checkers.moves,color:ws.gameSymbol,from,to,capture:!!result.move.capture,promoted:!!room.checkers.board[to.r][to.c]?.king});
+  room.checkersHistory=room.checkersHistory.slice(-80);
+  if(room.winner){
+    if(room.winner==='X'||room.winner==='O'){room.score[room.winner]+=1;const loser=room.winner==='X'?'O':'X';updateStats(room.ids[room.winner],room.names[room.winner],'win');updateStats(room.ids[loser],room.names[loser],'loss');room.endReason='rules';}
+    else {updateStats(room.ids.X,room.names.X,'draw');updateStats(room.ids.O,room.names.O,'draw');room.endReason='draw';}
+    finishGameFixture(room,{winner:room.winner});
   }
-  broadcastGame(room,{type:'game-state',state:publicGame(room,ws.gameSymbol)});
+  broadcastGame(room,{type:'game-state',state:publicGame(room,ws.gameSymbol),lastMove:room.checkersHistory.at(-1)});
 }
 function gameMove(ws, message) {
   const room = gameRooms.get(ws.gameRoom);
-  if(room?.gameType==='rps') return rpsMove(ws,message);
   if(room?.gameType==='checkers') return checkersMove(ws,message);
+  if(room?.gameType==='rps') return rpsMove(ws,message);
   if (!room || room.winner || ws.gameSpectator) return send(ws,{type:'game-error',message:'Estás a acompanhar como espectador.'});
   if (!room.players.X || !room.players.O) return send(ws, { type: 'game-error', message: 'Aguarda o segundo jogador.' });
   const cell = Number(message.cell);
@@ -477,11 +478,15 @@ function resetGame(ws) {
   if (!room || !room.winner) return send(ws, { type: 'game-error', message: 'A revanche só pode começar depois de uma partida.' });
   if (room.championshipFixture) return send(ws, { type: 'game-error', message: 'Este jogo faz parte do campeonato e já foi encerrado.' });
   if (!room.players.X || !room.players.O) return send(ws, { type: 'game-error', message: 'Aguarda os dois jogadores.' });
-  if(room.gameType==='checkers'){room.checkersState=Checkers.initialState();room.checkersState.status='playing';room.board=room.checkersState.board;room.turn='X';room.turnStartedAt=Date.now();}
-  else room.board = room.gameType==='rps' ? [] : Array(9).fill(null);
+  if(room.gameType==='checkers'){
+    room.checkers=checkers.initialState(); room.board=room.checkers.board; room.turn=room.checkers.turn;
+    room.checkersHistory=[]; room.endReason=null;
+  }else{
+    room.board = room.gameType==='rps' ? [] : Array(9).fill(null);
+    room.turn = null;
+  }
   room.rpsChoices = {X:null,O:null};
   room.rpsResult = null;
-  room.turn = null;
   room.winner = null;
   room.winningLine = [];
   room.turnStartedAt = null;
@@ -566,7 +571,7 @@ app.post('/api/games/championships', (req, res) => {
   const participantCount = Number(req.body?.participantCount);
   const teamAName = clean(req.body?.teamAName, 50);
   const teamBName = clean(req.body?.teamBName, 50);
-  const gameType = req.body?.gameType==='rps'?'rps':(req.body?.gameType==='checkers'?'checkers':'tictactoe');
+  const gameType = req.body?.gameType==='rps'?'rps':'tictactoe';
   const plannedMatches = req.body?.plannedMatches==null ? 1 : Number(req.body?.plannedMatches);
   if(!name || !Number.isInteger(participantCount) || participantCount < 2 || participantCount > 32 || participantCount % 2 !== 0) return res.status(400).json({error:'O número de participantes deve ser par, entre 2 e 32.'});
   if(!Number.isInteger(plannedMatches) || plannedMatches < 1 || plannedMatches > 15) return res.status(400).json({error:'O número de partidas deve ser um inteiro entre 1 e 15.'});
