@@ -46,7 +46,7 @@ function saveSession(){if(roomCode&&mySymbol)localStorage.setItem('2on_game_sess
 function clearSession(){localStorage.removeItem('2on_game_session')}
 function startWithData(){myName=$('playerName').value.trim().slice(0,24)||'Jogador';myTeam=$('teamName').value.trim().slice(0,40);localStorage.setItem('2on_player_name',myName);localStorage.setItem('2on_player_team',myTeam);return true}
 let actionBusy=false,createWatchdog=null,sessionRecovery=false;
-function setActionBusy(v){actionBusy=!!v;clearTimeout(createWatchdog);createWatchdog=null;const b=$('lobbyCreateBtn');if(b){b.disabled=actionBusy;b.textContent=actionBusy?'A criar…':'Criar partida'}const s=$('lobbyStatus');if(!actionBusy&&s&&!s.textContent.startsWith('Partida'))s.textContent=''}
+function setActionBusy(v,kind='create'){actionBusy=!!v;clearTimeout(createWatchdog);createWatchdog=null;const cb=$('lobbyCreateBtn'),jb=$('lobbyJoinBtn');if(cb){cb.disabled=actionBusy;cb.textContent=actionBusy&&kind==='create'?'A criar…':'Criar partida'}if(jb){jb.disabled=actionBusy;jb.textContent=actionBusy&&kind==='join'?'A entrar…':'Entrar com código'}const s=$('lobbyStatus');if(!actionBusy&&s&&!s.textContent.startsWith('Partida'))s.textContent=''}
 async function create(){
   if(actionBusy)return;
   startWithData();
@@ -86,7 +86,49 @@ async function create(){
   }
 }
 
-function join(){const code=prompt('Código da sala:')?.trim().toUpperCase();if(!code)return;if(!/^[A-Z2-9]{5,10}$/.test(code))return toast('Código inválido.');startWithData();activeFixtureId=null;roomCode=code;mySymbol=null;const action={type:'game-join',roomCode:code,name:myName,teamName:myTeam};if(!socketOpen()){pendingAction=action;toast('A ligar ao servidor…');connect();return}send(action)}
+async function join(){
+  if(actionBusy)return;
+  const input=$('joinRoomCode');
+  const code=(input?.value||'').trim().toUpperCase();
+  if(!code)return toast('Escreve o código da sala.');
+  if(!/^[A-Z2-9]{5,10}$/.test(code))return toast('Código inválido.');
+  startWithData();
+  activeFixtureId=null;
+  roomCode=code; mySymbol=null;
+  const action={type:'game-join',roomCode:code,name:myName,teamName:myTeam};
+  setActionBusy(true,'join');
+  const status=$('lobbyStatus');
+  if(status)status.textContent='A ligar ao servidor…';
+  try{
+    if(!sessionReady){
+      const ok=await initSession();
+      if(!ok)throw new Error('Não foi possível iniciar a sessão.');
+    }
+    if(!socketOpen()||!wsAuthenticated){
+      pendingAction=action;
+      if(status)status.textContent='A ligar ao servidor…';
+      connect();
+    }else{
+      pendingAction=null;
+      if(status)status.textContent='A entrar na sala…';
+      if(!send(action))throw new Error('A ligação ao servidor ainda não está pronta.');
+    }
+    clearTimeout(createWatchdog);
+    createWatchdog=setTimeout(()=>{
+      if(actionBusy){
+        setActionBusy(false);
+        pendingAction=null;
+        if(status)status.textContent='O servidor não respondeu. Verifica a ligação e tenta novamente.';
+        toast('⚠️ Não foi possível entrar na sala.');
+      }
+    },15000);
+  }catch(e){
+    setActionBusy(false);
+    pendingAction=null;
+    if(status)status.textContent=e?.message||'Não foi possível entrar na sala.';
+    toast(e?.message||'Não foi possível entrar na sala.');
+  }
+}
 function leave(){openConfirm('Sair da partida?','A partida será encerrada para ti e o adversário será informado.',()=>{send({type:'game-leave'});roomCode=null;mySymbol=null;state=null;activeFixtureId=null;clearSession();stopVoice();page('home')})}
 function initials(name){return(name||'?').trim().split(/\s+/).slice(0,2).map(x=>x[0]).join('').toUpperCase().slice(0,2)}
 function render(){
@@ -163,7 +205,8 @@ let selectedCheckers=null;
 function clickCheckers(r,c){
   if(!state||state.gameType==='rps'||state.winner||isSpectator)return;
   const myColor=mySymbol==='X'?1:2;
-  if(state.turn!==myColor||!state.players?.[mySymbol])return;
+  const op=mySymbol==='X'?'O':'X';
+  if(state.turn!==myColor||!state.players?.[op])return;
   if(state.disconnected){toast('📡 Aguarda a reconexão do adversário.');return;}
   const piece=state.board?.[r]?.[c];
   if(piece?.color===myColor){
@@ -402,13 +445,15 @@ function openLobbyEntry(mode='create',gameType=selectedGameType){
   const label=$('selectedGameLabel'); if(label)label.textContent=selectedGameType==='rps'?'Pedra, Papel e Tesoura':selectedGameType==='checkers'?'Damas':'X Vs O';
   const title=$('lobbyEntryTitle'); if(title)title.textContent='Preparar partida';
   box.hidden=false;
-  if(mode==='create') $('lobbyCreateBtn').focus(); else $('lobbyJoinBtn').focus();
+  if(mode==='join'){const codeInput=$('joinRoomCode');if(codeInput){codeInput.value='';codeInput.focus()}}
+  else $('lobbyCreateBtn').focus();
   box.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 $('connectGame').onclick=()=>openLobbyEntry('create','tictactoe');
 $('closeLobbyEntry').onclick=()=>{$('lobbyEntry').hidden=true};
 $('lobbyCreateBtn').onclick=()=>create();
 $('lobbyJoinBtn').onclick=()=>join();
+$('joinRoomCode').onkeydown=e=>{if(e.key==='Enter')join()};
 $('openChampionshipFromLobby').onclick=()=>page('championships');
 document.querySelectorAll('.lobby-game-button').forEach(b=>b.onclick=()=>{
   const game=b.dataset.game;
