@@ -20,7 +20,7 @@ function send(payload){const copy={...payload};if(!copy.actionId&&copy.type!=='s
 function flushQueuedActions(){if(!wsAuthenticated||!socketOpen())return;const actions=pendingActions.splice(0);for(const action of actions)ws.send(JSON.stringify(action));}
 function flushSocketState(){if(!sessionReady||!wsAuthenticated||!socketOpen())return;ws.send(JSON.stringify({type:'global-chat-join'}));if(currentCupId)ws.send(JSON.stringify({type:'championship-watch',championshipId:currentCupId}));if(roomCode&&mySymbol){ws.send(JSON.stringify({type:'game-rejoin',roomCode,name:myName||'Jogador'}));return}if(pendingAction){pendingActions.unshift(pendingAction);pendingAction=null}flushQueuedActions()}
 function connect(){if(!sessionReady)return;if(ws&&(ws.readyState===1||ws.readyState===0))return;clearTimeout(reconnectTimer);const proto=location.protocol==='https:'?'wss:':'ws:';ws=new WebSocket(proto+'//'+location.host);ws.onopen=()=>{reconnectDelay=800;$('connectionState').textContent='Ligado';$('connectionState').className='status-dot online';ws.send(JSON.stringify({type:'session-auth',token:sessionToken}))};ws.onmessage=e=>{let m;try{m=JSON.parse(e.data)}catch{return}handle(m)};ws.onclose=()=>{wsAuthenticated=false;if(intentionalClose)return;$('connectionState').textContent='Reconectando…';$('connectionState').className='status-dot offline';clearTimeout(reconnectTimer);reconnectTimer=setTimeout(connect,reconnectDelay);reconnectDelay=Math.min(reconnectDelay*2,8000)};ws.onerror=()=>{wsAuthenticated=false}}
-function handle(m){switch(m.type){case'session-ready':sessionReady=true;wsAuthenticated=true;playerId=m.playerId||playerId;myName=m.name||myName;localStorage.setItem('2on_player_id',playerId);localStorage.setItem('2on_player_name',myName);flushSocketState();break;case'global-chat-history':globalMessages=Array.isArray(m.messages)?m.messages.slice(-200):[];globalMessages.forEach(x=>x?.id&&seen.add(x.id));renderGlobalMessages();renderGlobalDock();break;case'global-chat':{const msg=m.message;if(!msg?.id||seen.has(msg.id))break;seen.add(msg.id);globalMessages.push(msg);if(globalMessages.length>200)globalMessages.shift();if(chatScope==='general'&&$('play')?.classList.contains('active'))renderChat();else{globalUnread++;renderGlobalDock()}renderGlobalMessages();break;}case'team-chat-history':teamMessages=Array.isArray(m.messages)?m.messages.slice(-200):[];teamMessages.forEach(x=>x?.id&&seen.add(x.id));if(chatScope==='team')renderChat();break;case'team-chat':{const msg=m.message;if(!msg?.id||seen.has(msg.id))break;seen.add(msg.id);teamMessages.push(msg);if(teamMessages.length>200)teamMessages.shift();if(chatScope==='team'&&$('play')?.classList.contains('active'))renderChat();else teamUnread++;updateTeamBadge();break;}case'game-created':case'game-joined':case'game-rejoined':actionBusy=false;roomCode=m.roomCode;mySymbol=m.symbol;isSpectator=!!m.spectator;state=m.state;activeFixtureId=state?.championshipFixture?.fixtureId||null;saveSession();render();page('play');if(voiceOn&&!isSpectator&&state?.players?.X&&state?.players?.O){if(mySymbol==='X')makeVoiceOffer().catch(()=>{});else send({type:'game-voice-ready'});}flushQueuedActions();break;case'game-state':state=m.state;render();break;case'game-timeout':state=m.state;render();toast('⏱️ Tempo esgotado. A vez passou para o adversário.');break;case'game-disconnected':state=m.state;render();toast('📡 O adversário perdeu a ligação. Aguardando reconexão…');break;case'game-left':if(state){state.players[m.symbol]=false;state.names[m.symbol]=null;state.disconnected=null;render()}toast('👋 O adversário saiu da partida.');break;case'game-info':toast(m.message||'');break;case'game-error':actionBusy=false;pendingAction=null;toast(m.message||'Não foi possível concluir.');break;case'game-chat-error':actionBusy=false;toast(m.message||'Aguarda um momento antes de enviar outra mensagem.');break;case'game-chat':if(m.messageId&&seen.has(m.messageId))break;if(m.messageId){seen.add(m.messageId);if(seen.size>300)seen.delete(seen.values().next().value)}if(!m.scope||m.scope===chatScope)addMsg(m.name,m.text,m.from===mySymbol,m.scope,m.at);break;case'championship-chat-history':currentChampChat=m.messages||[];if($('cupMessages')){$('cupMessages').innerHTML='';currentChampChat.forEach(x=>addChampMsg(x.name,x.text,x.isMe===true,x.scope||'general',x.at))}break;case'championship-chat':if(m.message?.id&&seen.has(m.message.id))break;if(m.message?.id)seen.add(m.message.id);currentChampChat.push(m.message);if(currentChampChat.length>200)currentChampChat.shift();if(m.message?.scope==='team'){teamMessages.push(m.message);if(teamMessages.length>200)teamMessages.shift();if(chatScope==='team'&&$('play')?.classList.contains('active'))renderChat();else{teamUnread++;updateTeamBadge()}}addChampMsg(m.message.name,m.message.text,m.message.isMe===true,m.message.scope||m.scope,m.message.at);break;case'championship-deleted':if(currentCupId===m.championshipId||state?.championshipFixture?.championshipId===m.championshipId){stopVoice();roomCode=null;mySymbol=null;state=null;activeFixtureId=null;clearSession();currentCupId=null;hideCupPanels();page('championships');loadCups(false);toast('🗑️ O campeonato foi eliminado pelo criador.')}break;case'championship-updated':if(currentCupId===m.championshipId){if(roomCode&&state?.championshipFixture)fetchChampionshipSilently(m.championshipId);else openChampionship(m.championshipId)}break;case'championship-fixture-ready':{
+function handle(m){switch(m.type){case'session-ready':sessionReady=true;wsAuthenticated=true;playerId=m.playerId||playerId;myName=m.name||myName;localStorage.setItem('2on_player_id',playerId);localStorage.setItem('2on_player_name',myName);flushSocketState();break;case'global-chat-history':globalMessages=Array.isArray(m.messages)?m.messages.slice(-200):[];globalMessages.forEach(x=>x?.id&&seen.add(x.id));renderGlobalMessages();renderGlobalDock();break;case'global-chat':{const msg=m.message;if(!msg?.id||seen.has(msg.id))break;seen.add(msg.id);globalMessages.push(msg);if(globalMessages.length>200)globalMessages.shift();if(chatScope==='general'&&$('play')?.classList.contains('active'))renderChat();else{globalUnread++;renderGlobalDock()}renderGlobalMessages();break;}case'team-chat-history':teamMessages=Array.isArray(m.messages)?m.messages.slice(-200):[];teamMessages.forEach(x=>x?.id&&seen.add(x.id));if(chatScope==='team')renderChat();break;case'team-chat':{const msg=m.message;if(!msg?.id||seen.has(msg.id))break;seen.add(msg.id);teamMessages.push(msg);if(teamMessages.length>200)teamMessages.shift();if(chatScope==='team'&&$('play')?.classList.contains('active'))renderChat();else teamUnread++;updateTeamBadge();break;}case'game-created':case'game-joined':case'game-rejoined':setActionBusy(false);selectedCheckers=null;roomCode=m.roomCode;mySymbol=m.symbol;isSpectator=!!m.spectator;state=m.state;activeFixtureId=state?.championshipFixture?.fixtureId||null;saveSession();render();page('play');if(voiceOn&&!isSpectator&&state?.players?.X&&state?.players?.O){if(mySymbol==='X')makeVoiceOffer().catch(()=>{});else send({type:'game-voice-ready'});}flushQueuedActions();break;case'game-state':state=m.state;render();break;case'game-timeout':state=m.state;render();toast('⏱️ Tempo esgotado. A vez passou para o adversário.');break;case'game-disconnected':state=m.state;render();toast('📡 O adversário perdeu a ligação. Aguardando reconexão…');break;case'game-left':if(state){state.players[m.symbol]=false;state.names[m.symbol]=null;state.disconnected=null;render()}toast('👋 O adversário saiu da partida.');break;case'game-info':toast(m.message||'');break;case'game-error':setActionBusy(false);pendingAction=null;toast(m.message||'Não foi possível concluir.');break;case'game-chat-error':actionBusy=false;toast(m.message||'Aguarda um momento antes de enviar outra mensagem.');break;case'game-chat':if(m.messageId&&seen.has(m.messageId))break;if(m.messageId){seen.add(m.messageId);if(seen.size>300)seen.delete(seen.values().next().value)}if(!m.scope||m.scope===chatScope)addMsg(m.name,m.text,m.from===mySymbol,m.scope,m.at);break;case'championship-chat-history':currentChampChat=m.messages||[];if($('cupMessages')){$('cupMessages').innerHTML='';currentChampChat.forEach(x=>addChampMsg(x.name,x.text,x.isMe===true,x.scope||'general',x.at))}break;case'championship-chat':if(m.message?.id&&seen.has(m.message.id))break;if(m.message?.id)seen.add(m.message.id);currentChampChat.push(m.message);if(currentChampChat.length>200)currentChampChat.shift();if(m.message?.scope==='team'){teamMessages.push(m.message);if(teamMessages.length>200)teamMessages.shift();if(chatScope==='team'&&$('play')?.classList.contains('active'))renderChat();else{teamUnread++;updateTeamBadge()}}addChampMsg(m.message.name,m.message.text,m.message.isMe===true,m.message.scope||m.scope,m.message.at);break;case'championship-deleted':if(currentCupId===m.championshipId||state?.championshipFixture?.championshipId===m.championshipId){stopVoice();roomCode=null;mySymbol=null;state=null;activeFixtureId=null;clearSession();currentCupId=null;hideCupPanels();page('championships');loadCups(false);toast('🗑️ O campeonato foi eliminado pelo criador.')}break;case'championship-updated':if(currentCupId===m.championshipId){if(roomCode&&state?.championshipFixture)fetchChampionshipSilently(m.championshipId);else openChampionship(m.championshipId)}break;case'championship-fixture-ready':{
   const isPlayer=!!m.homeIsMe||!!m.awayIsMe;
   if(!isPlayer)break;
   currentCupId=m.championshipId;
@@ -46,17 +46,18 @@ function saveSession(){if(roomCode&&mySymbol)localStorage.setItem('2on_game_sess
 function clearSession(){localStorage.removeItem('2on_game_session')}
 function startWithData(){myName=$('playerName').value.trim().slice(0,24)||'Jogador';myTeam=$('teamName').value.trim().slice(0,40);localStorage.setItem('2on_player_name',myName);localStorage.setItem('2on_player_team',myTeam);return true}
 let actionBusy=false;
-function create(){if(actionBusy)return;actionBusy=true;if(!startWithData()){actionBusy=false;return}activeFixtureId=null;const action={type:'game-create',name:myName,teamName:myTeam,gameType:selectedGameType};if(!socketOpen()){pendingAction=action;toast('A ligar ao servidor…');connect();return}send(action)}
+function setActionBusy(v){actionBusy=!!v;const b=$('lobbyCreateBtn');if(b){b.disabled=actionBusy;b.textContent=actionBusy?'A criar…':'Criar partida'}}
+function create(){if(actionBusy)return;setActionBusy(true);if(!startWithData()){setActionBusy(false);return}activeFixtureId=null;const action={type:'game-create',name:myName,teamName:myTeam,gameType:selectedGameType};if(!socketOpen()){pendingAction=action;toast('A ligar ao servidor…');connect();return}send(action)}
 function join(){const code=prompt('Código da sala:')?.trim().toUpperCase();if(!code)return;if(!/^[A-Z2-9]{5,10}$/.test(code))return toast('Código inválido.');startWithData();activeFixtureId=null;roomCode=code;mySymbol=null;const action={type:'game-join',roomCode:code,name:myName,teamName:myTeam};if(!socketOpen()){pendingAction=action;toast('A ligar ao servidor…');connect();return}send(action)}
 function leave(){openConfirm('Sair da partida?','A partida será encerrada para ti e o adversário será informado.',()=>{send({type:'game-leave'});roomCode=null;mySymbol=null;state=null;activeFixtureId=null;clearSession();stopVoice();page('home')})}
 function initials(name){return(name||'?').trim().split(/\s+/).slice(0,2).map(x=>x[0]).join('').toUpperCase().slice(0,2)}
 function render(){
   if(!state)return;
+  const isRps=state.gameType==='rps';
+  const isCheckers=state.gameType==='checkers';
   const op=mySymbol==='X'?'O':'X';
   const connected=!!state.players?.[op];
   const opName=state.names?.[op]||'A aguardar';
-  const isRps=state.gameType==='rps';
-  const isCheckers=state.gameType==='checkers';
   $('backChamp').hidden=!state.championshipFixture;
   $('roomTitle').textContent=roomCode||'SALA';
   $('meSymbol').textContent=isSpectator?'👀':(isCheckers?(mySymbol==='X'?'⚪':'⚫'):(mySymbol||'—'));
@@ -68,7 +69,7 @@ function render(){
   $('meAvatar').textContent=isSpectator?'👀':initials(myName);
   $('opAvatar').textContent=initials(connected?opName:'O');
   $('matchNumber').textContent=state.matchNumber||1;
-  $('scoreValue').textContent=isSpectator?'AO VIVO':(isCheckers?`${state.checkers?.pieces?.[mySymbol]||0} — ${state.checkers?.pieces?.[op]||0}`:`${state.score?.[mySymbol]||0} — ${state.score?.[op]||0}`);
+  $('scoreValue').textContent=isSpectator?'AO VIVO':`${state.score?.[mySymbol]||0} — ${state.score?.[op]||0}`;
   const winner=state.winner;
   let status;
   if(isSpectator) status=winner?(winner==='draw'?'🏁 Empate terminado':'🏁 Jogo terminado'):(connected?'👀 A acompanhar esta partida':'👀 A acompanhar');
@@ -76,7 +77,7 @@ function render(){
   else if(state.disconnected) status=`Reconectando ${state.names?.[state.disconnected]||'adversário'}…`;
   else if(!connected) status='⏳ A aguardar o adversário';
   else if(isRps) status=state.rps?.myChoice?'⏳ Escolha registada · aguarda o adversário':'🎯 Escolhe a tua jogada';
-  else if(isCheckers) status=state.checkers?.mustContinue ? '⚡ Continua a captura' : (state.turn===mySymbol?'🎯 É a tua vez':'⏳ Vez do adversário');
+  else if(isCheckers) status=state.turn===(mySymbol==='X'?1:2)?'🎯 É a tua vez':`⏳ Vez de ${opName}`;
   else status=state.turn===null?'👆 Quem tocar primeiro começa':state.turn===mySymbol?'🎯 É a tua vez':`⏳ Vez de ${opName}`;
   $('gameStatus').textContent=status;
   $('resultBanner').textContent=winner?(winner==='draw'?(isRps?'🤝 As escolhas foram iguais':'🤝 Partida empatada'):`🏁 Partida terminada · ${state.names?.[winner]||winner}`):isSpectator?'👀 Estás a assistir — não podes jogar':'';
@@ -84,7 +85,7 @@ function render(){
   $('rpsChoices').hidden=!isRps;
   $('board').setAttribute('aria-hidden', String(isRps));
   $('rpsChoices').setAttribute('aria-hidden', String(!isRps));
-  if(isRps){ $('board').replaceChildren(); $('board').classList.remove('checkers-board'); renderRps(connected,winner); } else if(isCheckers){ $('rpsChoices').replaceChildren(); renderCheckers(connected,winner); } else { $('rpsChoices').replaceChildren(); $('board').classList.remove('checkers-board'); renderTicTacToe(connected,winner); }
+  if(isRps){ $('board').replaceChildren(); renderRps(connected,winner); } else if(isCheckers){ $('rpsChoices').replaceChildren(); renderCheckers(connected,winner); } else { $('rpsChoices').replaceChildren(); renderTicTacToe(connected,winner); }
   $('rematchBtn').disabled=!winner||!!state.championshipFixture||isSpectator;
   $('rematchBtn').hidden=!!state.championshipFixture;
   $('rematchBtn').textContent='🔁 Revanche';
@@ -99,37 +100,48 @@ function render(){
   }else{$('champResultActions').hidden=true;$('champResultActions').innerHTML=''}
   updateClock();
 }
-let checkerSelection=null;
-function renderCheckers(connected,winner){
-  $('board').classList.add('checkers-board');
-  const active=!isSpectator&&connected&&!winner&&!state.disconnected&&state.turn===mySymbol;
-  const targets=Array.isArray(state.checkers?.legalTargets)?state.checkers.legalTargets:[];
-  const targetKey=(r,c)=>`${r},${c}`;
-  const legalDest=new Set((checkerSelection?targets.filter(m=>m.from.r===checkerSelection.r&&m.from.c===checkerSelection.c):targets).map(m=>targetKey(m.to.r,m.to.c)));
-  const selectedKey=checkerSelection?targetKey(checkerSelection.r,checkerSelection.c):null;
-  $('board').innerHTML=state.board.map((row,r)=>row.map((piece,c)=>{
-    const dark=(r+c)%2===1, key=targetKey(r,c), isTarget=legalDest.has(key), selected=selectedKey===key;
-    const belongs=piece&&(piece.color===(mySymbol==='X'?1:2));
-    const pieceHtml=piece?`<span class="checker-piece ${piece.color===1?'white':'black'} ${piece.king?'king':''}" aria-label="${piece.king?'Dama':'Peça'}">${piece.king?'♛':''}</span>`:'';
-    return `<button type="button" class="checker-cell ${dark?'dark':'light'} ${selected?'selected':''} ${isTarget?'target':''}" data-r="${r}" data-c="${c}" ${active?'':'disabled'}>${pieceHtml}</button>`;
-  }).join('')).join('');
-  $('board').querySelectorAll('.checker-cell').forEach(btn=>btn.onclick=()=>{
-    if(!active)return;
-    const r=+btn.dataset.r,c=+btn.dataset.c,key=targetKey(r,c);
-    if(legalDest.has(key)&&checkerSelection){send({type:'game-move',from:checkerSelection,to:{r,c}});checkerSelection=null;return;}
-    const piece=state.board[r]?.[c];
-    if(piece&&piece.color===(mySymbol==='X'?1:2)&&targets.some(m=>m.from.r===r&&m.from.c===c))checkerSelection={r,c};
-    else if(!piece)checkerSelection=null;
-    renderCheckers(connected,winner);
-  });
-}
 function renderTicTacToe(connected,winner){
+  $('board').classList.remove('checkers-board');
   const active=!isSpectator&&connected&&!winner&&(!state.turn||state.turn===mySymbol)&&!state.disconnected;
   $('board').innerHTML=state.board.map((v,i)=>`<button class="cell ${v?v.toLowerCase()+' place':''} ${state.winningLine?.includes(i)?'win':''}" data-cell="${i}" ${v||!active?'disabled':''}>${v||''}</button>`).join('');
   document.querySelectorAll('.cell').forEach(b=>b.onclick=()=>{const cell=+b.dataset.cell;if(active&&!state.board[cell])send({type:'game-move',cell})});
 }
+function renderCheckers(connected,winner){
+  const myColor=mySymbol==='X'?1:2;
+  const active=!isSpectator&&connected&&!winner&&state.turn===myColor&&!state.disconnected;
+  const targets=Array.isArray(state.checkers?.legalTargets)?state.checkers.legalTargets:[];
+  const selectedFrom=selectedCheckers;
+  $('board').classList.add('checkers-board');
+  $('board').innerHTML=state.board.map((row,r)=>row.map((piece,c)=>{
+    const dark=(r+c)%2===1;
+    const selected=selectedFrom&&selectedFrom.r===r&&selectedFrom.c===c;
+    const legal=active&&targets.some(m=>(!selectedFrom|| (m.from.r===selectedFrom.r&&m.from.c===selectedFrom.c))&&m.to.r===r&&m.to.c===c);
+    const p=piece?`<span class=\"checkers-piece ${piece.color===1?'white':'black'}${piece.king?' king':''}\">${piece.king?'♛':''}</span>`:'';
+    return `<button type=\"button\" class=\"cell checkers-cell ${dark?'dark':'light'} ${selected?'selected':''} ${legal?'legal':''}\" data-r=\"${r}\" data-c=\"${c}\" ${dark?'':'aria-label=\"Casa clara\"'}>${p}</button>`;
+  }).join('')).join('');
+  $('board').querySelectorAll('.checkers-cell').forEach(cell=>cell.onclick=()=>clickCheckers(+cell.dataset.r,+cell.dataset.c));
+}
+let selectedCheckers=null;
+function clickCheckers(r,c){
+  if(!state||state.gameType==='rps'||state.winner||isSpectator)return;
+  const myColor=mySymbol==='X'?1:2;
+  if(state.turn!==myColor||!state.players?.[mySymbol])return;
+  if(state.disconnected){toast('📡 Aguarda a reconexão do adversário.');return;}
+  const piece=state.board?.[r]?.[c];
+  if(piece?.color===myColor){
+    const forced=state.checkers?.mustContinue;
+    if(forced&&(!selectedCheckers||selectedCheckers.r!==forced.r||selectedCheckers.c!==forced.c))return;
+    selectedCheckers={r,c}; render(); return;
+  }
+  if(!selectedCheckers)return;
+  const move=(state.checkers?.legalTargets||[]).find(m=>m.from.r===selectedCheckers.r&&m.from.c===selectedCheckers.c&&m.to.r===r&&m.to.c===c);
+  if(!move){toast('Essa jogada não é válida.');return;}
+  send({type:'game-move',from:selectedCheckers,to:{r,c}});
+  selectedCheckers=null;
+}
 function rpsLabel(choice){return choice==='rock'?'✊ Pedra':choice==='paper'?'✋ Papel':'✌️ Tesoura'}
 function renderRps(connected,winner){
+  $('board').classList.remove('checkers-board');
   const choices=[['rock','✊','Pedra'],['paper','✋','Papel'],['scissors','✌️','Tesoura']];
   const mine=state.rps?.myChoice||null;
   const opponentChosen=!!(mySymbol&&state.rps?.choices?.[opponentSymbol()]);
@@ -138,7 +150,7 @@ function renderRps(connected,winner){
   $('rpsChoices').querySelectorAll('[data-rps]').forEach(btn=>btn.onclick=()=>{if(active)send({type:'game-move',choice:btn.dataset.rps})});
 }
 function opponentSymbol(){return mySymbol==='X'?'O':'X'}
-function updateClock(){clearInterval(clockTimer);const tick=()=>{if(state?.gameType==='checkers'||!state?.turn||state.winner||!state.turnStartedAt){$('turnClock').textContent='—';return}$('turnClock').textContent=`${Math.max(0,Math.ceil((state.turnStartedAt+state.turnSeconds*1000-Date.now())/1000))}s · ${state.turn===mySymbol?'a tua vez':'vez do adversário'}`};tick();clockTimer=setInterval(tick,250)}
+function updateClock(){clearInterval(clockTimer);const tick=()=>{if(!state?.turn||state.winner||!state.turnStartedAt){$('turnClock').textContent='—';return}$('turnClock').textContent=`${Math.max(0,Math.ceil((state.turnStartedAt+state.turnSeconds*1000-Date.now())/1000))}s · ${state.turn===mySymbol?'a tua vez':'vez do adversário'}`};tick();clockTimer=setInterval(tick,250)}
 async function updateChampionshipResultActions(cupId,fixtureId){
   const box=$('champResultActions'); if(!box)return;
   const token=++resultActionToken;
@@ -348,8 +360,8 @@ $('backHome').onclick=()=>{
 $('backChamp').onclick=async()=>{const cid=state?.championshipFixture?.championshipId;if(cid){exitCurrentGame();page('championships');await openChampionship(cid)}};
 function openLobbyEntry(mode='create',gameType=selectedGameType){
   const box=$('lobbyEntry'); if(!box)return;
-  selectedGameType=gameType==='rps'?'rps':(gameType==='checkers'?'checkers':'tictactoe');
-  const label=$('selectedGameLabel'); if(label)label.textContent=selectedGameType==='rps'?'Pedra, Papel e Tesoura':(selectedGameType==='checkers'?'Damas':'X Vs O');
+  selectedGameType=['rps','checkers','tictactoe'].includes(gameType)?gameType:'tictactoe';
+  const label=$('selectedGameLabel'); if(label)label.textContent=selectedGameType==='rps'?'Pedra, Papel e Tesoura':selectedGameType==='checkers'?'Damas':'X Vs O';
   box.hidden=false;
   if(mode==='create') $('lobbyCreateBtn').focus(); else $('lobbyJoinBtn').focus();
   box.scrollIntoView({behavior:'smooth',block:'nearest'});

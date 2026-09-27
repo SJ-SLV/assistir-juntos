@@ -363,22 +363,6 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .rps-result { display: flex; justify-content: center; align-items: center; gap: 14px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); font-weight: 800; }
 .rps-result strong { color: var(--muted); font-size: 10px; letter-spacing: .12em; }
 
-
-/* ---------- Damas 8×8 ---------- */
-.board.checkers-board { grid-template-columns: repeat(8, 1fr); gap: 0; width: min(460px, 94vw); aspect-ratio: 1; border: 4px solid #172538; border-radius: 16px; overflow: hidden; box-shadow: 0 18px 48px rgba(0,0,0,.28); background: #172538; }
-.checker-cell { position: relative; aspect-ratio: 1; min-width: 0; min-height: 0; padding: 0; border: 0; border-radius: 0; display: grid; place-items: center; cursor: pointer; transition: filter .12s ease, box-shadow .12s ease; }
-.checker-cell.light { background: #d9c7a4; }
-.checker-cell.dark { background: #6d4d35; }
-.checker-cell:disabled { cursor: default; opacity: 1; }
-.checker-cell.target { box-shadow: inset 0 0 0 4px rgba(62,226,171,.72); }
-.checker-cell.selected { box-shadow: inset 0 0 0 4px rgba(255,213,79,.95); }
-.checker-cell.target::after { content:""; width: 20%; height: 20%; border-radius: 50%; background: rgba(62,226,171,.9); position: absolute; }
-.checker-piece { width: 72%; height: 72%; border-radius: 50%; display: grid; place-items: center; font-size: clamp(20px, 6vw, 34px); line-height: 1; font-weight: 900; border: 2px solid rgba(255,255,255,.25); box-shadow: 0 5px 10px rgba(0,0,0,.28), inset 0 2px 2px rgba(255,255,255,.15); z-index: 1; }
-.checker-piece.white { background: #f4f0e8; color: #5b3d28; }
-.checker-piece.black { background: #17191d; color: #f0d36b; border-color: rgba(255,255,255,.12); }
-.checker-piece.king { outline: 3px solid rgba(240,211,107,.65); outline-offset: -6px; }
-@media(max-width:520px){.board.checkers-board{width:min(94vw,420px);border-width:3px;border-radius:12px}.checker-piece{width:76%;height:76%;}}
-
 /* ---------- Chat (partida + campeonato) ---------- */
 .chat, .cup-chat { overflow: hidden; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); box-shadow: 0 12px 38px rgba(0, 0, 0, .12); }
 .chat-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border-bottom: 1px solid var(--line); }
@@ -605,3 +589,129 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .topbar-home-link{display:inline-flex;align-items:center;justify-content:center;gap:6px;color:var(--muted,#8fa0b4);text-decoration:none;font-size:12px;font-weight:700;padding:8px 10px;border:1px solid var(--border,rgba(255,255,255,.09));border-radius:10px;background:rgba(255,255,255,.03);transition:.16s ease}
 .topbar-home-link:hover{color:var(--ink,#f5f8fc);border-color:rgba(255,255,255,.18);transform:translateY(-1px)}
 .topbar-actions{display:flex;align-items:center;gap:8px}
+
+/* ========================================================================== 
+   2 ON GAMES · v2.9.1 responsive refinement + Damas
+   ========================================================================== */
+.checkers-board{
+  width:min(560px,100%);
+  max-width:100%;
+  margin:0 auto;
+  display:grid;
+  grid-template-columns:repeat(8,minmax(0,1fr));
+  gap:0;
+  overflow:hidden;
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:14px;
+  box-shadow:0 18px 50px rgba(0,0,0,.24);
+  background:#101b29;
+}
+.checkers-board .checkers-cell{
+  position:relative;
+  min-width:0;
+  min-height:0;
+  width:100%;
+  aspect-ratio:1;
+  border:0;
+  border-radius:0;
+  padding:0;
+  display:grid;
+  place-items:center;
+  background:#17273a;
+  box-shadow:none;
+  transform:none;
+}
+.checkers-board .checkers-cell.light{background:#d5dbe1;color:#17202b}
+.checkers-board .checkers-cell.dark{background:#496177;color:#fff}
+.checkers-board .checkers-cell:hover{transform:none;filter:brightness(1.06)}
+.checkers-board .checkers-cell.selected{box-shadow:inset 0 0 0 4px rgba(53,224,161,.9)}
+.checkers-board .checkers-cell.legal:after{content:"";position:absolute;width:20%;height:20%;border-radius:50%;background:rgba(53,224,161,.9);box-shadow:0 0 0 5px rgba(53,224,161,.14)}
+.checkers-piece{
+  position:relative;
+  width:72%;
+  height:72%;
+  border-radius:50%;
+  border:3px solid rgba(255,255,255,.3);
+  display:grid;
+  place-items:center;
+  box-shadow:0 5px 10px rgba(0,0,0,.3),inset 0 2px 0 rgba(255,255,255,.16);
+  z-index:1;
+}
+.checkers-piece.white{background:#f4f7fa;color:#182230;border-color:#c8d1da}
+.checkers-piece.black{background:#17202b;color:#fff;border-color:#65778a}
+.checkers-piece.king{font-size:clamp(14px,3vw,25px);font-weight:900}
+
+/* Keep the discovery area visually balanced instead of oversized on phones. */
+.games-discovery__hero{padding:clamp(24px,4vw,40px)}
+.games-discovery__hero h2{font-size:clamp(30px,4.7vw,52px)}
+.lobby-game-card{min-height:218px;padding:19px}
+.lobby-game-icon{width:48px;height:48px;font-size:22px}
+.lobby-features article{padding:15px}
+
+@media (min-width:901px){
+  .lobby-main{padding-top:20px}
+  .games-discovery{gap:18px}
+  .games-discovery__hero p{max-width:680px;font-size:14px}
+}
+
+@media (max-width:700px){
+  .app{width:min(100% - 12px,1240px);padding:6px 0 42px}
+  .topbar{margin-bottom:8px;padding:8px 10px;border-radius:14px;top:4px}
+  .topbar-brand__mark{width:38px;height:38px;flex-basis:38px;border-radius:10px}
+  .topbar-brand__copy b{font-size:10px}
+  .topbar-brand__copy small{font-size:9px}
+  .topbar nav{gap:3px}
+  .topbar nav button,.topbar-home-link{min-height:38px;padding:8px 9px;font-size:11px}
+  .lobby-main{padding-top:12px}
+  .games-discovery{gap:13px}
+  .games-discovery__hero{padding:20px 16px;border-radius:17px}
+  .games-discovery__hero h2{font-size:31px;line-height:1.05;margin:7px 0 8px}
+  .games-discovery__hero p{font-size:13px;line-height:1.55}
+  .games-discovery__actions{margin-top:16px;gap:7px}
+  .games-connect-note{padding:13px 14px;border-radius:14px}
+  .games-connect-note__icon{width:36px;height:36px;flex-basis:36px;font-size:20px}
+  .lobby-entry{margin-bottom:14px;padding:14px;border-radius:14px}
+  .lobby-entry__grid{gap:8px;margin-top:10px}
+  .lobby-entry__grid input{min-height:42px;padding:10px}
+  .lobby-entry__actions{margin-top:9px;gap:7px}
+  .lobby-entry__actions .lobby-button{min-height:42px;padding:9px 10px}
+  .lobby-games-grid{gap:10px}
+  .lobby-game-card{min-height:170px;padding:15px;border-radius:15px}
+  .lobby-game-card h3{font-size:17px;margin:6px 0 4px}
+  .lobby-game-card p{font-size:11.5px;line-height:1.45}
+  .lobby-game-card__footer{padding-top:12px}
+  .lobby-game-button{min-height:40px}
+  .lobby-features{gap:8px;margin-top:10px}
+  .lobby-features article{padding:12px}
+  .lobby-features strong{margin-bottom:8px}
+  .lobby-features span{font-size:10.5px}
+  .game-head h2,.section-head h2{font-size:24px}
+  .match-info{gap:4px}
+  .player-card{min-height:58px;padding:8px 7px;border-radius:11px}
+  .player-card b,.player-card small{max-width:74px}
+  .avatar{width:32px;height:32px;flex-basis:32px;font-size:13px;border-radius:9px}
+  .score{min-width:54px}
+  .score strong{font-size:19px}
+  .board-wrap{width:min(92vw,520px);margin:14px auto}
+  .checkers-board{border-radius:10px}
+  .checkers-piece{border-width:2px}
+  .head-actions{gap:5px}
+  .head-actions button{min-height:38px;padding:8px 8px;font-size:11px}
+  .chat{border-radius:14px}
+  .messages{height:170px}
+  .global-chat-dock{right:6px;bottom:6px;width:calc(100vw - 12px)}
+}
+
+@media (max-width:420px){
+  .topbar-brand__copy b{max-width:180px;overflow:hidden;text-overflow:ellipsis}
+  .topbar nav{width:100%;overflow:visible}
+  .topbar nav button,.topbar-home-link{font-size:10px;padding:7px 6px}
+  .games-discovery__hero h2{font-size:29px}
+  .lobby-game-card{min-height:158px;padding:13px}
+  .lobby-game-icon{width:42px;height:42px;font-size:19px}
+  .lobby-status{margin-top:9px;font-size:8px}
+  .lobby-game-card p{font-size:11px}
+  .lobby-game-button{font-size:12px}
+  .player-card b{font-size:12px}
+  .player-card small{font-size:9px}
+}
