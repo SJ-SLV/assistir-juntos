@@ -1,0 +1,10 @@
+'use strict';
+const fs=require('fs'),path=require('path');
+const root=path.join(__dirname,'..');
+const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
+const server=fs.readFileSync(path.join(root,'server.js'),'utf8');
+const readmes=fs.readFileSync(path.join(root,'README.md'),'utf8');
+const v=pkg.version;
+if(!server.includes(`const APP_VERSION = '${v}';`))throw new Error('APP_VERSION do servidor diverge do package.json.');
+if(!readmes.includes(`# 2 ON Platform ${v}`))throw new Error('README não está na versão atual.');
+console.log(`VERSION CHECK ${v} PASSED`);

@@ -10,7 +10,7 @@ ok(/id="lobbyCreateBtn"/.test(html),'Botão Criar partida ausente.');
 ok(/id="connectGame"/.test(html),'Entrada Criar partida ausente.');
 ok(/\.lobby-game-button/.test(js)&&/openLobbyEntry\('create',game\)/.test(js),'Jogar agora não abre o fluxo de criação.');
 ok(/type:'game-create'/.test(js),'Cliente não envia game-create.');
-console.log('LOBBY SMOKE 2.9.3 PASSED');
+console.log('LOBBY SMOKE 2.9.5 PASSED');
 
 ok(/type:'game-create'/.test(js),'game-create ausente.');
 ok(/createWatchdog/.test(js),'Timeout de criação ausente.');

@@ -14,4 +14,4 @@ const checks=[
  ['responsive design',/@media\s*\(\s*max-width\s*:/.test(css)],
 ];
 for(const [n,ok] of checks)if(!ok)throw new Error('UI smoke failed: '+n);
-console.log('UI SMOKE 2.9.3 PASSED');
+console.log('UI SMOKE 2.9.5 PASSED');
