@@ -3,7 +3,7 @@
   let ws = null;
   let wsAuthenticated = false;
   let wsReconnectDelay = 1000;
-  let pendingSocketAction = null;
+  let pendingSocketActions = [];
 
   const SESSION_KEY = 'assistir_juntos_session_v1';
   const AUTH_KEY = '2on_session_token';
@@ -144,7 +144,8 @@
 
   function queueSocketAction(payload) {
     if (socketSend(payload)) return true;
-    pendingSocketAction = payload;
+    pendingSocketActions.push(payload);
+    if (pendingSocketActions.length > 30) pendingSocketActions.shift();
     return true;
   }
 
@@ -216,8 +217,20 @@
   } catch (e) {}
 
   // ---------- SAIR DA SALA ----------
+  let leaveTimer = null;
   function leaveRoom() {
-    socketSend({ type: 'leave-room' });
+    clearTimeout(leaveTimer);
+    if (!socketSend({ type: 'leave-room' })) {
+      resetAllStateToHome();
+      hideTopbarChip();
+      return;
+    }
+    leaveTimer = setTimeout(() => {
+      if (roomCode || role) {
+        resetAllStateToHome();
+        hideTopbarChip();
+      }
+    }, 2000);
   }
   document.getElementById('btn-leave-viewer').addEventListener('click', leaveRoom);
 
@@ -235,6 +248,7 @@
     if (ytPlayer && ytPlayer.destroy) { try { ytPlayer.destroy(); } catch (e) {} }
     ytPlayer = null;
     cleanupTransferFile();
+    chatHistoryLog = [];
     showScreen('home');
   }
 
@@ -979,7 +993,7 @@
     } else if (msg.action === 'file-kind') {
       remoteFileKind = msg.kind;
       movieAudioAttached = false;
-      updateViewerNowPlaying(msg.kind === 'audio' ? ('<svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg> ' + (msg.title || 'Música')) : '');
+      updateViewerNowPlaying(msg.kind === 'audio' ? ('🎵 ' + (msg.title || 'Música')) : '');
     } else if (msg.action === 'yt-load') {
       if (role === 'viewer') applyRemoteMode('youtube');
       if (role === 'host') {
@@ -990,7 +1004,7 @@
         document.getElementById('yt-track-title').textContent = msg.title || msg.videoId;
       }
       document.getElementById('yt-sync-btn-viewer').style.display = role === 'viewer' ? 'inline-block' : 'none';
-      updateViewerNowPlaying('<svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> ' + (msg.title || 'Vídeo do YouTube'));
+      updateViewerNowPlaying('▶ ' + (msg.title || 'Vídeo do YouTube'));
       await ensureYtPlayer(msg.videoId);
     } else if (msg.action === 'yt-play' || msg.action === 'yt-pause' || msg.action === 'yt-sync') {
       if (!ytPlayer && msg.videoId) await ensureYtPlayer(msg.videoId);
@@ -1304,6 +1318,7 @@
     chatMessages.scrollTop = chatMessages.scrollHeight;
     if (remember) {
       chatHistoryLog.push({ text, kind });
+      chatHistoryLog = chatHistoryLog.slice(-50);
       saveChatHistory();
     }
   }
@@ -1618,8 +1633,9 @@
         wsAuthenticated = true;
         if (roomCode && role) {
           socket.send(JSON.stringify({ type: 'rejoin-room', code: roomCode, role, name: myName }));
-        } else if (pendingSocketAction) {
-          const action = pendingSocketAction; pendingSocketAction = null; socket.send(JSON.stringify(action));
+        } else if (pendingSocketActions.length) {
+          const actions = pendingSocketActions.splice(0);
+          actions.forEach(action => { try { socket.send(JSON.stringify(action)); } catch (_) {} });
         }
         return;
       }
@@ -1673,6 +1689,8 @@
           break;
 
         case 'left-room':
+          clearTimeout(leaveTimer);
+          leaveTimer = null;
           clearChatHistory();
           resetAllStateToHome();
           hideTopbarChip();
@@ -1777,7 +1795,7 @@
           break;
 
         case 'app-pong':
-          updateLatency(performance.now() - msg.t);
+          if (typeof msg.t === 'number' && Number.isFinite(msg.t)) updateLatency(performance.now() - msg.t);
           break;
 
         case 'reaction':
