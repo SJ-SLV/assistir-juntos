@@ -5,6 +5,7 @@ const path = require('path');
 const crypto = require('crypto');
 const fs = require('fs');
 const WebSocket = require('ws');
+const checkers = require('./checkers');
 
 const APP_NAME = '2 ON Platform';
 const APP_VERSION = '2.9.3';
