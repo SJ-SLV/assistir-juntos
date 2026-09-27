@@ -1,6 +1,6 @@
 {
   "name": "2-on-platform",
-  "version": "2.9.2",
+  "version": "2.9.3",
   "private": true,
   "description": "2 ON — plataforma de jogos multiplayer em tempo real, com X Vs O, Pedra, Papel e Tesoura, Damas, campeonatos e Streaming sincronizado.",
   "main": "server.js",
