@@ -7,13 +7,14 @@ const fs = require('fs');
 const WebSocket = require('ws');
 
 const APP_NAME = '2 ON Platform';
-const APP_VERSION = '2.9.1';
+const APP_VERSION = '2.9.2';
 const PORT = Number(process.env.PORT || 3000);
 const HOST = process.env.HOST || '0.0.0.0';
 const ROOM_TTL_MS = 6 * 60 * 60 * 1000;
 const RECONNECT_GRACE_MS = 5 * 60 * 1000;
 const MAX_MESSAGE = 32 * 1024;
 const TURN_SECONDS = 20;
+const MAX_GAME_ROOMS = 1000;
 const DATA_DIR = path.join(__dirname, 'data');
 const DATA_FILE = path.join(DATA_DIR, 'games.json');
 
@@ -293,6 +294,7 @@ function updateStats(playerId, name, result) {
   savePersistentData();
 }
 function createGameRoom(ws, message) {
+  if (gameRooms.size >= MAX_GAME_ROOMS) return send(ws, { type: 'game-error', message: 'O servidor atingiu o limite temporário de salas. Tenta novamente dentro de alguns instantes.' });
   const session=sessions.get(ws.sessionHash); updateSessionName(session,message.name); ws.identityName=session?.name||ws.identityName;
   if (ws.gameRoom) return send(ws, { type: 'game-error', message: 'Já estás numa partida.' });
   const code = roomCode();
@@ -970,7 +972,7 @@ wss.on('connection', (ws, req) => {
       if (!ws.authenticated) {
         if (message.type !== 'session-auth') return send(ws,{type:'session-required',message:'Autentica a sessão antes de continuar.'});
         const session=getSession(clean(message.token,200));
-        if(!session){try{ws.close(1008,'session-required')}catch(_){}return;}
+        if(!session){send(ws,{type:'session-error',message:'A sessão expirou. A renovar a sessão…'});try{ws.close(1008,'session-required')}catch(_){}return;}
         ws.authenticated=true; ws.identityPlayerId=session.playerId; ws.identityName=session.name; ws.sessionHash=session.tokenHash; session.lastSeen=Date.now();
         addPlayerSocket(ws,session.playerId);
         return send(ws,{type:'session-ready',playerId:session.playerId,name:session.name});

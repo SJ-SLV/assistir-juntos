@@ -42,3 +42,15 @@ O E2E real com Express/WebSocket não foi falsamente marcado como aprovado. O am
 ## Próximo passo recomendado
 
 Publicar esta versão no Render e executar o teste com dois navegadores/dispositivos: criar sala Damas → copiar código → entrar → fazer jogadas → captura obrigatória → reconexão → revanche.
+
+
+## v2.9.2 — correção de criação e hierarquia responsiva
+- Corrigido o fluxo de autenticação WebSocket quando a sessão expira: o cliente renova a sessão e reconecta.
+- O botão de criação deixa de ficar preso em “A criar…” quando a ligação falha ou o servidor não responde.
+- Adicionado timeout de 12 s para criação de sala com feedback ao utilizador.
+- Adicionada mensagem de estado na área de preparação.
+- Adicionado limite de 1000 salas de jogos em memória.
+- Reorganizada a hierarquia do lobby: hero → preparação → catálogo.
+- Reduzidas dimensões e espaçamentos em mobile e desktop.
+- Criado título explícito “Jogos disponíveis”.
+- Aumentado o espaço inferior para impedir que o dock de conversa cubra conteúdo.
