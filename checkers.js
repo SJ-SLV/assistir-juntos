@@ -1,0 +1,19 @@
+'use strict';
+const SIZE=8, EMPTY=0, WHITE=1, BLACK=2;
+const cloneBoard=b=>b.map(r=>r.map(p=>p===EMPTY?EMPTY:{...p}));
+const inside=(r,c)=>r>=0&&r<SIZE&&c>=0&&c<SIZE;
+const opponent=c=>c===WHITE?BLACK:WHITE;
+const pieceOf=(b,r,c,color)=>inside(r,c)&&b[r][c]!==EMPTY&&b[r][c].color===color;
+function initialBoard(){const b=Array.from({length:SIZE},()=>Array(SIZE).fill(EMPTY));for(let r=0;r<3;r++)for(let c=0;c<SIZE;c++)if((r+c)%2)b[r][c]={color:BLACK,king:false};for(let r=5;r<8;r++)for(let c=0;c<SIZE;c++)if((r+c)%2)b[r][c]={color:WHITE,king:false};return b;}
+function initialState(){return{board:initialBoard(),turn:WHITE,winner:null,draw:false,status:'playing',moves:0,halfMoves:0,mustContinue:null};}
+function dirs(p){return p.king?[[1,1],[1,-1],[-1,1],[-1,-1]]:p.color===WHITE?[[-1,1],[-1,-1]]:[[1,1],[1,-1]];}
+function captures(b,r,c){const p=b[r][c];if(!p)return[];const out=[];for(const[dr,dc]of dirs(p)){const mr=r+dr,mc=c+dc,tr=r+2*dr,tc=c+2*dc;if(inside(tr,tc)&&b[mr]?.[mc]&&b[mr][mc].color===opponent(p.color)&&b[tr][tc]===EMPTY)out.push({from:{r,c},to:{r:tr,c:tc},capture:{r:mr,c:mc}});}return out;}
+function simple(b,r,c){const p=b[r][c];if(!p)return[];const out=[];for(const[dr,dc]of dirs(p)){const tr=r+dr,tc=c+dc;if(inside(tr,tc)&&b[tr][tc]===EMPTY)out.push({from:{r,c},to:{r:tr,c:tc},capture:null});}return out;}
+function allCaptures(b,color){const out=[];for(let r=0;r<SIZE;r++)for(let c=0;c<SIZE;c++)if(pieceOf(b,r,c,color))out.push(...captures(b,r,c));return out;}
+function legalMoves(b,color,forced=null){if(forced){if(!inBounds(forced.r,forced.c)||b[forced.r][forced.c]?.color!==color)return [];return captures(b,forced.r,forced.c);}const cs=allCaptures(b,color);if(cs.length)return cs;const out=[];for(let r=0;r<SIZE;r++)for(let c=0;c<SIZE;c++)if(pieceOf(b,r,c,color))out.push(...simple(b,r,c));return out;}
+function countPieces(b,color){let n=0;for(let r=0;r<SIZE;r++)for(let c=0;c<SIZE;c++)if(pieceOf(b,r,c,color))n++;return n;}
+function finish(s){const moves=legalMoves(s.board,s.turn,s.mustContinue);if(!moves.length){s.winner=opponent(s.turn);s.status='finished';s.mustContinue=null;return s;}if(countPieces(s.board,opponent(s.turn))===0){s.winner=s.turn;s.status='finished';s.mustContinue=null;return s;}if(s.halfMoves>=80){s.draw=true;s.status='finished';s.mustContinue=null;return s;}s.status='playing';return s;}
+function applyMove(s,m){const b=cloneBoard(s.board),p=b[m.from.r][m.from.c];if(!p)throw new Error('Peça inexistente.');b[m.from.r][m.from.c]=EMPTY;b[m.to.r][m.to.c]=p;if(m.capture)b[m.capture.r][m.capture.c]=EMPTY;let promoted=false;if(!p.king&&((p.color===WHITE&&m.to.r===0)||(p.color===BLACK&&m.to.r===SIZE-1))){p.king=true;promoted=true;}const n={...s,board:b,moves:s.moves+1,halfMoves:m.capture?0:s.halfMoves+1};if(m.capture){const more=captures(b,m.to.r,m.to.c);if(more.length&&!promoted){n.mustContinue={r:m.to.r,c:m.to.c};return finish(n);}}n.mustContinue=null;n.turn=opponent(s.turn);return finish(n);}
+function validateAndApply(s,from,to){if(!s||!Array.isArray(s.board)||s.board.length!==SIZE)return{ok:false,error:'Estado da partida inválido.'};if(!from||!to||![from,to].every(v=>Number.isInteger(v.r)&&Number.isInteger(v.c)))return{ok:false,error:'Coordenadas inválidas.'};if(s.status==='finished')return{ok:false,error:'A partida já terminou.'};if(!inside(from.r,from.c)||!inside(to.r,to.c))return{ok:false,error:'Coordenadas inválidas.'};const m=legalMoves(s.board,s.turn,s.mustContinue).find(x=>x.from.r===from.r&&x.from.c===from.c&&x.to.r===to.r&&x.to.c===to.c);if(!m)return{ok:false,error:'Jogada inválida ou captura obrigatória.'};return{ok:true,state:applyMove(s,m),move:m};}
+function legalTargets(s,color){if(!s||s.status==='finished'||s.turn!==color)return[];return legalMoves(s.board,color,s.mustContinue);}
+module.exports={SIZE,EMPTY,WHITE,BLACK,initialState,legalMoves,legalTargets,validateAndApply,countPieces};

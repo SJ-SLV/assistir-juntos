@@ -5,10 +5,9 @@ const path = require('path');
 const crypto = require('crypto');
 const fs = require('fs');
 const WebSocket = require('ws');
-const checkers = require('./checkers');
 
-const APP_NAME = '2 ON Platform';
-const APP_VERSION = '2.9.3';
+const APP_NAME = '2 ON Streaming Games';
+const APP_VERSION = '2.9.5';
 const PORT = Number(process.env.PORT || 3000);
 const HOST = process.env.HOST || '0.0.0.0';
 const ROOM_TTL_MS = 6 * 60 * 60 * 1000;
@@ -25,7 +24,7 @@ app.use(express.json({ limit: '256kb' }));
 app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  res.setHeader('Permissions-Policy', 'camera=*, microphone=*, geolocation=()');
+  res.setHeader('Permissions-Policy', 'camera=(self), microphone=(self), geolocation=()');
   res.setHeader('Content-Security-Policy', "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; script-src 'self' https://www.youtube.com https://www.youtube-nocookie.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' blob:; connect-src 'self' ws: wss: https://www.youtube.com https://www.youtube-nocookie.com; frame-src https://www.youtube.com https://www.youtube-nocookie.com;");
   if (process.env.NODE_ENV === 'production' || req.secure) res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
   next();
@@ -79,7 +78,8 @@ function normalizeStatsRecord(raw){
   if(!playerId)return null;
   const wins=Math.max(0,Number(raw?.wins)||0), losses=Math.max(0,Number(raw?.losses)||0), draws=Math.max(0,Number(raw?.draws)||0);
   const games=wins+losses+draws;
-  return {playerId,name:cleanBasic(raw?.name,24)||'Jogador',wins,losses,draws,games,history:Array.isArray(raw?.history)?raw.history.slice(0,50):[]};
+  const history=Array.isArray(raw?.history)?raw.history.map(h=>({gameType:['tictactoe','rps','checkers'].includes(h?.gameType)?h.gameType:'unknown',result:['win','loss','draw'].includes(h?.result)?h.result:'draw',at:Number(h?.at)||Date.now()})).slice(0,50):[];
+  return {playerId,name:cleanBasic(raw?.name,24)||'Jogador',wins,losses,draws,games,history};
 }
 function cleanBasic(value,max=80){return String(value??'').replace(/[<>\u0000-\u001f]/g,'').trim().slice(0,max)}
 function normalizeChampionship(raw){
@@ -156,7 +156,7 @@ function savePersistentData(){
 }
 loadPersistentData();
 
-const clean = (value, max = 80) => String(value ?? '').replace(/[<>\u0000-\u001f]/g, '').trim().slice(0, max);
+const clean = cleanBasic;
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 function hashToken(token){return crypto.createHash('sha256').update(String(token||'')).digest('hex');}
 function issueSession(name='Jogador'){
@@ -191,12 +191,15 @@ const send = (ws, payload) => {
   }
   return false;
 };
+const ROOM_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 function roomCode() {
-  let code;
-  do {
-    code = crypto.randomBytes(4).toString('hex').toUpperCase().replace(/[01]/g, '').slice(0, 5);
-  } while (code.length < 5 || streamRooms.has(code) || gameRooms.has(code));
-  return code;
+  for(let attempt=0;attempt<50;attempt++){
+    const bytes=crypto.randomBytes(5);
+    let code='';
+    for(let i=0;i<5;i++)code+=ROOM_ALPHABET[bytes[i]%ROOM_ALPHABET.length];
+    if(!streamRooms.has(code)&&!gameRooms.has(code))return code;
+  }
+  throw new Error('Não foi possível gerar código de sala.');
 }
 
 app.post('/api/session', (req,res)=>{
@@ -391,12 +394,14 @@ function finishGameFixture(room, result){
   else f.finalBoard=[...room.board];
   f.status='finished';
   f.finishedAt=Date.now();
-  if(!maybeFinishChampionship(c)){
+  const championshipFinished=maybeFinishChampionship(c);
+  if(!championshipFinished){
     const next=firstOpenFixture(c);
     if(next)notifyFixtureReady(c,next);
   }
   savePersistentData();
   broadcastChampionship(c,{type:'championship-updated',championshipId:c.id,fixtureId:f.id});
+  if(championshipFinished)broadcastChampionship(c,{type:'championship-finished',championshipId:c.id,fixtureId:f.id});
 }
 function rpsMove(ws,message){
   const room=gameRooms.get(ws.gameRoom);
@@ -912,7 +917,7 @@ function leaveStream(ws, announce = true) {
 }
 function handleStream(ws, message) {
   const type = message.type;
-  if (type === 'app-ping') return send(ws, { type: 'app-pong', t: message.t });
+  if (type === 'app-ping') { if (typeof message.t !== 'number' || !Number.isFinite(message.t)) return; return send(ws, { type: 'app-pong', t: message.t }); }
   if (type === 'create-room') return createStream(ws, message);
   if (type === 'join-room') return joinStream(ws, message);
   if (type === 'rejoin-room') return rejoinStream(ws, message);
@@ -942,7 +947,9 @@ function handleStream(ws, message) {
   if (type === 'control') {
     if (ws.streamRole !== 'host' && !room.controlGranted) return;
     const allowedActions=['mode','file-kind','media-play','media-pause','media-seek','media-sync','yt-load','yt-play','yt-pause','yt-sync','yt-heartbeat','transfer-play','transfer-pause','transfer-heartbeat'];
-    if(!allowedActions.includes(clean(message.action,40)))return;
+    const action=clean(message.action,40);
+    if(!allowedActions.includes(action))return;
+    if(action==='mode'&&!['file','transfer','youtube'].includes(message.mode))return;
     return streamForward(room, ws, message);
   }
   if (['offer','answer','ice-candidate','chat','reaction','typing'].includes(type)) {
@@ -1131,6 +1138,7 @@ setInterval(() => {
 const listener = server.listen(PORT, HOST, () => console.log(`${APP_NAME} v${APP_VERSION} em http://${HOST}:${PORT}`));
 function shutdown(signal) {
   console.log(`${signal}: a encerrar...`);
+  try { savePersistentData(); } catch (_) {}
   for (const ws of wss.clients) { try { ws.close(1001, 'Server shutdown'); } catch (_) {} }
   listener.close(() => process.exit(0));
   setTimeout(() => process.exit(0), 3000).unref();
