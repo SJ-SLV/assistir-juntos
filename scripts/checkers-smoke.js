@@ -23,4 +23,4 @@ assert.equal(targets.length,1);
 assert.deepEqual(targets[0].to,{r:3,c:2});
 const cap=validateAndApply(forced,targets[0].from,targets[0].to);
 assert(cap.ok&&cap.move.capture,'Captura obrigatória não aplicada.');
-console.log('CHECKERS SMOKE 2.9.1 PASSED');
+console.log('CHECKERS SMOKE 2.9.3 PASSED');
