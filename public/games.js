@@ -47,7 +47,45 @@ function clearSession(){localStorage.removeItem('2on_game_session')}
 function startWithData(){myName=$('playerName').value.trim().slice(0,24)||'Jogador';myTeam=$('teamName').value.trim().slice(0,40);localStorage.setItem('2on_player_name',myName);localStorage.setItem('2on_player_team',myTeam);return true}
 let actionBusy=false,createWatchdog=null,sessionRecovery=false;
 function setActionBusy(v){actionBusy=!!v;clearTimeout(createWatchdog);createWatchdog=null;const b=$('lobbyCreateBtn');if(b){b.disabled=actionBusy;b.textContent=actionBusy?'A criar…':'Criar partida'}const s=$('lobbyStatus');if(!actionBusy&&s&&!s.textContent.startsWith('Partida'))s.textContent=''}
-function create(){if(actionBusy)return;startWithData();activeFixtureId=null;const action={type:'game-create',name:myName,teamName:myTeam,gameType:selectedGameType};setActionBusy(true);const status=$('lobbyStatus');if(status)status.textContent='A ligar ao servidor e a criar a sala…';if(!socketOpen()||!wsAuthenticated){pendingAction=action;connect();}else{pendingAction=null;send(action)}createWatchdog=setTimeout(()=>{if(actionBusy){setActionBusy(false);if(status)status.textContent='Não foi possível concluir a criação. Verifica a ligação ao servidor e tenta novamente.';toast('⚠️ O servidor não respondeu a tempo.');}},12000)}
+async function create(){
+  if(actionBusy)return;
+  startWithData();
+  activeFixtureId=null;
+  const action={type:'game-create',name:myName,teamName:myTeam,gameType:selectedGameType};
+  setActionBusy(true);
+  const status=$('lobbyStatus');
+  if(status)status.textContent='A ligar ao servidor…';
+  try{
+    if(!sessionReady){
+      const ok=await initSession();
+      if(!ok)throw new Error('Não foi possível iniciar a sessão.');
+    }
+    if(!socketOpen()||!wsAuthenticated){
+      pendingAction=action;
+      if(status)status.textContent='A ligar ao servidor…';
+      connect();
+    }else{
+      pendingAction=null;
+      if(status)status.textContent='A criar a sala…';
+      if(!send(action))throw new Error('A ligação ao servidor ainda não está pronta.');
+    }
+    clearTimeout(createWatchdog);
+    createWatchdog=setTimeout(()=>{
+      if(actionBusy){
+        setActionBusy(false);
+        pendingAction=null;
+        if(status)status.textContent='O servidor não respondeu. Verifica a ligação e tenta novamente.';
+        toast('⚠️ Não foi possível criar a sala.');
+      }
+    },15000);
+  }catch(e){
+    setActionBusy(false);
+    pendingAction=null;
+    if(status)status.textContent=e?.message||'Não foi possível criar a sala.';
+    toast(e?.message||'Não foi possível criar a sala.');
+  }
+}
+
 function join(){const code=prompt('Código da sala:')?.trim().toUpperCase();if(!code)return;if(!/^[A-Z2-9]{5,10}$/.test(code))return toast('Código inválido.');startWithData();activeFixtureId=null;roomCode=code;mySymbol=null;const action={type:'game-join',roomCode:code,name:myName,teamName:myTeam};if(!socketOpen()){pendingAction=action;toast('A ligar ao servidor…');connect();return}send(action)}
 function leave(){openConfirm('Sair da partida?','A partida será encerrada para ti e o adversário será informado.',()=>{send({type:'game-leave'});roomCode=null;mySymbol=null;state=null;activeFixtureId=null;clearSession();stopVoice();page('home')})}
 function initials(name){return(name||'?').trim().split(/\s+/).slice(0,2).map(x=>x[0]).join('').toUpperCase().slice(0,2)}
@@ -362,6 +400,7 @@ function openLobbyEntry(mode='create',gameType=selectedGameType){
   const box=$('lobbyEntry'); if(!box)return;
   selectedGameType=['rps','checkers','tictactoe'].includes(gameType)?gameType:'tictactoe';
   const label=$('selectedGameLabel'); if(label)label.textContent=selectedGameType==='rps'?'Pedra, Papel e Tesoura':selectedGameType==='checkers'?'Damas':'X Vs O';
+  const title=$('lobbyEntryTitle'); if(title)title.textContent='Preparar partida';
   box.hidden=false;
   if(mode==='create') $('lobbyCreateBtn').focus(); else $('lobbyJoinBtn').focus();
   box.scrollIntoView({behavior:'smooth',block:'nearest'});
