@@ -56,10 +56,11 @@ function render(){
   const connected=!!state.players?.[op];
   const opName=state.names?.[op]||'A aguardar';
   const isRps=state.gameType==='rps';
+  const isCheckers=state.gameType==='checkers';
   $('backChamp').hidden=!state.championshipFixture;
   $('roomTitle').textContent=roomCode||'SALA';
-  $('meSymbol').textContent=isSpectator?'👀':(mySymbol||'—');
-  $('opSymbol').textContent=op;
+  $('meSymbol').textContent=isSpectator?'👀':(isCheckers?(mySymbol==='X'?'⚪':'⚫'):(mySymbol||'—'));
+  $('opSymbol').textContent=isCheckers?(op==='X'?'⚪':'⚫'):op;
   $('meName').textContent=isSpectator?'👀 Espectador':(myName||'Tu');
   $('meTeam').textContent=isSpectator?'A acompanhar':(state.teams?.[mySymbol]||'Sem equipa');
   $('opponentName').textContent=connected?opName:'A aguardar';
@@ -67,7 +68,7 @@ function render(){
   $('meAvatar').textContent=isSpectator?'👀':initials(myName);
   $('opAvatar').textContent=initials(connected?opName:'O');
   $('matchNumber').textContent=state.matchNumber||1;
-  $('scoreValue').textContent=isSpectator?'AO VIVO':`${state.score?.[mySymbol]||0} — ${state.score?.[op]||0}`;
+  $('scoreValue').textContent=isSpectator?'AO VIVO':(isCheckers?`${state.checkers?.pieces?.[mySymbol]||0} — ${state.checkers?.pieces?.[op]||0}`:`${state.score?.[mySymbol]||0} — ${state.score?.[op]||0}`);
   const winner=state.winner;
   let status;
   if(isSpectator) status=winner?(winner==='draw'?'🏁 Empate terminado':'🏁 Jogo terminado'):(connected?'👀 A acompanhar esta partida':'👀 A acompanhar');
@@ -75,6 +76,7 @@ function render(){
   else if(state.disconnected) status=`Reconectando ${state.names?.[state.disconnected]||'adversário'}…`;
   else if(!connected) status='⏳ A aguardar o adversário';
   else if(isRps) status=state.rps?.myChoice?'⏳ Escolha registada · aguarda o adversário':'🎯 Escolhe a tua jogada';
+  else if(isCheckers) status=state.checkers?.mustContinue ? '⚡ Continua a captura' : (state.turn===mySymbol?'🎯 É a tua vez':'⏳ Vez do adversário');
   else status=state.turn===null?'👆 Quem tocar primeiro começa':state.turn===mySymbol?'🎯 É a tua vez':`⏳ Vez de ${opName}`;
   $('gameStatus').textContent=status;
   $('resultBanner').textContent=winner?(winner==='draw'?(isRps?'🤝 As escolhas foram iguais':'🤝 Partida empatada'):`🏁 Partida terminada · ${state.names?.[winner]||winner}`):isSpectator?'👀 Estás a assistir — não podes jogar':'';
@@ -82,7 +84,7 @@ function render(){
   $('rpsChoices').hidden=!isRps;
   $('board').setAttribute('aria-hidden', String(isRps));
   $('rpsChoices').setAttribute('aria-hidden', String(!isRps));
-  if(isRps){ $('board').replaceChildren(); renderRps(connected,winner); } else { $('rpsChoices').replaceChildren(); renderTicTacToe(connected,winner); }
+  if(isRps){ $('board').replaceChildren(); $('board').classList.remove('checkers-board'); renderRps(connected,winner); } else if(isCheckers){ $('rpsChoices').replaceChildren(); renderCheckers(connected,winner); } else { $('rpsChoices').replaceChildren(); $('board').classList.remove('checkers-board'); renderTicTacToe(connected,winner); }
   $('rematchBtn').disabled=!winner||!!state.championshipFixture||isSpectator;
   $('rematchBtn').hidden=!!state.championshipFixture;
   $('rematchBtn').textContent='🔁 Revanche';
@@ -96,6 +98,30 @@ function render(){
     updateChampionshipResultActions(state.championshipFixture.championshipId,state.championshipFixture.fixtureId);
   }else{$('champResultActions').hidden=true;$('champResultActions').innerHTML=''}
   updateClock();
+}
+let checkerSelection=null;
+function renderCheckers(connected,winner){
+  $('board').classList.add('checkers-board');
+  const active=!isSpectator&&connected&&!winner&&!state.disconnected&&state.turn===mySymbol;
+  const targets=Array.isArray(state.checkers?.legalTargets)?state.checkers.legalTargets:[];
+  const targetKey=(r,c)=>`${r},${c}`;
+  const legalDest=new Set((checkerSelection?targets.filter(m=>m.from.r===checkerSelection.r&&m.from.c===checkerSelection.c):targets).map(m=>targetKey(m.to.r,m.to.c)));
+  const selectedKey=checkerSelection?targetKey(checkerSelection.r,checkerSelection.c):null;
+  $('board').innerHTML=state.board.map((row,r)=>row.map((piece,c)=>{
+    const dark=(r+c)%2===1, key=targetKey(r,c), isTarget=legalDest.has(key), selected=selectedKey===key;
+    const belongs=piece&&(piece.color===(mySymbol==='X'?1:2));
+    const pieceHtml=piece?`<span class="checker-piece ${piece.color===1?'white':'black'} ${piece.king?'king':''}" aria-label="${piece.king?'Dama':'Peça'}">${piece.king?'♛':''}</span>`:'';
+    return `<button type="button" class="checker-cell ${dark?'dark':'light'} ${selected?'selected':''} ${isTarget?'target':''}" data-r="${r}" data-c="${c}" ${active?'':'disabled'}>${pieceHtml}</button>`;
+  }).join('')).join('');
+  $('board').querySelectorAll('.checker-cell').forEach(btn=>btn.onclick=()=>{
+    if(!active)return;
+    const r=+btn.dataset.r,c=+btn.dataset.c,key=targetKey(r,c);
+    if(legalDest.has(key)&&checkerSelection){send({type:'game-move',from:checkerSelection,to:{r,c}});checkerSelection=null;return;}
+    const piece=state.board[r]?.[c];
+    if(piece&&piece.color===(mySymbol==='X'?1:2)&&targets.some(m=>m.from.r===r&&m.from.c===c))checkerSelection={r,c};
+    else if(!piece)checkerSelection=null;
+    renderCheckers(connected,winner);
+  });
 }
 function renderTicTacToe(connected,winner){
   const active=!isSpectator&&connected&&!winner&&(!state.turn||state.turn===mySymbol)&&!state.disconnected;
@@ -112,7 +138,7 @@ function renderRps(connected,winner){
   $('rpsChoices').querySelectorAll('[data-rps]').forEach(btn=>btn.onclick=()=>{if(active)send({type:'game-move',choice:btn.dataset.rps})});
 }
 function opponentSymbol(){return mySymbol==='X'?'O':'X'}
-function updateClock(){clearInterval(clockTimer);const tick=()=>{if(!state?.turn||state.winner||!state.turnStartedAt){$('turnClock').textContent='—';return}$('turnClock').textContent=`${Math.max(0,Math.ceil((state.turnStartedAt+state.turnSeconds*1000-Date.now())/1000))}s · ${state.turn===mySymbol?'a tua vez':'vez do adversário'}`};tick();clockTimer=setInterval(tick,250)}
+function updateClock(){clearInterval(clockTimer);const tick=()=>{if(state?.gameType==='checkers'||!state?.turn||state.winner||!state.turnStartedAt){$('turnClock').textContent='—';return}$('turnClock').textContent=`${Math.max(0,Math.ceil((state.turnStartedAt+state.turnSeconds*1000-Date.now())/1000))}s · ${state.turn===mySymbol?'a tua vez':'vez do adversário'}`};tick();clockTimer=setInterval(tick,250)}
 async function updateChampionshipResultActions(cupId,fixtureId){
   const box=$('champResultActions'); if(!box)return;
   const token=++resultActionToken;
@@ -322,8 +348,8 @@ $('backHome').onclick=()=>{
 $('backChamp').onclick=async()=>{const cid=state?.championshipFixture?.championshipId;if(cid){exitCurrentGame();page('championships');await openChampionship(cid)}};
 function openLobbyEntry(mode='create',gameType=selectedGameType){
   const box=$('lobbyEntry'); if(!box)return;
-  selectedGameType=gameType==='rps'?'rps':'tictactoe';
-  const label=$('selectedGameLabel'); if(label)label.textContent=selectedGameType==='rps'?'Pedra, Papel e Tesoura':'X Vs O';
+  selectedGameType=gameType==='rps'?'rps':(gameType==='checkers'?'checkers':'tictactoe');
+  const label=$('selectedGameLabel'); if(label)label.textContent=selectedGameType==='rps'?'Pedra, Papel e Tesoura':(selectedGameType==='checkers'?'Damas':'X Vs O');
   box.hidden=false;
   if(mode==='create') $('lobbyCreateBtn').focus(); else $('lobbyJoinBtn').focus();
   box.scrollIntoView({behavior:'smooth',block:'nearest'});
@@ -335,7 +361,7 @@ $('lobbyJoinBtn').onclick=()=>join();
 $('openChampionshipFromLobby').onclick=()=>page('championships');
 document.querySelectorAll('.lobby-game-button').forEach(b=>b.onclick=()=>{
   const game=b.dataset.game;
-  if(game==='tictactoe'||game==='rps') openLobbyEntry('create',game);
+  if(game==='tictactoe'||game==='rps'||game==='checkers') openLobbyEntry('create',game);
   else toast('🎮 Este jogo está em preparação.');
 });
 $('copyCode').onclick=async()=>{try{await navigator.clipboard.writeText(roomCode);toast('Código copiado.')}catch{toast('Código: '+roomCode)}};$('shareCode').onclick=shareRoomCode;$('leaveGame').onclick=leave;$('rematchBtn').onclick=()=>{if(!state?.winner)return;if(send({type:'game-reset'}))toast('Revanche iniciada.');};$('voiceBtn').onclick=toggleVoice;$('chatSend').onclick=sendChat;$('chatInput').onkeydown=e=>{if(e.key==='Enter')sendChat()};document.querySelectorAll('.chat-tabs button').forEach(b=>b.onclick=()=>{chatScope=b.dataset.scope;document.querySelectorAll('.chat-tabs button').forEach(x=>x.classList.toggle('active',x===b));if(chatScope==='team'&&!state?.championshipFixture){toast('👥 O chat da equipa está disponível nos campeonatos.');chatScope='general';document.querySelectorAll('.chat-tabs button').forEach(x=>x.classList.toggle('active',x.dataset.scope==='general'));return}if(chatScope==='team')teamUnread=0;renderChat()});$('globalChatToggle').onclick=()=>{$('globalChatPanel').hidden=!$('globalChatPanel').hidden;globalChatOpen=!$('globalChatPanel').hidden;if(globalChatOpen){globalUnread=0;renderGlobalDock();setTimeout(()=>$('globalChatInput')?.focus(),30)}};$('globalChatClose').onclick=()=>{$('globalChatPanel').hidden=true;globalChatOpen=false};$('globalChatSend').onclick=sendGlobalChat;$('globalChatInput').onkeydown=e=>{if(e.key==='Enter')sendGlobalChat()};document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>page(b.dataset.page));$('createCup').onclick=()=>{$('cupCreate').hidden=false;$('cupJoin').hidden=true;$('cupAccess').hidden=true};$('cupCancel').onclick=()=>{$('cupCreate').hidden=true};$('joinCup').onclick=()=>{$('cupJoin').hidden=false;$('cupCreate').hidden=true;$('cupAccess').hidden=true;$('cupJoinName').value=myName};$('cupJoinCancel').onclick=()=>{$('cupJoin').hidden=true};$('cupCreateSubmit').onclick=createChampionship;$('cupJoinSubmit').onclick=joinChampionship;$('cupChatSend').onclick=sendChampionshipChat;$('cupChatInput').onkeydown=e=>{if(e.key==='Enter')sendChampionshipChat()};$('qrClose').onclick=closeQr;$('qrModal').onclick=e=>{if(e.target===$('qrModal'))closeQr()};$('qrShare').onclick=async()=>{const url=$('qrLink').href;if(navigator.share){try{await navigator.share({title:$('qrTitle').textContent,url});return}catch(e){if(e?.name==='AbortError')return}}try{await navigator.clipboard.writeText(url);toast('🔗 Link copiado.')}catch{toast(url)}};$('qrDownload').onclick=()=>{const canvas=$('qrCanvas');if(!canvas.hidden){const a=document.createElement('a');a.download='2-on-acesso-qr.png';a.href=canvas.toDataURL('image/png');a.click()}else window.open($('qrImage').src,'_blank','noopener');};

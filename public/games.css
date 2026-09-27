@@ -363,6 +363,22 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .rps-result { display: flex; justify-content: center; align-items: center; gap: 14px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); font-weight: 800; }
 .rps-result strong { color: var(--muted); font-size: 10px; letter-spacing: .12em; }
 
+
+/* ---------- Damas 8×8 ---------- */
+.board.checkers-board { grid-template-columns: repeat(8, 1fr); gap: 0; width: min(460px, 94vw); aspect-ratio: 1; border: 4px solid #172538; border-radius: 16px; overflow: hidden; box-shadow: 0 18px 48px rgba(0,0,0,.28); background: #172538; }
+.checker-cell { position: relative; aspect-ratio: 1; min-width: 0; min-height: 0; padding: 0; border: 0; border-radius: 0; display: grid; place-items: center; cursor: pointer; transition: filter .12s ease, box-shadow .12s ease; }
+.checker-cell.light { background: #d9c7a4; }
+.checker-cell.dark { background: #6d4d35; }
+.checker-cell:disabled { cursor: default; opacity: 1; }
+.checker-cell.target { box-shadow: inset 0 0 0 4px rgba(62,226,171,.72); }
+.checker-cell.selected { box-shadow: inset 0 0 0 4px rgba(255,213,79,.95); }
+.checker-cell.target::after { content:""; width: 20%; height: 20%; border-radius: 50%; background: rgba(62,226,171,.9); position: absolute; }
+.checker-piece { width: 72%; height: 72%; border-radius: 50%; display: grid; place-items: center; font-size: clamp(20px, 6vw, 34px); line-height: 1; font-weight: 900; border: 2px solid rgba(255,255,255,.25); box-shadow: 0 5px 10px rgba(0,0,0,.28), inset 0 2px 2px rgba(255,255,255,.15); z-index: 1; }
+.checker-piece.white { background: #f4f0e8; color: #5b3d28; }
+.checker-piece.black { background: #17191d; color: #f0d36b; border-color: rgba(255,255,255,.12); }
+.checker-piece.king { outline: 3px solid rgba(240,211,107,.65); outline-offset: -6px; }
+@media(max-width:520px){.board.checkers-board{width:min(94vw,420px);border-width:3px;border-radius:12px}.checker-piece{width:76%;height:76%;}}
+
 /* ---------- Chat (partida + campeonato) ---------- */
 .chat, .cup-chat { overflow: hidden; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); box-shadow: 0 12px 38px rgba(0, 0, 0, .12); }
 .chat-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border-bottom: 1px solid var(--line); }
